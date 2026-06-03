@@ -15,7 +15,7 @@ var CONFIG = {
   //  • Google Sheet: File ▸ Share ▸ Publish to web ▸ .csv. Two columns — Tier, Name.
   //    (A published Sheet is the most reliable source.)
   // Leave "" to keep the "YOUR NAME HERE" placeholders on the wall.
-  PATRONS_DOC_URL: "",
+  PATRONS_DOC_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRRlKXYhf97sQcT0SKa_91oXBuJv_dmYm3m_5k5Jp7Df49Fm3HuQbRML14GlEsETyNgoWeZNLKBMelv/pub?gid=299262421&single=true&output=csv",
 
   // Newsletter: paste your Mailchimp / Buttondown form-action URL.
   // Leave "" for a graceful "saved locally" confirmation message.
