@@ -6,7 +6,7 @@ var CONFIG = {
   // File ▸ Share ▸ Publish to web ▸ choose the sheet ▸ Comma-separated values (.csv).
   // Columns (header row, any order): Season, Date, Opponent, Competition, Location, Status, GrunionScore, OpponentScore
   // Leave "" to show the built-in sample fixtures below.
-  SHEET_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRRlKXYhf97sQcT0SKa_91oXBuJv_dmYm3m_5k5Jp7Df49Fm3HuQbRML14GlEsETyNgoWeZNLKBMelv/pub?gid=0&single=true&output=csv",
+  SHEET_CSV_URL: "",
 
   // The '78 Club patron roster: paste a PUBLISHED Google Doc OR Google Sheet URL.
   //  • Google Doc:  File ▸ Share ▸ Publish to web ▸ copy the link. In the doc, put each
@@ -15,7 +15,7 @@ var CONFIG = {
   //  • Google Sheet: File ▸ Share ▸ Publish to web ▸ .csv. Two columns — Tier, Name.
   //    (A published Sheet is the most reliable source.)
   // Leave "" to keep the "YOUR NAME HERE" placeholders on the wall.
-  PATRONS_DOC_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRRlKXYhf97sQcT0SKa_91oXBuJv_dmYm3m_5k5Jp7Df49Fm3HuQbRML14GlEsETyNgoWeZNLKBMelv/pub?gid=299262421&single=true&output=csv",
+  PATRONS_DOC_URL: "",
 
   // Newsletter: paste your Mailchimp / Buttondown form-action URL.
   // Leave "" for a graceful "saved locally" confirmation message.
@@ -117,14 +117,14 @@ var CONFIG = {
 
   // built-in sample fixtures — shown until SHEET_CSV_URL is set. SWAP via the sheet.
   var SAMPLE = [
-    {Season:'2024–25', Date:'2025-04-12', Opponent:'Ventura',        Competition:'SoCal D3', Location:'Home', Status:'Result', GrunionScore:'31', OpponentScore:'17'},
-    {Season:'2024–25', Date:'2025-03-22', Opponent:'Kern County',    Competition:'SoCal D3', Location:'Away', Status:'Result', GrunionScore:'19', OpponentScore:'24'},
-    {Season:'2024–25', Date:'2025-03-08', Opponent:'San Luis Obispo',Competition:'SoCal D3', Location:'Home', Status:'Result', GrunionScore:'27', OpponentScore:'27'},
-    {Season:'2024–25', Date:'2025-02-15', Opponent:'Santa Monica',   Competition:'SoCal D3', Location:'Away', Status:'Result', GrunionScore:'22', OpponentScore:'10'},
-    {Season:'2024–25', Date:'2025-05-03', Opponent:'Bakersfield',    Competition:'Playoff',  Location:'Home', Status:'Upcoming', GrunionScore:'', OpponentScore:''},
-    {Season:'2023–24', Date:'2024-04-06', Opponent:'Ventura',        Competition:'SoCal D3', Location:'Away', Status:'Result', GrunionScore:'15', OpponentScore:'29'},
-    {Season:'2023–24', Date:'2024-03-16', Opponent:'Santa Monica',   Competition:'SoCal D3', Location:'Home', Status:'Result', GrunionScore:'33', OpponentScore:'12'},
-    {Season:'2023–24', Date:'2024-02-24', Opponent:'Kern County',    Competition:'SoCal D3', Location:'Home', Status:'Result', GrunionScore:'20', OpponentScore:'20'}
+    {Season:'2024–25', Division:'SoCal Division 3', Date:'2025-04-12', Opponent:'Ventura',        Competition:'SoCal D3', Location:'Home', Status:'Result', GrunionScore:'31', OpponentScore:'17'},
+    {Season:'2024–25', Division:'SoCal Division 3', Date:'2025-03-22', Opponent:'Kern County',    Competition:'SoCal D3', Location:'Away', Status:'Result', GrunionScore:'19', OpponentScore:'24'},
+    {Season:'2024–25', Division:'SoCal Division 3', Date:'2025-03-08', Opponent:'San Luis Obispo',Competition:'SoCal D3', Location:'Home', Status:'Result', GrunionScore:'27', OpponentScore:'27'},
+    {Season:'2024–25', Division:'SoCal Division 3', Date:'2025-02-15', Opponent:'Santa Monica',   Competition:'SoCal D3', Location:'Away', Status:'Result', GrunionScore:'22', OpponentScore:'10'},
+    {Season:'2024–25', Division:'SoCal Division 3', Date:'2025-05-03', Opponent:'Bakersfield',    Competition:'Playoff',  Location:'Home', Status:'Upcoming', GrunionScore:'', OpponentScore:''},
+    {Season:'2023–24', Division:'SoCal Division 3', Date:'2024-04-06', Opponent:'Ventura',        Competition:'SoCal D3', Location:'Away', Status:'Result', GrunionScore:'15', OpponentScore:'29'},
+    {Season:'2023–24', Division:'SoCal Division 3', Date:'2024-03-16', Opponent:'Santa Monica',   Competition:'SoCal D3', Location:'Home', Status:'Result', GrunionScore:'33', OpponentScore:'12'},
+    {Season:'2023–24', Division:'SoCal Division 3', Date:'2024-02-24', Opponent:'Kern County',    Competition:'SoCal D3', Location:'Home', Status:'Result', GrunionScore:'20', OpponentScore:'20'}
   ];
 
   var isSample=true;
@@ -143,7 +143,7 @@ var CONFIG = {
     var lines=text.replace(/\r/g,'').split('\n').filter(function(l){return l.trim().length;});
     if(lines.length<2) return [];
     var headers=splitLine(lines[0]).map(function(h){return h.trim().toLowerCase();});
-    var map={season:'Season',date:'Date',opponent:'Opponent',competition:'Competition',location:'Location',status:'Status',grunionscore:'GrunionScore',opponentscore:'OpponentScore'};
+    var map={season:'Season',division:'Division',date:'Date',opponent:'Opponent',competition:'Competition',location:'Location',status:'Status',grunionscore:'GrunionScore',opponentscore:'OpponentScore'};
     var out=[];
     for(var i=1;i<lines.length;i++){
       var cells=splitLine(lines[i]); var o={};
@@ -207,7 +207,11 @@ var CONFIG = {
     var w=0,l=0,d=0;
     list.forEach(function(r){ var res=result(r); if(res.cls==='r-win')w++; else if(res.cls==='r-loss')l++; else if(res.cls==='r-draw')d++; });
     metaEl.hidden=false;
-    metaEl.innerHTML='SoCal Division 3 · '+w+'W–'+l+'L–'+d+'D'+(isSample?'<span class="sample-flag">Sample data — connect the sheet</span>':'');
+    // Division label comes from the sheet's "Division" column for this season.
+    // Uses the first non-empty Division value found; falls back if the column is empty.
+    var division='SoCal Division 3';
+    for(var di=0; di<list.length; di++){ if(list[di].Division){ division=list[di].Division; break; } }
+    metaEl.innerHTML=esc(division)+' · '+w+'W–'+l+'L–'+d+'D'+(isSample?'<span class="sample-flag">Sample data — connect the sheet</span>':'');
 
     var html='';
     list.forEach(function(r){
