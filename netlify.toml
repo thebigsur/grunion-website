@@ -1,0 +1,12 @@
+# Netlify configuration for the Grunion RFC site.
+# This is a plain static site — no build step. Netlify just serves the files as-is.
+
+[build]
+  publish = "."
+  command = ""
+
+# Let visitors reach the '78 Club page at /the-78-club (without the .html)
+[[redirects]]
+  from = "/the-78-club"
+  to = "/the-78-club.html"
+  status = 200
