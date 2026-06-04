@@ -482,7 +482,7 @@ a.sp-feature:hover .sp-addr{color:#fff}
 
 /* ---- featured sponsor logo lockup ---- */
 .spf-body{display:flex;flex-direction:column;gap:16px;align-items:flex-start}
-.spf-logo{background:#fff;border-radius:8px;padding:14px 18px;display:inline-flex;max-width:100%}
+.spf-logo{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:14px 18px;display:inline-flex;max-width:100%}
 .spf-logo img{display:block;height:44px;width:auto;max-width:100%;object-fit:contain}
 .spf-body p{color:rgba(255,255,255,.78);font-size:.98rem}
 
