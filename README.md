@@ -66,12 +66,12 @@ for that name, so it updates automatically.
 - `assets/hero-action.png` — the big homepage hero photo
 - `assets/mermaids-team.png` — photo on the rugby-family section
 - `assets/sharkeez-logo.png` — a sponsor logo
-- `assets/gallery-1.jpg` … `assets/gallery-6.jpg` — the Match Gallery photos
+- `assets/history-1.jpg` … `assets/history-3.jpg` — the three club-life photos. These show in the History mosaic AND the Match Gallery below it (same three files power both).
 
-For the gallery: just upload `gallery-1.jpg` through `gallery-6.jpg` to
+For the gallery/history: just upload `history-1.jpg` through `history-3.jpg` to
 `assets/`. Any slot without a matching file shows a labeled placeholder, so the
-gallery never looks broken. (Use `.jpg`. If you must use `.png`, tell whoever
-maintains the site so the one reference can be updated.)
+section never looks broken. (Use `.jpg`. If you must use `.png`, tell whoever
+maintains the site so the references can be updated.)
 
 ### Everything else (wording, new sections, design)
 Send the change to whoever maintains the site and they'll update the files.
