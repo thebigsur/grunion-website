@@ -52,7 +52,7 @@
   </div>
   <div class="wrap hero-inner">
     <p class="eyebrow">Santa Barbara Rugby Football Club · Playing since 1978</p>
-    <h1>Hard Rugby <span class="alt">on the Coast</span></h1>
+    <h1>Storied Rugby <span class="alt">on the Coast</span></h1>
     <p class="sub">Welcome to the home of Grunion Rugby Football Club. Santa Barbara's home for misfits since 1978.</p>
     <div class="hero-cta">
       <a href="#play" class="btn btn-gold">Come Play</a>
@@ -87,12 +87,13 @@
 
 <!-- ============================ MATCH GALLERY ============================ -->
 <!-- HOW TO UPDATE PHOTOS (no code needed):
-     Each slot below looks for a file named assets/gallery-1.jpg, gallery-2.jpg, etc.
-     To add or change a photo: upload a JPG to the assets/ folder with the matching
-     name (gallery-1.jpg ... gallery-6.jpg), overwriting the old one. The site shows
-     it automatically. If no file exists for a slot, a labeled placeholder shows
-     instead — so the gallery never looks broken. .jpg is expected; if you use .png,
-     change the extension in the data-photo attribute for that slot. -->
+     These three slots share the same photos as the History mosaic above —
+     they look for assets/history-1.jpg, history-2.jpg, history-3.jpg. Upload a
+     JPG to the assets/ folder with the matching name (overwriting the old one)
+     and it shows up in BOTH the History section and here automatically. If no
+     file exists for a slot, a labeled placeholder shows instead — so the gallery
+     never looks broken. .jpg is expected; if you use .png, change the extension
+     in the data-photo attribute for that slot (in both places). -->
 <section class="section" id="gallery" aria-labelledby="gal-h">
   <div class="wrap">
     <div class="gal-head">
@@ -106,12 +107,9 @@
       </div>
     </div>
     <div class="gal-strip" id="galStrip">
-      <figure class="g-item"><div class="ph" data-photo="assets/gallery-1.jpg"><span class="ph-tag">Match action 01</span></div></figure>
-      <figure class="g-item"><div class="ph green" data-photo="assets/gallery-2.jpg"><span class="ph-tag">Match action 02</span></div></figure>
-      <figure class="g-item"><div class="ph" data-photo="assets/gallery-3.jpg"><span class="ph-tag">Team huddle</span></div></figure>
-      <figure class="g-item"><div class="ph green" data-photo="assets/gallery-4.jpg"><span class="ph-tag">The third half</span></div></figure>
-      <figure class="g-item"><div class="ph" data-photo="assets/gallery-5.jpg"><span class="ph-tag">Home match day</span></div></figure>
-      <figure class="g-item"><div class="ph green" data-photo="assets/gallery-6.jpg"><span class="ph-tag">Add a photo</span></div></figure>
+      <figure class="g-item"><div class="ph" data-photo="assets/history-1.jpg"><span class="ph-tag">The early side · 1978</span></div></figure>
+      <figure class="g-item"><div class="ph green" data-photo="assets/history-2.jpg"><span class="ph-tag">Clubhouse &amp; mates</span></div></figure>
+      <figure class="g-item"><div class="ph" data-photo="assets/history-3.jpg"><span class="ph-tag">Recent match day</span></div></figure>
     </div>
   </div>
 </section>
@@ -123,14 +121,14 @@
     <div class="section-head">
       <span class="kicker">Partner With The Club</span>
       <h2 id="sp-h">Sponsors</h2>
-      <p class="lede sp-intro" style="margin-top:20px">Local business is the engine of Santa Barbara rugby. A Grunion sponsorship puts your name in front of an active, loyal community — on the pitch, across our socials, and right here. Packages can be tailored; reach out and we'll build the right fit.</p>
+      <p class="lede sp-intro" style="margin-top:20px">Local business is the engine of Santa Barbara rugby. A Grunion sponsorship puts your name in front of an active, loyal community — on the pitch at Elings Park visited by 250,000+ people each year, across our socials, and right here on our home page. Packages can be tailored; reach out and we'll build the right fit.</p>
     </div>
 
     <div class="sp-wall">
-      <a class="sp-feature" href="https://www.bajasharkeez.com/" target="_blank" rel="noopener">
+      <a class="sp-feature" href="https://www.sharkeez.net" target="_blank" rel="noopener">
         <span class="kicker">Featured Sponsor</span>
         <div class="spf-body">
-          <span class="spf-logo"><img src="assets/sharkeez-logo.png" alt="Baja Sharkeez" /></span>
+          <span class="spf-logo"><img src="https://sharkeez.net/wp-content/uploads/2025/09/sharkeez-light.png" alt="Baja Sharkeez" /></span>
           <p>Our home away from home and host of the third half. The club gathers here every Thursday after training and after home matches.</p>
         </div>
         <div class="sp-addr">416 State St · Santa Barbara &nbsp;·&nbsp; Visit website →</div>
@@ -186,7 +184,6 @@
         <a href="#" data-link="sponsorMail" class="btn btn-solid-ink arrow">Inquire About Sponsorship</a>
         <span style="font-family:var(--font-mono);font-size:.76rem;letter-spacing:.06em;color:var(--ink-soft)">Subject: “Grunion Sponsorship”</span>
       </div>
-      <p class="sp-distinct">A note on giving: sponsorship is a business partnership for visibility and advertising value — it is not the same as a tax-deductible donation. For tax-advantaged charitable giving, see <a href="the-78-club.html" style="color:var(--ocean-700)">The '78 Club</a>.</p>
     </div>
   </div>
 </section>
@@ -255,9 +252,9 @@
 
     <!-- club-life mosaic: drop photo files into assets/ and set background-image on each .ph -->
     <div class="hist-mosaic">
-      <figure class="hm-item"><div class="ph green"><span class="ph-tag">The early side · 1978</span></div></figure>
-      <figure class="hm-item"><div class="ph"><span class="ph-tag">Clubhouse &amp; mates</span></div></figure>
-      <figure class="hm-item"><div class="ph green"><span class="ph-tag">Recent match day</span></div></figure>
+      <figure class="hm-item"><div class="ph green" data-photo="assets/history-1.jpg"><span class="ph-tag">The early side · 1978</span></div></figure>
+      <figure class="hm-item"><div class="ph" data-photo="assets/history-2.jpg"><span class="ph-tag">Clubhouse &amp; mates</span></div></figure>
+      <figure class="hm-item"><div class="ph green" data-photo="assets/history-3.jpg"><span class="ph-tag">Recent match day</span></div></figure>
     </div>
 
     <div class="history-cols">
