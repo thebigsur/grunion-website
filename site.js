@@ -32,9 +32,9 @@ var CONFIG = {
   SPONSOR_EMAIL:      "sponsorship@grunionrugby.org",
 
   // Giving conversations (The '78 Club "Start a Conversation")
-  GIVING_NAME:        "[Contact Name]",
-  GIVING_EMAIL:       "[email]",
-  GIVING_PHONE:       "[phone]",
+  GIVING_NAME:        "Josh Timpe",
+  GIVING_EMAIL:       "Treasurer@SBRFC.com",
+  GIVING_PHONE:       "",
 
   // Legal
   EIN:                "93-4659131"
@@ -306,7 +306,7 @@ var CONFIG = {
   var strip=document.getElementById('galStrip');
   if(!strip) return;
 
-  /* Photo auto-load: each .ph[data-photo] probes for its image file (assets/gallery-N.jpg).
+  /* Photo auto-load: each .ph[data-photo] probes for its image file.
      If the file exists, it becomes the slot's background and the placeholder label hides.
      If not, the labeled placeholder stays — so the gallery never looks broken.
      To update a photo, just upload the matching filename to assets/ (overwrite). */
