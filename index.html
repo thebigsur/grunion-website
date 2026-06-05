@@ -87,13 +87,13 @@
 
 <!-- ============================ MATCH GALLERY ============================ -->
 <!-- HOW TO UPDATE PHOTOS (no code needed):
-     These three slots share the same photos as the History mosaic above —
-     they look for assets/history-1.jpg, history-2.jpg, history-3.jpg. Upload a
-     JPG to the assets/ folder with the matching name (overwriting the old one)
-     and it shows up in BOTH the History section and here automatically. If no
-     file exists for a slot, a labeled placeholder shows instead — so the gallery
-     never looks broken. .jpg is expected; if you use .png, change the extension
-     in the data-photo attribute for that slot (in both places). -->
+     These slots share photos with the History mosaic above where the names match
+     (history-1.jpg, history-2.jpg, history-3.jpg). The additional gallery slots
+     look for gallery-4.jpg, gallery-5.jpg, gallery-6.jpg. Upload a JPG to the
+     assets/ folder with the matching name (overwriting the old one) and it shows
+     up automatically. If no file exists for a slot, a labeled placeholder shows
+     instead — so the gallery never looks broken. .jpg is expected; if you use
+     .png, change the extension in the data-photo attribute for that slot. -->
 <section class="section" id="gallery" aria-labelledby="gal-h">
   <div class="wrap">
     <div class="gal-head">
@@ -110,6 +110,9 @@
       <figure class="g-item"><div class="ph" data-photo="assets/history-1.jpg"><span class="ph-tag">The early side · 1978</span></div></figure>
       <figure class="g-item"><div class="ph green" data-photo="assets/history-2.jpg"><span class="ph-tag">Clubhouse &amp; mates</span></div></figure>
       <figure class="g-item"><div class="ph" data-photo="assets/history-3.jpg"><span class="ph-tag">Recent match day</span></div></figure>
+      <figure class="g-item"><div class="ph green" data-photo="assets/gallery-4.jpg"><span class="ph-tag">Match day</span></div></figure>
+      <figure class="g-item"><div class="ph" data-photo="assets/gallery-5.jpg"><span class="ph-tag">Match day</span></div></figure>
+      <figure class="g-item"><div class="ph green" data-photo="assets/gallery-6.jpg"><span class="ph-tag">Match day</span></div></figure>
     </div>
   </div>
 </section>
@@ -357,29 +360,6 @@
     </div>
   </div>
 </section>
-
-<!-- ============================ THE '78 CLUB (teaser → the-78-club.html) ============================ -->
-<section class="section on-dark" id="club78" aria-labelledby="c78t-h">
-  <div class="wrap">
-    <div class="teaser78">
-      <div class="t78-copy">
-        <span class="kicker">Become a Legacy Donor</span>
-        <h2 id="c78t-h" style="font-size:clamp(2.6rem,7vw,5.2rem);margin-top:14px">The <span class="alt" style="color:var(--gold-soft)">'78 Club</span></h2>
-        <p class="club-mission">Named for the year it all started, The '78 Club is the Grunion's circle of Legacy Donors — funding the club's next era. Gifts are <b>tax-deductible</b> (SBRFC is a 501(c)(3)) and go to player acquisition, coaching, and club infrastructure.</p>
-        <span class="tax-badge">501(c)(3) · EIN <span data-ein>93-4659131</span> · Tax-deductible</span>
-        <div class="club-cta-row">
-          <a href="the-78-club.html" class="btn btn-gold arrow">Explore The '78 Club</a>
-        </div>
-      </div>
-      <ul class="t78-tiers">
-        <li><span>Founders' XV</span><b>$3,000+/yr</b></li>
-        <li><span>Reserves</span><b>$1,000–$3,000/yr</b></li>
-        <li><span>Supporters' Union</span><b>$500–$1,000/yr</b></li>
-        <li><span>Sponsor a Player</span><b>$500/yr</b></li>
-      </ul>
-    </div>
-  </div>
-</section>
 <hr class="rule101" />
 
 <!-- ============================ FAMILY ============================ -->
@@ -428,21 +408,20 @@
           <div class="ct-row"><div class="c-k">Email</div><div class="c-v"><a href="mailto:grunionrugby@gmail.com">grunionrugby@gmail.com</a></div></div>
           <div class="ct-row"><div class="c-k">Home Pitch</div><div class="c-v">Elings Park, Santa Barbara</div></div>
           <div class="ct-row"><div class="c-k">Third Half</div><div class="c-v">Baja Sharkeez<br>416 State St</div></div>
-          <div class="ct-row"><div class="c-k">Mailing</div><div class="c-v">1298 Las Positas Rd<br>Santa Barbara, CA 93103</div></div>
           <div class="ct-row"><div class="c-k">Social</div><div class="c-v"><a href="https://www.facebook.com/GrunionRugby" target="_blank" rel="noopener">Facebook</a> · <a href="https://www.instagram.com/santabarbaragrunionrugby" target="_blank" rel="noopener">Instagram</a></div></div>
         </div>
         <a href="tel:+18056186510" class="btn btn-solid-ink arrow" style="margin-top:28px">Text Jordan to Get Started</a>
       </div>
       <div class="maps">
         <div class="map-card">
-          <div class="ph"><span class="ph-tag">Map — Elings Park</span></div>
+          <div class="ph photo" style="background-image:url('assets/elings-park.jpg')" role="img" aria-label="Elings Park"></div>
           <div class="map-body">
             <div><div class="m-name">Elings Park</div><div class="m-addr">Home pitch · Santa Barbara, CA</div></div>
             <a class="btn btn-line btn-sm arrow" href="https://www.google.com/maps/search/?api=1&query=Elings+Park+Santa+Barbara" target="_blank" rel="noopener">Open in Maps</a>
           </div>
         </div>
         <div class="map-card">
-          <div class="ph green"><span class="ph-tag">Map — Baja Sharkeez</span></div>
+          <div class="ph photo" style="background-image:url('assets/sharkeez-bar.jpg')" role="img" aria-label="Baja Sharkeez interior"></div>
           <div class="map-body">
             <div><div class="m-name">Baja Sharkeez</div><div class="m-addr">416 State St · Santa Barbara, CA</div></div>
             <a class="btn btn-line btn-sm arrow" href="https://www.google.com/maps/search/?api=1&query=Baja+Sharkeez+416+State+St+Santa+Barbara" target="_blank" rel="noopener">Open in Maps</a>
