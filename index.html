@@ -3,6 +3,507 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Grunion Rugby Football Club — Santa Barbara · Playing since 1978</title>
+<meta name="description" content="The Santa Barbara Grunion Rugby Football Club. Hard rugby on the coast, playing since 1978, formally founded 1980. A 501(c)(3) non-profit." />
+
+<!-- ============================================================= -->
+<!--  GRUNION RFC — homepage. Drag the whole project onto Netlify. -->
+<!--  All "connect later" values live in the CONFIG block at the   -->
+<!--  top of site.js. Search: "CONFIG".                            -->
+<!-- ============================================================= -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800;900&family=Libre+Franklin:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<link rel="stylesheet" href="styles.css" />
+</head>
+
+<body data-hero="fullbleed">
+<a class="skip" href="#fixtures">Skip to content</a>
+
+<!-- ============================ HEADER ============================ -->
+<header class="site-head" id="siteHead">
+  <div class="wrap nav">
+    <a class="brand" href="#top" aria-label="Grunion Rugby Football Club — home">
+      <img class="crest" src="assets/grunion-crest.png" alt="Grunion RFC crest" />
+      <span><b>Grunion RFC</b><i>Santa Barbara · Est. 1980</i></span>
+    </a>
+    <nav class="nav-links" id="navLinks" aria-label="Primary">
+      <a href="#fixtures">Fixtures</a>
+      <a href="#play">Play</a>
+      <a href="#history">History</a>
+      <a href="#news">News</a>
+      <a href="the-78-club.html" class="nav-club">The '78 Club</a>
+      <a href="#sponsors">Sponsors</a>
+    </nav>
+    <div class="nav-actions">
+      <a href="#play" class="btn btn-gold btn-sm">Join</a>
+      <button class="burger" id="burger" aria-label="Menu" aria-expanded="false" aria-controls="navLinks"><span></span></button>
+    </div>
+  </div>
+</header>
+
+<!-- ============================ HERO ============================ -->
+<main id="top">
+<section class="hero">
+  <div class="hero-media" aria-hidden="true">
+    <div class="ph hero-photo"></div>
+  </div>
+  <div class="wrap hero-inner">
+    <p class="eyebrow">Grunion Rugby Football Club · Playing since 1978</p>
+    <h1>Storied Rugby <span class="alt">on the Coast</span></h1>
+    <p class="sub">Welcome to the home of Grunion Rugby Football Club. Santa Barbara's home for misfits since 1978.</p>
+    <div class="hero-cta">
+      <a href="#play" class="btn btn-gold">Come Play</a>
+      <a href="#fixtures" class="btn btn-line">Fixtures &amp; Results</a>
+    </div>
+    <div class="ticker" id="ticker">
+      <span><span class="t-lab">Last</span> <span class="t-val">Grunion <span class="t-score">27–27</span> SLO</span></span>
+      <span><span class="t-lab">Next</span> <span class="t-val">vs <span id="nextOpp">—</span>, <span id="nextDate">TBD</span></span></span>
+    </div>
+  </div>
+</section>
+<hr class="rule101" />
+
+<!-- ============================ MATCH CENTRE ============================ -->
+<section class="section" id="fixtures" aria-labelledby="fx-h">
+  <div class="wrap">
+    <div class="mc-top">
+      <div>
+        <span class="kicker">Fixtures &amp; Results</span>
+        <h2 id="fx-h" style="font-size:clamp(2.6rem,7vw,5.2rem);margin-top:14px">Match Centre</h2>
+      </div>
+      <div class="season-toggle" id="seasonToggle" role="group" aria-label="Select season"></div>
+    </div>
+    <p class="mc-meta" id="mcMeta" hidden></p>
+    <div class="mc-list" id="mcList" aria-live="polite">
+      <div class="mc-state">Loading fixtures…</div>
+    </div>
+    <p class="mc-foot">Results post from the club fixtures sheet, usually within minutes of the final whistle. Game-day changes are also on Facebook and Instagram.</p>
+  </div>
+</section>
+<hr class="rule101" />
+
+<!-- ============================ MATCH GALLERY ============================ -->
+<!-- HOW TO UPDATE PHOTOS (no code needed):
+     These slots share photos with the History mosaic above where the names match
+     (history-1.jpg, history-2.jpg, history-3.jpg). The additional gallery slots
+     look for gallery-4.jpg, gallery-5.jpg, gallery-6.jpg. Upload a JPG to the
+     assets/ folder with the matching name (overwriting the old one) and it shows
+     up automatically. If no file exists for a slot, a labeled placeholder shows
+     instead — so the gallery never looks broken. .jpg is expected; if you use
+     .png, change the extension in the data-photo attribute for that slot. -->
+<section class="section" id="gallery" aria-labelledby="gal-h">
+  <div class="wrap">
+    <div class="gal-head">
+      <div>
+        <span class="kicker">From The Pitch</span>
+        <h2 id="gal-h">Match Gallery</h2>
+      </div>
+      <div class="gal-nav">
+        <button type="button" class="gal-arrow" data-gal="prev" aria-label="Scroll gallery left">←</button>
+        <button type="button" class="gal-arrow" data-gal="next" aria-label="Scroll gallery right">→</button>
+      </div>
+    </div>
+    <div class="gal-strip" id="galStrip">
+      <figure class="g-item"><div class="ph" data-photo="assets/history-1.jpg"><span class="ph-tag">The early side · 1978</span></div></figure>
+      <figure class="g-item"><div class="ph green" data-photo="assets/history-2.jpg"><span class="ph-tag">Clubhouse &amp; mates</span></div></figure>
+      <figure class="g-item"><div class="ph" data-photo="assets/history-3.jpg"><span class="ph-tag">Recent match day</span></div></figure>
+      <figure class="g-item"><div class="ph green" data-photo="assets/gallery-4.jpg"><span class="ph-tag">Match day</span></div></figure>
+      <figure class="g-item"><div class="ph" data-photo="assets/gallery-5.jpg"><span class="ph-tag">Match day</span></div></figure>
+      <figure class="g-item"><div class="ph green" data-photo="assets/gallery-6.jpg"><span class="ph-tag">Match day</span></div></figure>
+    </div>
+  </div>
+</section>
+<hr class="rule101" />
+
+<!-- ============================ SPONSORS ============================ -->
+<section class="section" id="sponsors" aria-labelledby="sp-h">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">Partner With The Club</span>
+      <h2 id="sp-h">Sponsors</h2>
+      <p class="lede sp-intro" style="margin-top:20px">Local business is the engine of Santa Barbara rugby. A Grunion sponsorship puts your name in front of an active, loyal community — on the pitch at Elings Park visited by 250,000+ people each year, across our socials, and right here on our home page. Packages can be tailored; reach out and we'll build the right fit.</p>
+    </div>
+
+    <div class="sp-wall">
+      <a class="sp-feature" href="https://www.sharkeez.net" target="_blank" rel="noopener">
+        <span class="kicker">Featured Sponsor</span>
+        <div class="spf-body">
+          <span class="spf-logo"><img src="https://sharkeez.net/wp-content/uploads/2025/09/sharkeez-light.png" alt="Baja Sharkeez" /></span>
+          <p>Our home away from home and host of the third half. The club gathers here every Thursday after training and after home matches.</p>
+        </div>
+        <div class="sp-addr">416 State St · Santa Barbara &nbsp;·&nbsp; Visit website →</div>
+      </a>
+      <a class="sp-logo sp-named" href="https://www.rinconbrewery.com/" target="_blank" rel="noopener">
+        <img src="https://www.rinconbrewery.com/favicon.png" alt="Rincon Brewery" loading="lazy" onerror="this.remove()" />
+        <span>Rincon Brewery</span>
+      </a>
+      <a class="sp-logo sp-named" href="https://www.goldenroostersb.com/" target="_blank" rel="noopener">
+        <img src="https://storage.googleapis.com/wzukusers/user-29017026/images/fav-ee4c346946734a4eb46b03ace15156ea/mstile-150x150.png" alt="Golden Rooster Transportation" loading="lazy" onerror="this.remove()" />
+        <span>Golden Rooster Transportation</span>
+      </a>
+      <div class="sp-logo">Sponsor logo</div>
+      <div class="sp-logo">Sponsor logo</div>
+      <a href="#" data-link="sponsorMail" class="sp-become"><b>Become a Sponsor</b><span>Add your logo →</span></a>
+      <div class="sp-logo">Sponsor logo</div>
+    </div>
+
+    <div class="packages">
+      <span class="kicker">Sponsor Partnership Packages</span>
+      <div class="pk-grid">
+        <div class="pk">
+          <div class="pk-name">Touchline</div>
+          <div class="pk-amt">$250</div>
+          <p>Logo + link on the website; thank-you on our socials.</p>
+        </div>
+        <div class="pk">
+          <div class="pk-name">Pass &amp; Catch</div>
+          <div class="pk-amt">$500</div>
+          <p>Above, plus a featured post on Facebook and Instagram.</p>
+          <div class="pk-prev">Includes Touchline</div>
+        </div>
+        <div class="pk">
+          <div class="pk-name">Drop Goal</div>
+          <div class="pk-amt">$1,000</div>
+          <p>Above, plus logo on all match-day announcement posts and a featured email mention.</p>
+          <div class="pk-prev">Includes Pass &amp; Catch</div>
+        </div>
+        <div class="pk">
+          <div class="pk-name">Pick &amp; Go</div>
+          <div class="pk-amt">$2,500</div>
+          <p>Above, plus invitation to club events and recognition at home matches.</p>
+          <div class="pk-prev">Includes Drop Goal</div>
+        </div>
+        <div class="pk top">
+          <div class="pk-name">Champions</div>
+          <div class="pk-amt">$5,000+</div>
+          <p>Above, plus logo on the team kit for the season and headline placement on the site.</p>
+          <div class="pk-prev">Includes Pick &amp; Go</div>
+        </div>
+      </div>
+      <div class="sp-cta">
+        <a href="#" data-link="sponsorMail" class="btn btn-solid-ink arrow">Inquire About Sponsorship</a>
+        <span style="font-family:var(--font-mono);font-size:.76rem;letter-spacing:.06em;color:var(--ink-soft)">Subject: “Grunion Sponsorship”</span>
+      </div>
+    </div>
+  </div>
+</section>
+<hr class="rule101" />
+
+<!-- ============================ PLAY ============================ -->
+<section class="section on-dark" id="play" aria-labelledby="play-h">
+  <div class="wrap">
+    <div class="play-grid">
+      <div>
+        <span class="kicker">Get On The Pitch</span>
+        <h2 id="play-h" style="font-size:clamp(2.6rem,7vw,5.2rem);margin-top:14px">Play for the Grunion</h2>
+        <p class="lede" style="margin-top:24px">Most of the side had never touched a rugby ball when they started. Beginners and veterans are both welcome at any session.</p>
+        <div class="fact-strip">
+          <div class="fact"><div class="f-k">Season</div><div class="f-v">Nov – April</div></div>
+          <div class="fact"><div class="f-k">Training</div><div class="f-v">Tue &amp; Thu<br>7:00–9:00 PM</div></div>
+          <div class="fact"><div class="f-k">Home Pitch</div><div class="f-v">Elings Park<br>Santa Barbara</div></div>
+        </div>
+        <p class="reassure">Off-season and schedule changes are posted to Facebook and Instagram.</p>
+        <div class="thirdhalf">
+          <span class="kicker">The Third Half</span>
+          <h4>Win or lose, the night ends at Baja Sharkeez</h4>
+          <p>Every Thursday after training and after home matches on Saturday. <b>416 State St · Santa Barbara.</b></p>
+        </div>
+      </div>
+      <div>
+        <span class="eyebrow" style="color:var(--gold-soft)">More Information</span>
+        <div class="join-info">
+          <h4>Questions? Reach out anytime</h4>
+          <p>Beginners and veterans are both welcome — just turn up to a session, or get in touch first and we'll look out for you.</p>
+          <div class="ji-contacts">
+            <a class="ji-row" href="tel:+18056186510">
+              <span class="ji-k">Call / Text Jordan</span>
+              <span class="ji-v">(805) 618-6510</span>
+            </a>
+            <a class="ji-row" href="mailto:grunionrugby@gmail.com">
+              <span class="ji-k">Email the club</span>
+              <span class="ji-v">grunionrugby@gmail.com</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<hr class="rule101" />
+
+<!-- ============================ HISTORY ============================ -->
+<section class="section" id="history" aria-labelledby="hist-h">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">Since 1978</span>
+      <h2 id="hist-h">Our History</h2>
+    </div>
+    <div class="hist-intro">
+      <p class="lede">Most of the original players came up through rugby at UCSB and weren't ready to quit when they aged out of the college game. The side first played together in 1978, formally organized as a club in 1980, and has been a Santa Barbara institution ever since.</p>
+      <div class="colors-callout">
+        <hr class="rule101" style="height:10px" />
+        <div class="cc-body">
+          <span class="kicker">The Shirt</span>
+          <h4>Santa Barbara, worn on the chest</h4>
+          <p>Blue for the ocean, green for the mountains, split by a gray stripe for Highway 101.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- club-life mosaic: drop photo files into assets/ and set background-image on each .ph -->
+    <div class="hist-mosaic">
+      <figure class="hm-item"><div class="ph green" data-photo="assets/history-1.jpg"><span class="ph-tag">The early side · 1978</span></div></figure>
+      <figure class="hm-item"><div class="ph" data-photo="assets/history-2.jpg"><span class="ph-tag">Clubhouse &amp; mates</span></div></figure>
+      <figure class="hm-item"><div class="ph green" data-photo="assets/history-3.jpg"><span class="ph-tag">Recent match day</span></div></figure>
+    </div>
+
+    <div class="history-cols">
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-year">1978</div>
+          <h4>First side takes the field</h4>
+          <p>UCSB graduates working in restaurants around town started playing together; Lance Mason would serve as first president. The name was deliberately tongue-in-cheek: the grunion, the small fish famous for its moonlit runs on local beaches. As Mason put it, there was always the question of whether they even existed.</p>
+        </div>
+        <div class="tl-item">
+          <div class="tl-year">1980</div>
+          <h4>Officially founded</h4>
+          <p>The club is formally established for the promotion, encouragement, and extension of Rugby Union football.</p>
+        </div>
+        <div class="tl-item">
+          <div class="tl-year">1981</div>
+          <h4>An instant family</h4>
+          <p>Members came from every sport and walk of life looking for community — and found it.</p>
+        </div>
+        <div class="tl-item">
+          <div class="tl-year">1998</div>
+          <h4>The Twenty Greatest Grunion</h4>
+          <p>To mark the 20th anniversary, the club named its Twenty Greatest — the start of a formal Hall of Fame.</p>
+        </div>
+        <div class="tl-item">
+          <div class="tl-year">2006</div>
+          <h4>Champions</h4>
+          <p>A divisional title — a high-water mark the club would chase for years.</p>
+        </div>
+        <div class="tl-item">
+          <div class="tl-year">2018</div>
+          <h4>Forty years on</h4>
+          <p>Charter members traveled from as far as Austin, Texas, to watch the current side play the Fossils at Elings Park.</p>
+        </div>
+        <div class="tl-item">
+          <div class="tl-year">2022</div>
+          <h4>SoCal Division 3 champions</h4>
+          <p>A late try and conversion sealed a 27–27 draw with San Luis Obispo, clinching the title on points differential — the first championship since 2006 — and a regional qualifier for USA Rugby Nationals.</p>
+        </div>
+        <div class="tl-item">
+          <div class="tl-year">2023</div>
+          <h4>Bringing back the 7s</h4>
+          <p>After a five-year hiatus, the club revived the Santa Barbara 7s at Elings Park.</p>
+        </div>
+        <div class="tl-item now">
+          <div class="tl-year">Today</div>
+          <h4>A new era</h4>
+          <p>Investing in players, coaching, and club infrastructure — and still playing the rough-and-tumble rugby the club was built on.</p>
+        </div>
+      </div>
+      <aside class="hist-aside">
+        <div class="hof">
+          <span class="kicker">Hall of Fame</span>
+          <h4>The Twenty Greatest Grunion</h4>
+          <p>Since 1998 the club has honored its Hall of Fame — the Twenty Greatest Grunion and the members who built this place.</p>
+          <p style="margin-top:12px"><a href="#contact" style="text-decoration:none;border-bottom:1px solid rgba(216,177,95,.4)">Add names / link if available →</a></p>
+        </div>
+        <div class="ph green" style="height:240px;border-radius:3px"><span class="ph-tag">Archive photo — early side / clubhouse</span></div>
+      </aside>
+    </div>
+  </div>
+</section>
+<hr class="rule101" />
+
+<!-- ============================ NEWS ============================ -->
+<section class="section" id="news" aria-labelledby="news-h" style="background:var(--paper-3)">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">Notices &amp; Match Reports</span>
+      <h2 id="news-h">Club News</h2>
+    </div>
+    <div class="news-grid">
+      <div class="fb-block">
+        <h3>Latest from Facebook</h3>
+        <div class="fb-shell">
+          <div class="fb-page" data-href="https://www.facebook.com/GrunionRugby" data-tabs="timeline" data-width="500" data-height="420" data-small-header="false" data-adapt-container-width="true" data-hide-cover="false" data-show-facepile="true"></div>
+          <div class="fb-fallback" id="fbFallback">
+            <span class="kicker" style="justify-content:center">Facebook</span>
+            <p>Match reports and game-day updates post to our official page.</p>
+            <a class="btn btn-solid-ink btn-sm arrow" href="https://www.facebook.com/GrunionRugby" target="_blank" rel="noopener">Open facebook.com/GrunionRugby</a>
+          </div>
+        </div>
+      </div>
+      <div class="nl-block">
+        <span class="kicker">Newsletter</span>
+        <h3>The Grunion Dispatch</h3>
+        <p>Match reports, socials, fundraisers and the occasional tale from the third half — straight to your inbox.</p>
+        <form class="nl-form" id="nlForm" novalidate>
+          <label for="nlEmail" style="position:absolute;left:-9999px">Email address</label>
+          <input id="nlEmail" type="email" name="email" placeholder="you@example.com" required autocomplete="email" />
+          <button class="btn btn-gold" type="submit">Subscribe</button>
+        </form>
+        <p class="nl-micro">No spam. Only when there's something worth saying.</p>
+        <p class="nl-msg" id="nlMsg" role="status"></p>
+        <div class="socials">
+          <a href="https://www.facebook.com/GrunionRugby" target="_blank" rel="noopener">Facebook</a>
+          <a href="https://www.instagram.com/santabarbaragrunionrugby" target="_blank" rel="noopener">Instagram</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<hr class="rule101" />
+
+<!-- ============================ FAMILY ============================ -->
+<section class="section on-dark" id="family" aria-labelledby="fam-h">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">One Rugby Town</span>
+      <h2 id="fam-h">Santa Barbara's Rugby Family</h2>
+      <p class="lede" style="margin-top:20px;color:rgba(255,255,255,.8)">The Grunion is the men's side of a wider Santa Barbara rugby community. If you're looking for women's or youth rugby, our sister clubs would love to hear from you.</p>
+    </div>
+    <div class="fam-grid">
+      <a class="fam-card" href="https://sbwomensrugby.com" target="_blank" rel="noopener">
+        <div class="ph photo" style="background-image:url('assets/mermaids-team.png')" role="img" aria-label="Santa Barbara Mermaids team photo"></div>
+        <div class="fc-body">
+          <span class="fc-tag">Women's Rugby</span>
+          <h3>Santa Barbara Mermaids</h3>
+          <p>Competitive women's rugby in Santa Barbara since 2015, playing in the Southern California Senior Women's Division II. Open to all women and nonconforming players 18+.</p>
+          <div class="fc-link">Visit sbwomensrugby.com →</div>
+        </div>
+      </a>
+      <a class="fam-card" href="https://stingraysrfc.com" target="_blank" rel="noopener">
+        <div class="ph photo" style="background-image:url('https://images.squarespace-cdn.com/content/v1/672e83d9472ba44258bdb8a4/9d4e0eaa-09dc-4896-b007-6475c86af97d/20250118_110138.jpg?format=1200w')" role="img" aria-label="Santa Barbara Stingrays youth rugby"></div>
+        <div class="fc-body">
+          <span class="fc-tag">Youth Rugby</span>
+          <h3>Santa Barbara Stingrays</h3>
+          <p>Youth rugby from U8 to U18 (U8 plays non-contact flag), building skill, character, and teamwork. Newcomers always welcome; scholarships and financial aid available.</p>
+          <div class="fc-link">Visit stingraysrfc.com →</div>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+<hr class="rule101" />
+
+<!-- ============================ CONTACT ============================ -->
+<section class="section" id="contact" aria-labelledby="ct-h">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">Come Find Us</span>
+      <h2 id="ct-h">Get In Touch</h2>
+    </div>
+    <div class="ct-grid">
+      <div>
+        <div class="ct-list">
+          <div class="ct-row"><div class="c-k">New Players</div><div class="c-v">Call or text <b>Jordan</b><br><a href="tel:+18056186510">(805) 618-6510</a></div></div>
+          <div class="ct-row"><div class="c-k">Email</div><div class="c-v"><a href="mailto:grunionrugby@gmail.com">grunionrugby@gmail.com</a></div></div>
+          <div class="ct-row"><div class="c-k">Home Pitch</div><div class="c-v">Elings Park, Santa Barbara</div></div>
+          <div class="ct-row"><div class="c-k">Third Half</div><div class="c-v">Baja Sharkeez<br>416 State St</div></div>
+          <div class="ct-row"><div class="c-k">Social</div><div class="c-v"><a href="https://www.facebook.com/GrunionRugby" target="_blank" rel="noopener">Facebook</a> · <a href="https://www.instagram.com/santabarbaragrunionrugby" target="_blank" rel="noopener">Instagram</a></div></div>
+        </div>
+        <a href="tel:+18056186510" class="btn btn-solid-ink arrow" style="margin-top:28px">Text Jordan to Get Started</a>
+      </div>
+      <div class="maps">
+        <div class="map-card">
+          <div class="ph photo" style="background-image:url('assets/elings-park.jpg')" role="img" aria-label="Elings Park"></div>
+          <div class="map-body">
+            <div><div class="m-name">Elings Park</div><div class="m-addr">Home pitch · Santa Barbara, CA</div></div>
+            <a class="btn btn-line btn-sm arrow" href="https://www.google.com/maps/search/?api=1&query=Elings+Park+Santa+Barbara" target="_blank" rel="noopener">Open in Maps</a>
+          </div>
+        </div>
+        <div class="map-card">
+          <div class="ph photo" style="background-image:url('assets/sharkeez-bar.jpg')" role="img" aria-label="Baja Sharkeez interior"></div>
+          <div class="map-body">
+            <div><div class="m-name">Baja Sharkeez</div><div class="m-addr">416 State St · Santa Barbara, CA</div></div>
+            <a class="btn btn-line btn-sm arrow" href="https://www.google.com/maps/search/?api=1&query=Baja+Sharkeez+416+State+St+Santa+Barbara" target="_blank" rel="noopener">Open in Maps</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- ============================ FOOTER ============================ -->
+<footer class="site-foot">
+  <hr class="rule101" />
+  <!-- Chip In — general donations (distinct from The '78 Club) -->
+  <div class="chip">
+    <div class="wrap chip-grid">
+      <div>
+        <span class="kicker">Chip In</span>
+        <h3>Donate Any Amount</h3>
+        <p>Not ready for The '78 Club? Any amount helps the Grunion keep playing. SBRFC is a 501(c)(3) — your gift is tax-deductible.</p>
+      </div>
+      <div class="chip-cta"><a href="#" data-link="donate" class="btn btn-gold arrow">Donate to the Grunion</a></div>
+    </div>
+  </div>
+
+  <!-- recurring sponsor strip -->
+  <div class="wrap">
+    <div class="foot-sponsors">
+      <span class="fs-lab">Proud sponsors</span>
+      <a class="fs-logo" href="https://www.sharkeez.net" target="_blank" rel="noopener">Baja Sharkeez</a>
+      <a class="fs-logo" href="https://www.rinconbrewery.com/" target="_blank" rel="noopener">Rincon Brewery</a>
+      <a class="fs-logo" href="https://www.goldenroostersb.com/" target="_blank" rel="noopener">Golden Rooster Transportation</a>
+      <a href="#sponsors" class="fs-logo" style="color:var(--gold-soft);border-color:var(--gold-soft)">Become a sponsor →</a>
+    </div>
+  </div>
+
+  <div class="wrap foot-main">
+    <div class="foot-brand">
+      <b>Grunion RFC</b>
+      <p>Grunion Rugby Football Club. Playing since 1978, founded 1980. For the promotion, encouragement, and extension of Rugby Union football.</p>
+    </div>
+    <div class="foot-col">
+      <h4>Club</h4>
+      <a href="#fixtures">Fixtures</a>
+      <a href="#play">Play</a>
+      <a href="#history">History</a>
+    </div>
+    <div class="foot-col">
+      <h4>Support</h4>
+      <a href="the-78-club.html">The '78 Club</a>
+      <a href="#sponsors">Sponsors</a>
+      <a href="#" data-link="donate">Donate</a>
+    </div>
+    <div class="foot-col">
+      <h4>Connect</h4>
+      <a href="https://www.facebook.com/GrunionRugby" target="_blank" rel="noopener">Facebook</a>
+      <a href="https://www.instagram.com/santabarbaragrunionrugby" target="_blank" rel="noopener">Instagram</a>
+      <a href="#news">Newsletter</a>
+      <a href="#contact">Contact</a>
+    </div>
+    <div class="foot-col">
+      <h4>Family</h4>
+      <a href="https://sbwomensrugby.com" target="_blank" rel="noopener">Mermaids</a>
+      <a href="https://stingraysrfc.com" target="_blank" rel="noopener">Stingrays</a>
+    </div>
+  </div>
+
+  <div class="wrap foot-legal">
+    <span>© <span id="year">2026</span> Grunion Rugby Football Club · Santa Barbara, CA</span>
+    <span>Proud member of the SBRFC, a 501(c)(3) non-profit organization · EIN 93-4659131</span>
+  </div>
+</footer>
+
+<div id="fb-root"></div>
+<script src="site.js"></script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>The '78 Club — Grunion RFC · Legacy Donor Program</title>
 <meta name="description" content="The '78 Club — the Grunion's 501(c)(3) Legacy Donor program. Four giving tiers and tax-advantaged ways to give." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
