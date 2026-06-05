@@ -37,7 +37,7 @@ var CONFIG = {
   GIVING_PHONE:       "[phone]",
 
   // Legal
-  EIN:                "[XX-XXXXXXX]"
+  EIN:                "93-4659131"
 };
 
 /* ---------- apply CONFIG to the page ---------- */
