@@ -333,3 +333,63 @@ var CONFIG = {
     });
   });
 })();
+
+/* ============================ HISTORY ASIDE — ARCHIVE SLIDESHOW ============================ */
+/* Cross-fades through assets/history-1.jpg … history-3.jpg. Each file is probed first;
+   only files that actually exist become slides. If none exist, the labeled green
+   placeholder stays put — so the section never looks broken. To change the photos,
+   just overwrite history-1.jpg / history-2.jpg / history-3.jpg in assets/. */
+(function(){
+  var box=document.getElementById('hofSlideshow');
+  if(!box) return;
+  var urls=(box.getAttribute('data-slideshow')||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
+  if(!urls.length) return;
+
+  var slides=[], loaded=0, total=urls.length;
+  urls.forEach(function(url){
+    var probe=new Image();
+    probe.onload=function(){
+      var s=document.createElement('div');
+      s.className='ph photo hof-slide';
+      s.style.backgroundImage="url('"+url+"')";
+      slides.push(s);
+      done();
+    };
+    probe.onerror=done;
+    probe.src=url;
+  });
+
+  function done(){
+    loaded++;
+    if(loaded<total) return;       // wait until every file resolved
+    if(!slides.length) return;     // none exist — keep the placeholder
+    // swap the placeholder for the real slides
+    box.innerHTML='';
+    slides.forEach(function(s){ box.appendChild(s); });
+
+    var dots=null, i=0;
+    if(slides.length>1){
+      dots=document.createElement('div');
+      dots.className='hof-dots';
+      slides.forEach(function(_,idx){
+        var d=document.createElement('button');
+        d.type='button'; d.setAttribute('aria-label','Show photo '+(idx+1));
+        d.addEventListener('click', function(){ show(idx); });
+        dots.appendChild(d);
+      });
+      box.appendChild(dots);
+    }
+
+    function show(n){
+      i=n;
+      slides.forEach(function(s,idx){ s.classList.toggle('is-on', idx===i); });
+      if(dots) dots.querySelectorAll('button').forEach(function(b,idx){ b.setAttribute('aria-current', idx===i?'true':'false'); });
+    }
+    show(0);
+
+    if(slides.length>1){
+      var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+      if(!reduce) setInterval(function(){ show((i+1)%slides.length); }, 4500);
+    }
+  }
+})();
