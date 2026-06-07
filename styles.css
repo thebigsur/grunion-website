@@ -539,3 +539,20 @@ a.sp-feature:hover .sp-addr{color:#fff}
 .ph-names--3{font-size:clamp(1.2rem,2.2vw,1.7rem);color:rgba(255,255,255,.92)}
 .ph-foot{margin-top:clamp(28px,4vw,40px);display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:center}
 .ph-note{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.42)}
+
+/* ---- featured sponsor: visible name + mascot-vs-wordmark sizing ---- */
+.spf-name{font-family:var(--font-display);font-weight:800;text-transform:uppercase;
+  font-size:1.6rem;letter-spacing:.02em;line-height:.95;color:#fff}
+.spf-logo img.spf-img-mascot{height:64px}
+
+/* ---- history aside: archive photo slideshow ---- */
+.hof-slideshow{position:relative;height:240px;border-radius:3px;overflow:hidden}
+.hof-slideshow .hof-slide{position:absolute;inset:0;height:100%;border-radius:3px;
+  opacity:0;transition:opacity .9s ease}
+.hof-slideshow .hof-slide.is-on{opacity:1}
+/* the labeled placeholder (no photos yet) is a single static slide — keep it visible */
+.hof-slideshow .hof-slide.green{opacity:1}
+.hof-dots{position:absolute;left:0;right:0;bottom:12px;display:flex;gap:7px;justify-content:center;z-index:2}
+.hof-dots button{width:8px;height:8px;padding:0;border:0;border-radius:50%;
+  background:rgba(255,255,255,.4);cursor:pointer;transition:background .2s}
+.hof-dots button[aria-current="true"]{background:var(--gold-soft)}
