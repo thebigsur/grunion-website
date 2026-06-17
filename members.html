@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Members Library — The '78 Club · Grunion RFC</title>
+<meta name="description" content="The '78 Club Members Library — the legacy-donor circle's photo and document archive for Grunion Rugby Football Club." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800;900&family=Libre+Franklin:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+/* ============================ MEMBERS LIBRARY (page-local) ============================ */
+/* dark backdrop — .on-dark only recolors text; the surface comes from here (mirrors #club78) */
+#memberlib{background:var(--ocean-950);color:#fff;position:relative;overflow:hidden}
+#memberlib::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(120% 80% at 80% 0%, rgba(34,107,73,.22), transparent 55%),
+            radial-gradient(90% 70% at 0% 100%, rgba(194,146,46,.12), transparent 60%)}
+#memberlib .wrap{position:relative}
+
+.members-lib{max-width:74ch}
+.members-lib .kicker{color:var(--gold-soft)}
+.members-lib h2{font-size:clamp(2.8rem,7.5vw,5.8rem);margin-top:14px}
+.members-lib h2 .alt{color:var(--gold-soft)}
+.members-lib .lede{color:rgba(255,255,255,.82);margin-top:24px}
+
+/* shared block scaffold */
+.mlib-block{margin-top:clamp(52px,7vw,84px)}
+.mlib-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:14px 28px}
+.mlib-head h3{font-size:clamp(1.8rem,3.4vw,2.6rem);line-height:.95}
+.mlib-count{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+
+/* ---- photo gallery: sub-folders ---- */
+.member-folder + .member-folder{margin-top:clamp(40px,5.5vw,60px)}
+.folder-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 18px;
+  border-bottom:1px solid rgba(255,255,255,.18);padding-bottom:12px}
+.folder-name{display:flex;align-items:center;gap:12px;font-family:var(--font-display);font-weight:800;
+  text-transform:uppercase;letter-spacing:.02em;font-size:clamp(1.3rem,2.4vw,1.75rem);line-height:1;color:#fff}
+.folder-name::before{content:"";width:9px;height:9px;flex:none;background:var(--gold);transform:rotate(45deg)}
+.folder-meta{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+.member-folder .member-gallery{margin-top:clamp(16px,2.4vw,22px)}
+
+.member-gallery{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:clamp(24px,3.5vw,36px)}
+@media(max-width:920px){.member-gallery{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:420px){.member-gallery{grid-template-columns:1fr}}
+
+.member-photo{position:relative;display:block;aspect-ratio:1/1;border-radius:4px;overflow:hidden;
+  background:var(--ocean-800);border:1px solid rgba(255,255,255,.14);text-decoration:none;color:#fff;
+  transition:border-color .18s ease,transform .18s ease}
+.member-photo img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s ease}
+.member-photo:hover{border-color:var(--gold-soft);transform:translateY(-2px)}
+.member-photo:hover img{transform:scale(1.05)}
+.member-photo:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.member-photo .mp-open{position:absolute;top:8px;right:8px;width:30px;height:30px;display:grid;place-items:center;
+  background:rgba(7,28,44,.7);border:1px solid rgba(216,177,95,.5);border-radius:2px;color:var(--gold-soft);
+  font-family:var(--font-mono);font-size:.85rem;opacity:0;transform:translateY(-4px);transition:opacity .18s ease,transform .18s ease}
+.member-photo:hover .mp-open,.member-photo:focus-visible .mp-open{opacity:1;transform:none}
+.member-photo .mp-cap{position:absolute;left:0;right:0;bottom:0;padding:18px 12px 10px;
+  background:linear-gradient(180deg,transparent,rgba(6,25,38,.88));
+  font-family:var(--font-mono);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.85);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* striped loading / empty tile — styled like the site's .ph placeholder */
+.member-gallery-loading{grid-column:1 / -1;min-height:220px;display:grid;place-items:center;gap:10px;text-align:center;
+  border-radius:4px;background-color:var(--ocean-800);
+  background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.045) 0 14px,transparent 14px 28px);
+  border:1px solid rgba(255,255,255,.12);padding:32px}
+.member-gallery-loading .gl-label{font-family:var(--font-mono);font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.62)}
+.member-gallery-loading .gl-sub{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.08em;color:rgba(255,255,255,.4);max-width:40ch}
+
+/* ---- documents list ---- */
+.member-docs{margin-top:clamp(20px,3vw,28px);border-top:2px solid rgba(255,255,255,.22)}
+.member-doc{display:grid;grid-template-columns:auto 1fr auto;gap:20px;align-items:center;
+  padding:18px 6px;border-bottom:1px solid rgba(255,255,255,.14);text-decoration:none;color:#fff;
+  transition:background .15s ease}
+.member-doc:hover{background:rgba(255,255,255,.045)}
+.member-doc:focus-visible{outline:3px solid var(--gold);outline-offset:-2px}
+.md-icon{width:46px;height:46px;flex:none;display:grid;place-items:center;border-radius:3px;
+  border:1px solid rgba(216,177,95,.45);background:rgba(216,177,95,.08);
+  font-family:var(--font-mono);font-size:.62rem;font-weight:600;letter-spacing:.08em;color:var(--gold-soft)}
+.member-doc[data-type="DOC"] .md-icon{border-color:rgba(157,193,212,.4);background:rgba(29,90,134,.18);color:#9fc3dc}
+.md-main{min-width:0}
+.md-title{font-family:var(--font-display);font-weight:700;text-transform:uppercase;letter-spacing:.01em;
+  font-size:clamp(1.15rem,2vw,1.45rem);line-height:1.05;color:#fff;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.md-meta{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:7px}
+.md-type{font-family:var(--font-mono);font-size:.62rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;
+  color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.22);padding:3px 8px;border-radius:2px}
+.md-note{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.06em;color:rgba(255,255,255,.4)}
+.md-dl{flex:none;font-family:var(--font-display);font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+  font-size:1rem;color:var(--gold-soft);display:inline-flex;align-items:center;gap:.5em;white-space:nowrap}
+.md-dl::after{content:"→";font-family:var(--font-body);font-weight:400}
+.member-doc:hover .md-dl{color:#fff}
+
+.member-doc-loading{display:flex;align-items:center;gap:16px;padding:24px 6px;border-bottom:1px solid rgba(255,255,255,.14);
+  font-family:var(--font-mono);font-size:.82rem;letter-spacing:.08em;color:rgba(255,255,255,.6)}
+.member-doc-loading .dl-dot{width:10px;height:10px;flex:none;background:var(--gold);transform:rotate(45deg)}
+
+@media(max-width:560px){
+  .member-doc{grid-template-columns:auto 1fr;grid-template-areas:"icon main" "dl dl";row-gap:14px}
+  .md-icon{grid-area:icon}.md-main{grid-area:main}.md-dl{grid-area:dl;justify-self:start}
+}
+
+/* ---- in-page footer note ---- */
+.mlib-sync{margin-top:clamp(40px,6vw,64px);display:flex;flex-wrap:wrap;align-items:flex-start;gap:14px 18px;
+  border-top:1px solid rgba(255,255,255,.16);padding-top:26px}
+.mlib-sync .sync-tag{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--gold-soft);border:1px solid rgba(216,177,95,.4);padding:6px 11px;border-radius:2px;flex:none}
+.mlib-sync p{color:rgba(255,255,255,.62);font-size:.95rem;max-width:64ch}
+</style>
+</head>
+<body data-page="club78">
+<a class="skip" href="#memberlib">Skip to content</a>
+<header class="site-head" id="siteHead">
+  <div class="wrap nav">
+    <a class="brand" href="index.html#top" aria-label="Grunion Rugby Football Club — home">
+      <img class="crest" src="assets/grunion-crest.png" alt="Grunion RFC crest" />
+      <span><b>Grunion RFC</b><i>Santa Barbara · Est. 1980</i></span>
+    </a>
+    <nav class="nav-links" id="navLinks" aria-label="Primary">
+      <a href="index.html#fixtures">Fixtures</a>
+      <a href="index.html#play">Play</a>
+      <a href="index.html#history">History</a>
+      <a href="index.html#news">News</a>
+      <a href="the-78-club.html" class="nav-club">The '78 Club</a>
+      <a href="index.html#sponsors">Sponsors</a>
+    </nav>
+    <div class="nav-actions">
+      <a href="index.html#play" class="btn btn-gold btn-sm">Join</a>
+      <button class="burger" id="burger" aria-label="Menu" aria-expanded="false" aria-controls="navLinks"><span></span></button>
+    </div>
+  </div>
+</header>
+<main>
+<section class="section on-dark" id="memberlib" aria-labelledby="mlib-h">
+  <div class="wrap">
+    <a class="p78-back" href="the-78-club.html">← Back to The '78 Club</a>
+
+    <div class="members-lib">
+      <span class="kicker">'78 Club Members</span>
+      <h2 id="mlib-h">Members <span class="alt">Library</span></h2>
+      <p class="lede">The legacy-donor circle's shared archive — match photography, event galleries, Founders' Council briefings, and club documents. Browse the photos below, or download the latest paperwork.</p>
+    </div>
+
+    <!-- PHOTO GALLERY -->
+    <div class="mlib-block">
+      <div class="mlib-head">
+        <div>
+          <span class="kicker">From The Archive</span>
+          <h3 id="gallery-h" style="margin-top:12px">Photo Gallery</h3>
+        </div>
+        <span class="mlib-count" id="memberGalleryCount" aria-hidden="true"></span>
+      </div>
+
+      <div id="memberGallery" aria-busy="true" aria-labelledby="gallery-h">
+        <!-- Each .member-folder maps to a sub-folder in the shared Drive. The script
+             fills the [data-folder-grid] list, replacing its loading child. -->
+        <section class="member-folder" data-folder="Current Season" aria-labelledby="folder-current-h">
+          <div class="folder-head">
+            <h4 class="folder-name" id="folder-current-h">Current Season</h4>
+            <span class="folder-meta" data-folder-count>Auto-synced</span>
+          </div>
+          <div class="member-gallery" data-folder-grid="Current Season" id="folder-current" role="list">
+            <div class="member-gallery-loading">
+              <span class="gl-label">Loading photos…</span>
+              <span class="gl-sub">Pulling the Current Season folder from the club's shared Drive.</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="member-folder" data-folder="Prior Season" aria-labelledby="folder-prior-h">
+          <div class="folder-head">
+            <h4 class="folder-name" id="folder-prior-h">Prior Season</h4>
+            <span class="folder-meta" data-folder-count>Auto-synced</span>
+          </div>
+          <div class="member-gallery" data-folder-grid="Prior Season" id="folder-prior" role="list">
+            <div class="member-gallery-loading">
+              <span class="gl-label">Loading photos…</span>
+              <span class="gl-sub">Pulling the Prior Season folder from the club's shared Drive.</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="member-folder" data-folder="Legacy Photos" aria-labelledby="folder-legacy-h">
+          <div class="folder-head">
+            <h4 class="folder-name" id="folder-legacy-h">Legacy Photos</h4>
+            <span class="folder-meta" data-folder-count>Auto-synced</span>
+          </div>
+          <div class="member-gallery" data-folder-grid="Legacy Photos" id="folder-legacy" role="list">
+            <div class="member-gallery-loading">
+              <span class="gl-label">Loading photos…</span>
+              <span class="gl-sub">Pulling the Legacy Photos folder from the club's shared Drive.</span>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- DOCUMENTS -->
+    <div class="mlib-block">
+      <div class="mlib-head">
+        <div>
+          <span class="kicker">Papers &amp; Briefings</span>
+          <h3 id="docs-h" style="margin-top:12px">Documents</h3>
+        </div>
+        <span class="mlib-count" id="memberDocsCount" aria-hidden="true"></span>
+      </div>
+      <div class="member-docs" id="memberDocs" role="list" aria-busy="true" aria-labelledby="docs-h">
+        <div class="member-doc-loading" id="memberDocsLoading">
+          <span class="dl-dot" aria-hidden="true"></span>
+          <span>Loading documents…</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- IN-PAGE FOOTER NOTE -->
+    <div class="mlib-sync">
+      <span class="sync-tag">Auto-synced</span>
+      <p>This library updates automatically from the club's shared Google Drive folder — new photos and documents appear here within minutes of being added. Nothing to upload, no logins to manage; if it's in the folder, it's on this page.</p>
+    </div>
+  </div>
+</section>
+</main>
+<hr class="rule101" />
+<footer class="site-foot">
+  <hr class="rule101" />
+  <!-- Chip In — general donations (distinct from The '78 Club) -->
+  <div class="chip">
+    <div class="wrap chip-grid">
+      <div>
+        <span class="kicker">Chip In</span>
+        <h3>Donate Any Amount</h3>
+        <p>Not ready for The '78 Club? Any amount helps the Grunion keep playing. SBRFC is a 501(c)(3) — your gift is tax-deductible.</p>
+      </div>
+      <div class="chip-cta"><a href="#" data-link="donate" class="btn btn-gold arrow">Donate to the Grunion</a></div>
+    </div>
+  </div>
+
+  <!-- recurring sponsor strip -->
+  <div class="wrap">
+    <div class="foot-sponsors">
+      <span class="fs-lab">Proud sponsors</span>
+      <a class="fs-logo" href="https://www.sharkeez.net" target="_blank" rel="noopener">Baja Sharkeez</a>
+      <a class="fs-logo" href="https://www.rinconbrewery.com/" target="_blank" rel="noopener">Rincon Brewery</a>
+      <a class="fs-logo" href="https://www.goldenroostersb.com/" target="_blank" rel="noopener">Golden Rooster Transportation</a>
+      <a href="index.html#sponsors" class="fs-logo" style="color:var(--gold-soft);border-color:var(--gold-soft)">Become a sponsor →</a>
+    </div>
+  </div>
+
+  <div class="wrap foot-main">
+    <div class="foot-brand">
+      <b>Grunion RFC</b>
+      <p>Grunion Rugby Football Club. Playing since 1978, founded 1980. For the promotion, encouragement, and extension of Rugby Union football.</p>
+    </div>
+    <div class="foot-col">
+      <h4>Club</h4>
+      <a href="index.html#fixtures">Fixtures</a>
+      <a href="index.html#play">Play</a>
+      <a href="index.html#history">History</a>
+    </div>
+    <div class="foot-col">
+      <h4>Support</h4>
+      <a href="the-78-club.html">The '78 Club</a>
+      <a href="index.html#sponsors">Sponsors</a>
+      <a href="#" data-link="donate">Donate</a>
+    </div>
+    <div class="foot-col">
+      <h4>Connect</h4>
+      <a href="https://www.facebook.com/GrunionRugby" target="_blank" rel="noopener">Facebook</a>
+      <a href="https://www.instagram.com/santabarbaragrunionrugby" target="_blank" rel="noopener">Instagram</a>
+      <a href="index.html#news">Newsletter</a>
+      <a href="index.html#contact">Contact</a>
+    </div>
+    <div class="foot-col">
+      <h4>Family</h4>
+      <a href="https://sbwomensrugby.com" target="_blank" rel="noopener">Mermaids</a>
+      <a href="https://stingraysrfc.com" target="_blank" rel="noopener">Stingrays</a>
+    </div>
+  </div>
+
+  <div class="wrap foot-legal">
+    <span>© <span id="year">2026</span> Grunion Rugby Football Club · Santa Barbara, CA</span>
+    <span>Proud member of the SBRFC, a 501(c)(3) non-profit organization · Tax ID: 93-4659131</span>
+  </div>
+</footer>
+<script src="site.js"></script>
+</body>
+</html>
