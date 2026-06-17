@@ -46,7 +46,7 @@ var CONFIG = {
   // "not connected yet" state — nothing looks broken.
   //
   // One read-only Google Drive API key (restricted to the Drive API):
-  MEMBERS_DRIVE_API_KEY:           "19oPNqh96-WQINhEHmshhGiljlqcjLBsj",
+  MEMBERS_DRIVE_API_KEY:           "18u1BehBRJyhk9b9tOKaUhZQpQhuiIZHj",
   //
   // The four folder IDs. A folder's ID is the long code in its URL when
   // you open it in Drive: drive.google.com/drive/folders/THIS_PART_HERE
@@ -56,6 +56,7 @@ var CONFIG = {
   MEMBERS_DRIVE_CURRENT_FOLDER_ID: "17QEKqr1FbUFtinEVDKmHhyhj0APBUsBK",  // "Current Season" sub-folder
   MEMBERS_DRIVE_PRIOR_FOLDER_ID:   "1egjcuVHrw_aaraITJD9pJllfo1gsw3Ki",  // "Prior Season" sub-folder
   MEMBERS_DRIVE_LEGACY_FOLDER_ID:  "1HgGxrtE4oqlNix6Rc1hyogaLCaom1ltd",  // "Legacy Photos" sub-folder
+  MEMBERS_DRIVE_DOCUMENTS_FOLDER_ID:  "19oPNqh96-WQINhEHmshhGiljlqcjLBsj",  // "Legacy Photos" sub-folder
 
   // Where the "Members Area" button (on the '78 Club page) points.
   // Leave as "members.html" — the in-site members library page.
