@@ -544,6 +544,9 @@ var CONFIG = {
 
   function renderDocs(files){
     docsHost.innerHTML='';
+    files.sort(function(a,b){
+      return cleanName(a.name).localeCompare(cleanName(b.name), undefined, {numeric:true, sensitivity:'base'});
+    });
     files.forEach(function(f){
       var type = (f.mimeType==='application/pdf') ? 'PDF' : 'DOC';
       var a=document.createElement('a');
