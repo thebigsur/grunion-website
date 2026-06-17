@@ -56,7 +56,6 @@ var CONFIG = {
   MEMBERS_DRIVE_CURRENT_FOLDER_ID: "17QEKqr1FbUFtinEVDKmHhyhj0APBUsBK",  // "Current Season" sub-folder
   MEMBERS_DRIVE_PRIOR_FOLDER_ID:   "1egjcuVHrw_aaraITJD9pJllfo1gsw3Ki",  // "Prior Season" sub-folder
   MEMBERS_DRIVE_LEGACY_FOLDER_ID:  "1HgGxrtE4oqlNix6Rc1hyogaLCaom1ltd",  // "Legacy Photos" sub-folder
-  MEMBERS_DRIVE_DOCUMENTS_FOLDER_ID:  "19oPNqh96-WQINhEHmshhGiljlqcjLBsj",  // "Legacy Photos" sub-folder
 
   // Where the "Members Area" button (on the '78 Club page) points.
   // Leave as "members.html" — the in-site members library page.
