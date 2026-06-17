@@ -23,7 +23,6 @@ var CONFIG = {
 
   // The '78 Club — Legacy Donor program
   JOIN_78_URL:        "#",   // payment / registration link
-  MEMBERS_AREA_URL:   "#",   // gated members portal link
 
   // General donations (footer "Chip In")
   DONATE_URL:         "#",
@@ -37,7 +36,30 @@ var CONFIG = {
   GIVING_PHONE:       "",
 
   // Legal
-  EIN:                "93-4659131"
+  EIN:                "93-4659131",
+
+  // ---------------------------------------------------------------
+  // THE '78 CLUB — MEMBERS LIBRARY (members.html)
+  // Photos + documents pulled live from a shared Google Drive folder.
+  // See the "Members Library — Google setup" walkthrough for how to get
+  // these values. Leave any value "" and that part shows a friendly
+  // "not connected yet" state — nothing looks broken.
+  //
+  // One read-only Google Drive API key (restricted to the Drive API):
+  MEMBERS_DRIVE_API_KEY:           "",
+  //
+  // The four folder IDs. A folder's ID is the long code in its URL when
+  // you open it in Drive: drive.google.com/drive/folders/THIS_PART_HERE
+  //   • DOCS  = the TOP-LEVEL shared folder. PDFs / Word docs go loose in here.
+  //   • the three season sub-folders live inside it; photos go in these.
+  MEMBERS_DRIVE_DOCS_FOLDER_ID:    "",  // top-level folder (holds the documents)
+  MEMBERS_DRIVE_CURRENT_FOLDER_ID: "",  // "Current Season" sub-folder
+  MEMBERS_DRIVE_PRIOR_FOLDER_ID:   "",  // "Prior Season" sub-folder
+  MEMBERS_DRIVE_LEGACY_FOLDER_ID:  "",  // "Legacy Photos" sub-folder
+
+  // Where the "Members Area" button (on the '78 Club page) points.
+  // Leave as "members.html" — the in-site members library page.
+  MEMBERS_AREA_URL:   "members.html"
 };
 
 /* ---------- apply CONFIG to the page ---------- */
@@ -392,4 +414,189 @@ var CONFIG = {
       if(!reduce) setInterval(function(){ show((i+1)%slides.length); }, 4500);
     }
   }
+})();
+
+/* ============================ '78 CLUB — MEMBERS LIBRARY ============================ */
+/* Lives on members.html only. Pulls photos + documents live from a shared Google
+   Drive folder via the Drive API (read-only key in CONFIG).
+
+   Drive layout (set up once, then pure drag-and-drop forever after):
+     TOP-LEVEL FOLDER  ......  PDFs / Word docs go loose in here → "Documents" list
+       ├─ Current Season  ...  photos → "Current Season" grid
+       ├─ Prior Season    ...  photos → "Prior Season" grid
+       └─ Legacy Photos   ...  photos → "Legacy Photos" grid
+
+   Each season you just move files down a level in Drive (Current→Prior→Legacy).
+   No edits to this file or members.html — the folder IDs and labels never change.
+
+   If the API key or a folder ID is blank, that section shows a calm "not
+   connected yet" message instead of a broken grid. */
+(function(){
+  var galleryHost = document.getElementById('memberGallery');
+  var docsHost    = document.getElementById('memberDocs');
+  if(!galleryHost && !docsHost) return;   // only on members.html
+
+  var KEY = CONFIG.MEMBERS_DRIVE_API_KEY;
+
+  // map each gallery section to its CONFIG folder id, by the section's data-folder-grid
+  var FOLDERS = {
+    'Current Season': CONFIG.MEMBERS_DRIVE_CURRENT_FOLDER_ID,
+    'Prior Season':   CONFIG.MEMBERS_DRIVE_PRIOR_FOLDER_ID,
+    'Legacy Photos':  CONFIG.MEMBERS_DRIVE_LEGACY_FOLDER_ID
+  };
+
+  /* ---------- PHOTO GALLERIES ---------- */
+  if(galleryHost){
+    var totalPhotos = 0, gridsPending = 0, gridsDone = 0;
+    var grids = galleryHost.querySelectorAll('[data-folder-grid]');
+
+    grids.forEach(function(grid){
+      var label = grid.getAttribute('data-folder-grid');
+      var fid   = FOLDERS[label];
+      var metaEl = grid.closest('.member-folder').querySelector('[data-folder-count]');
+
+      if(!KEY || !fid){
+        emptyGrid(grid, metaEl, 'Not connected yet', 'Add this folder\u2019s ID in the site settings to show its photos here.');
+        return;
+      }
+      gridsPending++;
+      listImages(fid, function(err, files){
+        gridsDone++;
+        if(err){ emptyGrid(grid, metaEl, 'Couldn\u2019t load', 'This folder couldn\u2019t be reached just now. Try a refresh.'); finishCount(); return; }
+        if(!files.length){ emptyGrid(grid, metaEl, 'No photos yet', 'Photos dropped into this Drive folder will appear here automatically.'); finishCount(); return; }
+        renderPhotos(grid, files);
+        totalPhotos += files.length;
+        if(metaEl) metaEl.textContent = files.length + (files.length===1?' photo':' photos');
+        finishCount();
+      });
+    });
+
+    function finishCount(){
+      if(gridsPending && gridsDone>=gridsPending){
+        var c=document.getElementById('memberGalleryCount');
+        if(c && totalPhotos) c.textContent = totalPhotos + (totalPhotos===1?' photo':' photos');
+      }
+    }
+  }
+
+  /* ---------- DOCUMENTS ---------- */
+  if(docsHost){
+    var DOCS_FID = CONFIG.MEMBERS_DRIVE_DOCS_FOLDER_ID;
+    if(!KEY || !DOCS_FID){
+      emptyDocs('Not connected yet', 'Add the shared folder\u2019s ID in the site settings to show documents here.');
+    } else {
+      listDocs(DOCS_FID, function(err, files){
+        if(err){ emptyDocs('Couldn\u2019t load', 'The documents folder couldn\u2019t be reached just now. Try a refresh.'); return; }
+        if(!files.length){ emptyDocs('No documents yet', 'PDFs and Word files added to the shared Drive folder will appear here automatically.'); return; }
+        renderDocs(files);
+        var c=document.getElementById('memberDocsCount');
+        if(c) c.textContent = files.length + (files.length===1?' file':' files');
+      });
+    }
+  }
+
+  /* ---------- Drive API calls ---------- */
+  // images in a folder, newest first
+  function listImages(folderId, cb){
+    var q = "'"+folderId+"' in parents and mimeType contains 'image/' and trashed=false";
+    driveList(q, 'files(id,name,thumbnailLink,imageMediaMetadata)', cb);
+  }
+  // PDFs + Word docs in a folder, newest first
+  function listDocs(folderId, cb){
+    var q = "'"+folderId+"' in parents and trashed=false and ("+
+            "mimeType='application/pdf' or "+
+            "mimeType='application/vnd.openxmlformats-officedocument.wordprocessingml.document' or "+
+            "mimeType='application/msword')";
+    driveList(q, 'files(id,name,mimeType,modifiedTime)', cb);
+  }
+  function driveList(q, fields, cb){
+    var url = 'https://www.googleapis.com/drive/v3/files'
+      + '?q=' + encodeURIComponent(q)
+      + '&orderBy=' + encodeURIComponent('modifiedTime desc')
+      + '&pageSize=200'
+      + '&fields=' + encodeURIComponent(fields)
+      + '&key=' + encodeURIComponent(KEY);
+    fetch(url).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(j){ cb(null, (j && j.files) || []); })
+      .catch(function(){ cb(true, null); });
+  }
+
+  /* ---------- renderers ---------- */
+  function renderPhotos(grid, files){
+    grid.innerHTML='';
+    files.forEach(function(f){
+      var full = 'https://drive.google.com/uc?export=view&id=' + f.id;
+      var thumb = f.thumbnailLink ? f.thumbnailLink.replace(/=s\d+$/, '=s600') : full;
+      var a=document.createElement('a');
+      a.className='member-photo';
+      a.href=full; a.target='_blank'; a.rel='noopener';
+      a.setAttribute('role','listitem');
+      a.setAttribute('aria-label','Open photo: '+(f.name||'photo'));
+      var img=document.createElement('img');
+      img.loading='lazy'; img.src=thumb; img.alt=cleanName(f.name)||'Club photo';
+      img.onerror=function(){ a.remove(); };
+      a.appendChild(img);
+      var open=document.createElement('span'); open.className='mp-open'; open.setAttribute('aria-hidden','true'); open.textContent='\u2197';
+      a.appendChild(open);
+      grid.appendChild(a);
+    });
+  }
+
+  function renderDocs(files){
+    docsHost.innerHTML='';
+    files.forEach(function(f){
+      var type = (f.mimeType==='application/pdf') ? 'PDF' : 'DOC';
+      var a=document.createElement('a');
+      a.className='member-doc';
+      a.setAttribute('data-type', type);
+      a.setAttribute('role','listitem');
+      a.href='https://drive.google.com/uc?export=download&id=' + f.id;
+      a.target='_blank'; a.rel='noopener';
+      a.setAttribute('aria-label','Download '+(f.name||'document'));
+
+      var icon=document.createElement('span'); icon.className='md-icon'; icon.setAttribute('aria-hidden','true'); icon.textContent=type;
+      var main=document.createElement('span'); main.className='md-main';
+      var title=document.createElement('span'); title.className='md-title'; title.textContent=cleanName(f.name)||'Document';
+      var meta=document.createElement('span'); meta.className='md-meta';
+      var tag=document.createElement('span'); tag.className='md-type'; tag.textContent=type;
+      meta.appendChild(tag);
+      if(f.modifiedTime){
+        var note=document.createElement('span'); note.className='md-note'; note.textContent='Updated '+fmtModified(f.modifiedTime);
+        meta.appendChild(note);
+      }
+      main.appendChild(title); main.appendChild(meta);
+      var dl=document.createElement('span'); dl.className='md-dl'; dl.textContent='Download';
+
+      a.appendChild(icon); a.appendChild(main); a.appendChild(dl);
+      docsHost.appendChild(a);
+    });
+  }
+
+  /* ---------- empty / fallback states ---------- */
+  function emptyGrid(grid, metaEl, label, sub){
+    grid.innerHTML =
+      '<div class="member-gallery-loading">'+
+        '<span class="gl-label">'+esc(label)+'</span>'+
+        '<span class="gl-sub">'+esc(sub)+'</span>'+
+      '</div>';
+    if(metaEl) metaEl.textContent='';
+  }
+  function emptyDocs(label, sub){
+    docsHost.innerHTML =
+      '<div class="member-doc-loading">'+
+        '<span class="dl-dot" aria-hidden="true"></span>'+
+        '<span>'+esc(label)+' \u2014 '+esc(sub)+'</span>'+
+      '</div>';
+  }
+
+  /* ---------- helpers ---------- */
+  function cleanName(n){
+    if(!n) return '';
+    return n.replace(/\.(jpe?g|png|gif|webp|heic|pdf|docx?|)$/i,'').replace(/[_-]+/g,' ').trim();
+  }
+  function fmtModified(iso){
+    var d=new Date(iso); if(isNaN(d)) return '';
+    return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  }
+  function esc(s){ return String(s).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
 })();
