@@ -46,13 +46,13 @@ var CONFIG = {
   // "not connected yet" state — nothing looks broken.
   //
   // One read-only Google Drive API key (restricted to the Drive API):
-  MEMBERS_DRIVE_API_KEY:           "18u1BehBRJyhk9b9tOKaUhZQpQhuiIZHj",
+  MEMBERS_DRIVE_API_KEY:           "AIzaSyAV74KmGRq3dJANP7uSq2_VKGMlZ1sMlOI",
   //
   // The four folder IDs. A folder's ID is the long code in its URL when
   // you open it in Drive: drive.google.com/drive/folders/THIS_PART_HERE
   //   • DOCS  = the TOP-LEVEL shared folder. PDFs / Word docs go loose in here.
   //   • the three season sub-folders live inside it; photos go in these.
-  MEMBERS_DRIVE_DOCS_FOLDER_ID:    "18u1BehBRJyhk9b9tOKaUhZQpQhuiIZHj",  // top-level folder (holds the documents)
+  MEMBERS_DRIVE_DOCS_FOLDER_ID:    "19oPNqh96-WQINhEHmshhGiljlqcjLBsj",  // top-level folder (holds the documents)
   MEMBERS_DRIVE_CURRENT_FOLDER_ID: "17QEKqr1FbUFtinEVDKmHhyhj0APBUsBK",  // "Current Season" sub-folder
   MEMBERS_DRIVE_PRIOR_FOLDER_ID:   "1egjcuVHrw_aaraITJD9pJllfo1gsw3Ki",  // "Prior Season" sub-folder
   MEMBERS_DRIVE_LEGACY_FOLDER_ID:  "1HgGxrtE4oqlNix6Rc1hyogaLCaom1ltd",  // "Legacy Photos" sub-folder
