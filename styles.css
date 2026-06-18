@@ -576,7 +576,7 @@ a.sp-feature:hover .sp-addr{color:#fff}
 
 /* ---- taller header + bigger logo/wordmark ---- */
 .nav{height:115px}
-.brand .crest{height:72px}
+.brand .crest{height:88px}
 .brand b{font-size:2.4rem}
 .brand i{font-size:.78rem}
 @media(max-width:1080px){
