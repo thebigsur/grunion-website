@@ -573,3 +573,16 @@ a.sp-feature:hover .sp-addr{color:#fff}
 .mpg-btn:hover:not(:disabled){background:var(--gold);border-color:var(--gold);color:var(--ocean-950)}
 .mpg-btn:disabled{opacity:.32;cursor:default}
 .mpg-label{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.6);min-width:9ch;text-align:center}
+
+/* ---- taller header + bigger logo/wordmark ---- */
+.nav{height:115px}
+.brand .crest{height:72px}
+.brand b{font-size:2.4rem}
+.brand i{font-size:.78rem}
+@media(max-width:1080px){
+  .nav-links{inset:115px 0 auto 0}
+}
+@media(max-width:520px){
+  .brand .crest{height:52px}
+}
+html{scroll-padding-top:125px}
