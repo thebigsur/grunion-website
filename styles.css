@@ -513,7 +513,7 @@ a.sp-feature:hover .sp-addr{color:#fff}
 /* ---- THE ONLINE PLAQUE (honor wall) ---- */
 .plaque-hero{margin:clamp(40px,6vw,72px) 0 clamp(8px,2vw,24px)}
 .ph-frame{position:relative;text-align:center;
-  padding:clamp(40px,5.5vw,76px) clamp(24px,5vw,80px) clamp(34px,4.5vw,60px);
+  padding:clamp(20px,2.5vw,36px) clamp(24px,5vw,80px) clamp(34px,4.5vw,60px);
   background:
     radial-gradient(120% 90% at 50% -10%, rgba(216,177,95,.14), transparent 60%),
     linear-gradient(180deg,#0e2c41,#081d2c 70%,#061926);
