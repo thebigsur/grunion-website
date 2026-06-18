@@ -522,24 +522,65 @@ var CONFIG = {
   }
 
   /* ---------- renderers ---------- */
+var PER_PAGE = 16;   // 4 rows × 4 columns
+
   function renderPhotos(grid, files){
-    grid.innerHTML='';
-    files.forEach(function(f){
-      var full = 'https://drive.google.com/uc?export=view&id=' + f.id;
-      var thumb = f.thumbnailLink ? f.thumbnailLink.replace(/=s\d+$/, '=s600') : full;
-      var a=document.createElement('a');
-      a.className='member-photo';
-      a.href=full; a.target='_blank'; a.rel='noopener';
-      a.setAttribute('role','listitem');
-      a.setAttribute('aria-label','Open photo: '+(f.name||'photo'));
-      var img=document.createElement('img');
-      img.loading='lazy'; img.src=thumb; img.alt=cleanName(f.name)||'Club photo';
-      img.onerror=function(){ a.remove(); };
-      a.appendChild(img);
-      var open=document.createElement('span'); open.className='mp-open'; open.setAttribute('aria-hidden','true'); open.textContent='\u2197';
-      a.appendChild(open);
-      grid.appendChild(a);
-    });
+    var page = 0;
+    var totalPages = Math.ceil(files.length / PER_PAGE);
+    var folderSection = grid.closest('.member-folder');
+
+    // pager controls (only built when there's more than one page)
+    var pager = null, pageLabel = null, prevBtn = null, nextBtn = null;
+    if(totalPages > 1){
+      pager = document.createElement('div');
+      pager.className = 'member-pager';
+      prevBtn = document.createElement('button');
+      prevBtn.type='button'; prevBtn.className='mpg-btn'; prevBtn.textContent='\u2190 Prev';
+      pageLabel = document.createElement('span');
+      pageLabel.className='mpg-label';
+      nextBtn = document.createElement('button');
+      nextBtn.type='button'; nextBtn.className='mpg-btn'; nextBtn.textContent='Next \u2192';
+      pager.appendChild(prevBtn); pager.appendChild(pageLabel); pager.appendChild(nextBtn);
+      folderSection.appendChild(pager);
+
+      prevBtn.addEventListener('click', function(){ if(page>0){ page--; drawPage(); scrollToFolder(); } });
+      nextBtn.addEventListener('click', function(){ if(page<totalPages-1){ page++; drawPage(); scrollToFolder(); } });
+    }
+
+    function scrollToFolder(){
+      var head = folderSection.querySelector('.folder-head');
+      var y = (head ? head.getBoundingClientRect().top : 0) + window.scrollY - 90;
+      window.scrollTo({ top:y, behavior:'smooth' });
+    }
+
+    function drawPage(){
+      var start = page * PER_PAGE;
+      var slice = files.slice(start, start + PER_PAGE);
+      grid.innerHTML='';
+      slice.forEach(function(f){
+        var full = 'https://drive.google.com/uc?export=view&id=' + f.id;
+        var thumb = f.thumbnailLink ? f.thumbnailLink.replace(/=s\d+$/, '=s600') : full;
+        var a=document.createElement('a');
+        a.className='member-photo';
+        a.href=full; a.target='_blank'; a.rel='noopener';
+        a.setAttribute('role','listitem');
+        a.setAttribute('aria-label','Open photo: '+(f.name||'photo'));
+        var img=document.createElement('img');
+        img.loading='lazy'; img.src=thumb; img.alt=cleanName(f.name)||'Club photo';
+        img.onerror=function(){ a.remove(); };
+        a.appendChild(img);
+        var open=document.createElement('span'); open.className='mp-open'; open.setAttribute('aria-hidden','true'); open.textContent='\u2197';
+        a.appendChild(open);
+        grid.appendChild(a);
+      });
+      if(pager){
+        pageLabel.textContent = 'Page ' + (page+1) + ' of ' + totalPages;
+        prevBtn.disabled = page===0;
+        nextBtn.disabled = page===totalPages-1;
+      }
+    }
+
+    drawPage();
   }
 
   function renderDocs(files){
@@ -557,7 +598,10 @@ var CONFIG = {
       a.target='_blank'; a.rel='noopener';
       a.setAttribute('aria-label','Download '+(f.name||'document'));
 
-      var icon=document.createElement('span'); icon.className='md-icon'; icon.setAttribute('aria-hidden','true'); icon.textContent=type;
+      var icon=document.createElement('span'); icon.className='md-icon'; icon.setAttribute('aria-hidden','true');
+      var crest=document.createElement('img'); crest.className='md-crest'; crest.src='assets/grunion-crest.png'; crest.alt='';
+      crest.onerror=function(){ icon.textContent=type; };  // fall back to "PDF"/"DOC" text if crest missing
+      icon.appendChild(crest);
       var main=document.createElement('span'); main.className='md-main';
       var title=document.createElement('span'); title.className='md-title'; title.textContent=cleanName(f.name)||'Document';
       var meta=document.createElement('span'); meta.className='md-meta';
