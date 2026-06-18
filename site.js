@@ -228,12 +228,11 @@ var CONFIG = {
     // record line
     var w=0,l=0,d=0;
     list.forEach(function(r){ var res=result(r); if(res.cls==='r-win')w++; else if(res.cls==='r-loss')l++; else if(res.cls==='r-draw')d++; });
-    metaEl.hidden=false;
-    // Division label comes from the sheet's "Division" column for this season.
-    // Uses the first non-empty Division value found; falls back if the column is empty.
-    var division='SoCal Division 3';
+metaEl.hidden=false;
+    // Division label comes from the sheet's "Division" column for this season (if present).
+    var division='';
     for(var di=0; di<list.length; di++){ if(list[di].Division){ division=list[di].Division; break; } }
-    metaEl.innerHTML=esc(division)+' · '+w+'W–'+l+'L–'+d+'D'+(isSample?'<span class="sample-flag">Sample data — connect the sheet</span>':'');
+    metaEl.innerHTML=(division?esc(division)+' · ':'')+w+'W–'+l+'L–'+d+'D'+(isSample?'<span class="sample-flag">Sample data — connect the sheet</span>':'');
 
     var html='';
     list.forEach(function(r){
