@@ -561,3 +561,15 @@ a.sp-feature:hover .sp-addr{color:#fff}
 .hof-dots button{width:8px;height:8px;padding:0;border:0;border-radius:50%;
   background:rgba(255,255,255,.4);cursor:pointer;transition:background .2s}
 .hof-dots button[aria-current="true"]{background:var(--gold-soft)}
+
+/* ---- members library: crest in document icon box ---- */
+.md-crest{width:100%;height:100%;object-fit:contain;display:block;padding:4px}
+
+/* ---- members library: photo pagination ---- */
+.member-pager{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:clamp(20px,3vw,28px)}
+.mpg-btn{background:transparent;border:1.5px solid rgba(255,255,255,.3);color:#fff;
+  font-family:var(--font-display);font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-size:.95rem;
+  padding:9px 18px;border-radius:2px;transition:background .15s ease,border-color .15s ease,color .15s ease}
+.mpg-btn:hover:not(:disabled){background:var(--gold);border-color:var(--gold);color:var(--ocean-950)}
+.mpg-btn:disabled{opacity:.32;cursor:default}
+.mpg-label{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.6);min-width:9ch;text-align:center}
