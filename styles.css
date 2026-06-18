@@ -525,7 +525,7 @@ a.sp-feature:hover .sp-addr{color:#fff}
 .ph-corner--tr{top:20px;right:20px;border-left:0;border-bottom:0}
 .ph-corner--bl{bottom:20px;left:20px;border-right:0;border-top:0}
 .ph-corner--br{bottom:20px;right:20px;border-left:0;border-top:0}
-.ph-crest{width:clamp(58px,7vw,82px);height:auto;margin:0 auto 18px;filter:drop-shadow(0 6px 18px rgba(0,0,0,.5))}
+.ph-crest{width:clamp(110px,14vw,160px);height:auto;margin:0 auto 18px;filter:drop-shadow(0 6px 18px rgba(0,0,0,.5))}
 .ph-kicker{font-family:var(--font-mono);font-size:.72rem;font-weight:500;letter-spacing:.26em;text-transform:uppercase;color:var(--gold-soft);display:block}
 .ph-title{font-family:var(--font-display);font-weight:900;text-transform:uppercase;line-height:.9;letter-spacing:.01em;
   font-size:clamp(2.8rem,7vw,5.6rem);margin:14px 0 0;text-shadow:0 3px 28px rgba(0,0,0,.4)}
