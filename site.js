@@ -249,11 +249,30 @@ metaEl.hidden=false;
   }
 
   function fillTicker(rows){
-    var sorted=rows.slice().sort(function(a,b){return new Date(b.Date)-new Date(a.Date);});
-    var next=sorted.filter(function(r){return result(r).cls==='r-up';}).sort(function(a,b){return new Date(a.Date)-new Date(b.Date);})[0];
-    if(next){
-      document.getElementById('nextOpp').textContent=next.Opponent||'TBD';
-      document.getElementById('nextDate').textContent=fmtDate(next.Date);
+    // Compare against today's date (local midnight) so LAST/NEXT track the calendar,
+    // not just the sheet's Status column.
+    var today=new Date(); today.setHours(0,0,0,0);
+    function dayOf(r){ var d=new Date(r.Date); if(isNaN(d)) return null; d.setHours(0,0,0,0); return d; }
+    function played(r){ return result(r).cls!=='r-up'; } // has a final score
+
+    // LAST = most recent game that has been played and is on/before today.
+    var last=rows.filter(function(r){ var d=dayOf(r); return d && played(r) && d<=today; })
+                 .sort(function(a,b){ return dayOf(b)-dayOf(a); })[0];
+    var lastScoreEl=document.getElementById('lastScore'),
+        lastOppEl=document.getElementById('lastOpp');
+    if(lastScoreEl && lastOppEl){
+      if(last){ lastScoreEl.textContent=result(last).score; lastOppEl.textContent=last.Opponent||'TBD'; }
+      else    { lastScoreEl.textContent='—'; lastOppEl.textContent='TBD'; }
+    }
+
+    // NEXT = next unplayed game on/after today. None left (e.g. season over) -> TBD.
+    var next=rows.filter(function(r){ var d=dayOf(r); return d && !played(r) && d>=today; })
+                 .sort(function(a,b){ return dayOf(a)-dayOf(b); })[0];
+    var nextOppEl=document.getElementById('nextOpp'),
+        nextDateEl=document.getElementById('nextDate');
+    if(nextOppEl && nextDateEl){
+      if(next){ nextOppEl.textContent=next.Opponent||'TBD'; nextDateEl.textContent=fmtDate(next.Date); }
+      else    { nextOppEl.textContent='—'; nextDateEl.textContent='TBD'; }
     }
   }
   function esc(s){ return String(s).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
