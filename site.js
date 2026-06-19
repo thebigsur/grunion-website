@@ -17,9 +17,10 @@ var CONFIG = {
   // Leave "" to keep the "YOUR NAME HERE" placeholders on the wall.
   PATRONS_DOC_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRRlKXYhf97sQcT0SKa_91oXBuJv_dmYm3m_5k5Jp7Df49Fm3HuQbRML14GlEsETyNgoWeZNLKBMelv/pub?gid=299262421&single=true&output=csv",
 
-  // Newsletter: paste your Mailchimp / Buttondown form-action URL.
+  // Newsletter: Formspree form endpoint. Submissions email grunionrugby@gmail.com
+  // with subject "Add me to MerMers" (set via the hidden _subject field in index.html).
   // Leave "" for a graceful "saved locally" confirmation message.
-  NEWSLETTER_ACTION_URL: "",
+  NEWSLETTER_ACTION_URL: "https://formspree.io/f/mqeordnp",
 
   // The '78 Club — Legacy Donor program
   JOIN_78_URL:        "#",   // payment / registration link
@@ -117,16 +118,28 @@ var CONFIG = {
 (function(){
   var form=document.getElementById('nlForm'), msg=document.getElementById('nlMsg'), input=document.getElementById('nlEmail');
   if(!form) return; // newsletter form lives on the homepage only
-  if(CONFIG.NEWSLETTER_ACTION_URL){ form.action=CONFIG.NEWSLETTER_ACTION_URL; form.method='post'; }
+  var endpoint=CONFIG.NEWSLETTER_ACTION_URL;
   form.addEventListener('submit', function(e){
-    var ok = input.checkValidity() && input.value.indexOf('@')>0;
-    if(!ok){ e.preventDefault(); msg.textContent='Please enter a valid email address.'; return; }
-    if(!CONFIG.NEWSLETTER_ACTION_URL){
-      e.preventDefault();
-      msg.textContent='Thanks — you’re on the list once the Dispatch goes live.';
-      form.reset();
+    e.preventDefault(); // always handle in JS so it never sends without a valid email
+    var ok = input.checkValidity() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value.trim());
+    if(!ok){ msg.textContent='Please enter a valid email address.'; input.focus(); return; }
+    if(!endpoint){
+      msg.textContent='Thanks — you’re on the list.';
+      form.reset(); return;
     }
-    /* else: native POST to the configured provider */
+    msg.textContent='Sending…';
+    fetch(endpoint, { method:'POST', body:new FormData(form), headers:{'Accept':'application/json'} })
+      .then(function(r){
+        if(r.ok){
+          msg.textContent='Thanks — you’re on the list for MerMers from the Deep.';
+          form.reset();
+        } else {
+          r.json().then(function(d){
+            msg.textContent=(d && d.errors && d.errors.length) ? d.errors[0].message : 'Something went wrong — please try again.';
+          }).catch(function(){ msg.textContent='Something went wrong — please try again.'; });
+        }
+      })
+      .catch(function(){ msg.textContent='Network error — please try again.'; });
   });
 })();
 
