@@ -25,8 +25,8 @@ var CONFIG = {
   // The '78 Club — Legacy Donor program
   JOIN_78_URL:        "#",   // payment / registration link
 
-  // General donations (footer "Chip In")
-  DONATE_URL:         "#",
+  // General donations (footer "Chip In") — Zeffy donation form (opens in a new tab)
+  DONATE_URL:         "https://www.zeffy.com/en-US/donation-form/grunion-rfc",
 
   // Sponsorship inquiries (business deal — email, not checkout)
   SPONSOR_EMAIL:      "sponsorship@grunionrugby.org",
