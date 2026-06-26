@@ -514,7 +514,7 @@ a.sp-feature:hover .sp-addr{color:#fff}
 /* ---- THE ONLINE PLAQUE (honor wall) ---- */
 .plaque-hero{margin:clamp(40px,6vw,72px) 0 clamp(8px,2vw,24px)}
 .ph-frame{position:relative;text-align:center;
-  padding:clamp(10px,1.25vw,18px) clamp(24px,5vw,80px) clamp(34px,4.5vw,60px);
+  padding:clamp(5px,0.6vw,9px) clamp(24px,5vw,80px) clamp(34px,4.5vw,60px);
   background:
     radial-gradient(120% 90% at 50% -10%, rgba(216,177,95,.14), transparent 60%),
     linear-gradient(180deg,#0e2c41,#081d2c 70%,#061926);
@@ -526,7 +526,7 @@ a.sp-feature:hover .sp-addr{color:#fff}
 .ph-corner--tr{top:20px;right:20px;border-left:0;border-bottom:0}
 .ph-corner--bl{bottom:20px;left:20px;border-right:0;border-top:0}
 .ph-corner--br{bottom:20px;right:20px;border-left:0;border-top:0}
-.ph-crest{width:clamp(110px,14vw,160px);height:auto;margin:0 auto 9px;filter:drop-shadow(0 6px 18px rgba(0,0,0,.5))}
+.ph-crest{width:clamp(110px,14vw,160px);height:auto;margin:0 auto 4px;filter:drop-shadow(0 6px 18px rgba(0,0,0,.5))}
 .ph-kicker{font-family:var(--font-mono);font-size:.72rem;font-weight:500;letter-spacing:.26em;text-transform:uppercase;color:var(--gold-soft);display:block}
 .ph-title{font-family:var(--font-display);font-weight:900;text-transform:uppercase;line-height:.9;letter-spacing:.01em;
   font-size:clamp(2.8rem,7vw,5.6rem);margin:14px 0 0;text-shadow:0 3px 28px rgba(0,0,0,.4)}
@@ -541,9 +541,9 @@ a.sp-feature:hover .sp-addr{color:#fff}
 .ph-tname{font-family:var(--font-mono);font-size:.78rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold-soft)}
 .ph-names{font-family:var(--font-display);font-weight:800;text-transform:uppercase;letter-spacing:.02em;
   line-height:1.2;color:#fff;text-wrap:balance;max-width:24ch;margin-inline:auto}
-.ph-names--1{font-size:clamp(2rem,4.4vw,3.4rem);color:var(--gold-soft);text-shadow:0 2px 16px rgba(216,177,95,.18)}
+.ph-names--1{font-size:clamp(1.5rem,3vw,2.3rem);color:var(--gold-soft);text-shadow:0 2px 16px rgba(216,177,95,.18)}
 .ph-names--2{font-size:clamp(1.5rem,3vw,2.3rem)}
-.ph-names--3{font-size:clamp(1.2rem,2.2vw,1.7rem);color:rgba(255,255,255,.92)}
+.ph-names--3{font-size:clamp(1.5rem,3vw,2.3rem);color:rgba(255,255,255,.92)}
 .ph-foot{margin-top:clamp(28px,4vw,40px);display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-content:center}
 .ph-note{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.42)}
 
