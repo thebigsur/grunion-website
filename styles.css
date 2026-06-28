@@ -106,7 +106,9 @@ button{font-family:inherit;cursor:pointer}
 .nav-links a::after{content:"";position:absolute;left:0;right:100%;bottom:-2px;height:2px;background:var(--gold);transition:right .2s ease}
 .nav-links a:hover::after{right:0}
 .nav-club{color:var(--gold-soft)!important}
-.nav-merchives{text-transform:none;letter-spacing:.04em}
+.nav-links a.nav-merchives{text-transform:none;letter-spacing:.04em}
+/* Brand spelling: keep "MERchives" mixed-case anywhere headings/nav would uppercase it */
+.merchives{text-transform:none}
 .nav-actions{display:flex;align-items:center;gap:16px}
 .burger{display:none;background:none;border:0;color:#fff;width:42px;height:42px;align-items:center;justify-content:center}
 .burger span,.burger span::before,.burger span::after{content:"";display:block;width:24px;height:2px;background:#fff;position:relative;transition:.2s}

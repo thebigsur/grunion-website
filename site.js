@@ -47,7 +47,7 @@ var CONFIG = {
   EIN:                "93-4659131",
 
   // ---------------------------------------------------------------
-  // THE '78 CLUB — THE MERCHIVES (MERchives.html)
+  // THE '78 CLUB — THE MERchives (MERchives.html)
   // Photos + documents pulled live from a shared Google Drive folder.
   // See the "Members Library — Google setup" walkthrough for how to get
   // these values. Leave any value "" and that part shows a friendly
