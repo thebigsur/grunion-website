@@ -40,7 +40,7 @@ var CONFIG = {
   EIN:                "93-4659131",
 
   // ---------------------------------------------------------------
-  // THE '78 CLUB — MEMBERS LIBRARY (members.html)
+  // THE '78 CLUB — THE MERCHIVES (MERchives.html)
   // Photos + documents pulled live from a shared Google Drive folder.
   // See the "Members Library — Google setup" walkthrough for how to get
   // these values. Leave any value "" and that part shows a friendly
@@ -58,9 +58,8 @@ var CONFIG = {
   MEMBERS_DRIVE_PRIOR_FOLDER_ID:   "1egjcuVHrw_aaraITJD9pJllfo1gsw3Ki",  // "Prior Season" sub-folder
   MEMBERS_DRIVE_LEGACY_FOLDER_ID:  "1HgGxrtE4oqlNix6Rc1hyogaLCaom1ltd",  // "Legacy Photos" sub-folder
 
-  // Where the "Members Area" button (on the '78 Club page) points.
-  // Leave as "members.html" — the in-site members library page.
-  MEMBERS_AREA_URL:   "members.html"
+  // Where any MERchives link points — the in-site archive page.
+  MEMBERS_AREA_URL:   "MERchives.html"
 };
 
 /* ---------- apply CONFIG to the page ---------- */
@@ -448,7 +447,7 @@ metaEl.hidden=false;
 })();
 
 /* ============================ '78 CLUB — MEMBERS LIBRARY ============================ */
-/* Lives on members.html only. Pulls photos + documents live from a shared Google
+/* Lives on MERchives.html only. Pulls photos + documents live from a shared Google
    Drive folder via the Drive API (read-only key in CONFIG).
 
    Drive layout (set up once, then pure drag-and-drop forever after):
@@ -458,14 +457,14 @@ metaEl.hidden=false;
        └─ Legacy Photos   ...  photos → "Legacy Photos" grid
 
    Each season you just move files down a level in Drive (Current→Prior→Legacy).
-   No edits to this file or members.html — the folder IDs and labels never change.
+   No edits to this file or MERchives.html — the folder IDs and labels never change.
 
    If the API key or a folder ID is blank, that section shows a calm "not
    connected yet" message instead of a broken grid. */
 (function(){
   var galleryHost = document.getElementById('memberGallery');
   var docsHost    = document.getElementById('memberDocs');
-  if(!galleryHost && !docsHost) return;   // only on members.html
+  if(!galleryHost && !docsHost) return;   // only on MERchives.html
 
   var KEY = CONFIG.MEMBERS_DRIVE_API_KEY;
 

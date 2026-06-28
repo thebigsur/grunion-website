@@ -10,3 +10,15 @@
   from = "/the-78-club"
   to = "/the-78-club.html"
   status = 200
+
+# Serve The MERchives at /MERchives (without the .html)
+[[redirects]]
+  from = "/MERchives"
+  to = "/MERchives.html"
+  status = 200
+
+# Send the old /members URL to the renamed MERchives page
+[[redirects]]
+  from = "/members"
+  to = "/MERchives.html"
+  status = 301
