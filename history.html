@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>History — Grunion RFC · Santa Barbara, Est. 1978</title>
+<meta name="description" content="The history of Grunion Rugby Football Club — the evolution of the crest, the Hall of Fame, the original 1978 side, and the club constitution." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800;900&family=Libre+Franklin:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+/* ============================ HISTORY (page-local) ============================ */
+#historypage{background:var(--ocean-950);color:#fff;position:relative;overflow:hidden}
+#historypage::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(120% 80% at 80% 0%, rgba(34,107,73,.22), transparent 55%),
+            radial-gradient(90% 70% at 0% 100%, rgba(194,146,46,.12), transparent 60%)}
+#historypage .wrap{position:relative}
+
+.hist-lead{max-width:74ch}
+.hist-lead .kicker{color:var(--gold-soft)}
+.hist-lead h1{font-size:clamp(2.8rem,7.5vw,5.8rem);margin-top:14px;line-height:.95;
+  font-family:var(--font-display);font-weight:900;text-transform:uppercase;letter-spacing:.01em}
+.hist-lead h1 .alt{color:var(--gold-soft)}
+.hist-lead .lede{color:rgba(255,255,255,.82);margin-top:24px}
+
+/* sub-nav of anchor links */
+.hist-subnav{position:sticky;top:64px;z-index:20;display:flex;flex-wrap:wrap;gap:8px 10px;
+  margin-top:clamp(28px,4vw,40px);padding:14px 0;background:rgba(7,28,44,.82);backdrop-filter:blur(6px);
+  border-top:1px solid rgba(255,255,255,.12);border-bottom:1px solid rgba(255,255,255,.12)}
+.hist-subnav a{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;
+  color:rgba(255,255,255,.78);text-decoration:none;border:1px solid rgba(216,177,95,.4);
+  border-radius:2px;padding:8px 13px;transition:background .15s ease,color .15s ease}
+.hist-subnav a:hover{background:rgba(216,177,95,.14);color:#fff}
+
+/* sections */
+.hist-block{margin-top:clamp(56px,8vw,96px);scroll-margin-top:120px}
+.hist-block > .kicker{color:var(--gold-soft)}
+.hist-block h2{font-size:clamp(2rem,5vw,3.4rem);line-height:.98;margin-top:10px;
+  font-family:var(--font-display);font-weight:800;text-transform:uppercase;letter-spacing:.01em}
+.hist-block h3{font-family:var(--font-display);font-weight:700;text-transform:uppercase;letter-spacing:.02em;
+  font-size:clamp(1.3rem,2.6vw,1.9rem);margin-top:clamp(28px,4vw,40px);color:var(--gold-soft)}
+.hist-block p{color:rgba(255,255,255,.84);max-width:74ch;margin-top:18px;line-height:1.7}
+.hist-block .muted{color:rgba(255,255,255,.6)}
+
+/* framed vintage images */
+.hist-figure{margin:clamp(26px,4vw,40px) 0;display:flex;flex-direction:column;align-items:center;gap:12px}
+.hist-figure img{max-width:min(440px,100%);height:auto;display:block;background:#f4f1e8;
+  padding:14px;border:1px solid rgba(255,255,255,.22);border-radius:4px;
+  box-shadow:0 18px 40px rgba(0,0,0,.35)}
+.hist-figure.row{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:20px}
+.hist-figure.row img{max-width:min(300px,46%)}
+.hist-figure figcaption{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.06em;
+  color:rgba(255,255,255,.55);text-align:center;max-width:70ch}
+
+/* hall of fame */
+.hof-subheads{margin-top:clamp(28px,4vw,40px);text-align:center}
+.hof-subheads span{display:block;font-family:var(--font-mono);letter-spacing:.1em;
+  color:rgba(255,255,255,.66);margin:6px 0}
+.greats{margin-top:clamp(24px,3.5vw,34px);columns:3;column-gap:40px;padding:0;list-style:none;
+  counter-reset:greats}
+@media(max-width:820px){.greats{columns:2}}
+@media(max-width:520px){.greats{columns:1}}
+.greats li{break-inside:avoid;font-family:var(--font-body);color:rgba(255,255,255,.86);
+  padding:7px 0;border-bottom:1px solid rgba(255,255,255,.09);counter-increment:greats;
+  display:flex;gap:10px;align-items:baseline}
+.greats li::before{content:counter(greats) ".";font-family:var(--font-mono);font-size:.8rem;
+  color:var(--gold-soft);min-width:2.1em;text-align:right}
+
+/* original team photo */
+.team-photo{margin:clamp(26px,4vw,40px) 0}
+.team-photo img{width:100%;max-width:760px;height:auto;display:block;border-radius:4px;
+  border:1px solid rgba(255,255,255,.2);box-shadow:0 18px 40px rgba(0,0,0,.35)}
+.team-caption{font-family:var(--font-body);color:rgba(255,255,255,.78);max-width:76ch;
+  margin-top:18px;line-height:1.7}
+.team-caption b{color:var(--gold-soft);font-weight:600}
+
+/* match results */
+.results{margin-top:clamp(22px,3vw,30px);max-width:520px;border-top:2px solid rgba(255,255,255,.2)}
+.results .res{display:flex;justify-content:space-between;gap:18px;padding:11px 4px;
+  border-bottom:1px solid rgba(255,255,255,.12);font-family:var(--font-mono);font-size:.92rem}
+.results .res .opp{color:rgba(255,255,255,.72)}
+.results .res .gr{color:#fff;font-weight:600}
+
+/* constitution */
+.const-head{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-top:clamp(26px,4vw,38px)}
+.const-head img{width:120px;height:auto;background:#f4f1e8;padding:10px;border-radius:4px;
+  border:1px solid rgba(255,255,255,.22)}
+.const-head .ch-title{font-family:var(--font-display);font-weight:700;text-transform:uppercase;
+  letter-spacing:.02em;font-size:clamp(1.1rem,2.2vw,1.5rem);color:#fff;max-width:30ch}
+.const h4{font-family:var(--font-display);font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+  font-size:1.15rem;color:var(--gold-soft);margin-top:clamp(30px,4vw,42px)}
+.const p{color:rgba(255,255,255,.84);max-width:80ch;margin-top:14px;line-height:1.7}
+.const ul,.const ol{max-width:80ch;margin-top:14px;padding-left:22px;color:rgba(255,255,255,.84);line-height:1.7}
+.const li{margin:7px 0}
+.const .amend{color:rgba(255,255,255,.72);font-style:italic}
+</style>
+</head>
+<body data-page="history">
+<a class="skip" href="#historypage">Skip to content</a>
+<header class="site-head" id="siteHead">
+  <div class="wrap nav">
+    <a class="brand" href="index.html#top" aria-label="Grunion Rugby Football Club — home">
+      <img class="crest" src="assets/grunion-crest.png" alt="Grunion RFC crest" />
+      <span><b>Grunion R.F.C.</b><i>Santa Barbara · Est. 1980</i></span>
+    </a>
+    <nav class="nav-links" id="navLinks" aria-label="Primary">
+      <a href="index.html#fixtures">Fixtures</a>
+      <a href="index.html#play">Play</a>
+      <a href="history.html">History</a>
+      <a href="index.html#news">News</a>
+      <a href="the-78-club.html" class="nav-club">'78 Club</a>
+      <a href="MERchives.html" class="nav-merchives">MERchives</a>
+      <a href="index.html#sponsors">Sponsors</a>
+    </nav>
+    <div class="nav-actions">
+      <a href="index.html#play" class="btn btn-gold btn-sm">Join</a>
+      <button class="burger" id="burger" aria-label="Menu" aria-expanded="false" aria-controls="navLinks"><span></span></button>
+    </div>
+  </div>
+</header>
+<main>
+<section class="section on-dark" id="historypage" aria-labelledby="hist-h">
+  <div class="wrap">
+    <div class="hist-lead">
+      <span class="kicker">Since 1978</span>
+      <h1 id="hist-h">Club <span class="alt">History</span></h1>
+      <p class="lede">The side first played together in 1978 and formally organized as a club in 1980. What follows is straight from the club archive — the evolution of the crest, the Hall of Fame, the original team, and the constitution that has held the Grunion together for over forty years.</p>
+    </div>
+
+    <nav class="hist-subnav" aria-label="History sections">
+      <a href="#evolution">Evolution</a>
+      <a href="#hall-of-fame">Hall of Fame</a>
+      <a href="#original-team">Original Team</a>
+      <a href="#the-constitution">The Constitution</a>
+    </nav>
+
+    <!-- EVOLUTION -->
+    <section class="hist-block" id="evolution" aria-labelledby="evo-h">
+      <span class="kicker">The Crest</span>
+      <h2 id="evo-h">Evolution of the Grunion</h2>
+      <p>The first known rendering of a potential logo or artwork for Grunion Memorabilia. It has been carbon dated to 1979 and although it seems innocent enough a fire storm of controversy engulfed the young Grunions as a result of this creation. The most controversial element seemed to be the tight fit on the Grunion's Rugby shorts. A certain homophobic fringe of the club objected to the bun-hugging style which they felt was further exacerbated by the pointing or "twinkle toed" posture of the Grunion. There are no surviving garments with this particular artwork. The SBV at the top refers to the fact that the club embodied Ventura as well as Santa Barbara.</p>
+      <figure class="hist-figure">
+        <img src="assets/grunionlogoOG.jpg" alt="The first known Grunion artwork, c. 1979 — the SBV crest" />
+      </figure>
+      <p>We move to the Art Nouveau Period of Grunion Art common to the early eighties. Again the recurring theme of male in virility crisis is in evidence. Note the pathetic and anthropomorphic females (mermaids) reaching from the depths to embrace the Godlike "Merman". Positive elements are the sleek lines of the Merman and avoiding the tight shorts issue by deleting shorts altogether.</p>
+      <figure class="hist-figure row">
+        <img src="assets/grunionlogocolor.jpg" alt="Art Nouveau period Grunion artwork — color" />
+        <img src="assets/grunionlogo.jpg" alt="Art Nouveau period Grunion crest" />
+      </figure>
+      <p>The Merman of the late nineties has evolved to the extent that psychologically he is more comfortable with himself. He has accepted who he is and no longer reflects an arrogant posture. His chest has deflated some with age (after all, he's twenty now). He no longer requires female validation to maintain his self esteem yet he appears vital and assertive.</p>
+      <figure class="hist-figure">
+        <img src="assets/grunionlogo2.jpg" alt="The late-nineties Grunion Merman crest" />
+      </figure>
+    </section>
+
+    <!-- HALL OF FAME -->
+    <section class="hist-block" id="hall-of-fame" aria-labelledby="hof-h">
+      <span class="kicker">Greatest Grunions</span>
+      <h2 id="hof-h">Grunion Rugby Hall of Fame</h2>
+      <p>Formal recognition of club member's outstanding contributions to the Grunion Rugby Club began with the selection of the Twenty Greatest Grunions to commemorate the twentieth anniversary of the club in 1998. Although all of these inductees were deserving it was recognized that many other past and present club members should be provided a process for future recognition. To that aim the club administration along with an advisory committee formulated standards and procedures for selection. Ongoing contributions of photos and information will be solicited to improve the quality and accuracy of the site as time passes.</p>
+      <div class="hof-subheads">
+        <span>A walk down the Hall...</span>
+        <span>Greatest Grunions...</span>
+        <span>Name...(First Year with Grunions)</span>
+      </div>
+      <ol class="greats">
+        <li>Mel Gregory ('78)</li>
+        <li>Bob Riggs ('78)</li>
+        <li>Jim Harasta ('78)</li>
+        <li>Jim Mathis ('78)</li>
+        <li>Frank Rizzo ('79)</li>
+        <li>Dave Davidson ('80)</li>
+        <li>Harry Wright ('81)</li>
+        <li>Jerry Ball ('82)</li>
+        <li>Mike Sexsmith ('83)</li>
+        <li>John Maloney ('84)</li>
+        <li>Peter Crick ('84)</li>
+        <li>Dennis O'Day ('86)</li>
+        <li>Russ Dalke ('86)</li>
+        <li>Lance Laffoon ('86)</li>
+        <li>David Brook ('87)</li>
+        <li>Bill Judson ('88)</li>
+        <li>Ellis Pilgrim ('88)</li>
+        <li>Greg Millerd ('90)</li>
+        <li>Chris Prendergast ('90)</li>
+        <li>Mike Loader ('93)</li>
+        <li>Tim Ahern</li>
+        <li>Kevin Battle</li>
+        <li>Dave Crooks</li>
+        <li>Dana Driskel</li>
+        <li>Ken Jacobsen ('93)</li>
+        <li>Tony McHale</li>
+        <li>Kurt Oeler</li>
+        <li>Dave Short</li>
+        <li>Greg Smales</li>
+        <li>Jovani Tovar</li>
+        <li>Bonnie Keinath ('87)</li>
+        <li>Doug Lynch ('81)</li>
+        <li>Tia Orton</li>
+        <li>Mark Kelly</li>
+        <li>Keric Brown</li>
+        <li>Troy Jacobsen ('99)</li>
+        <li>Ian Williams ('97)</li>
+        <li>Bob Swartz</li>
+        <li>Enrico Ferri</li>
+        <li>D. Wren Wise</li>
+        <li>Chad Wormser Von Barron</li>
+        <li>Dr. Bill Galivan</li>
+        <li>Lorri Lynch</li>
+        <li>Lance Mason</li>
+        <li>Andres Martinez</li>
+        <li>Shane Todd</li>
+      </ol>
+    </section>
+
+    <!-- ORIGINAL TEAM -->
+    <section class="hist-block" id="original-team" aria-labelledby="ot-h">
+      <span class="kicker">Where It Began</span>
+      <h2 id="ot-h">1978 Grunion Rugby Football Club</h2>
+      <figure class="team-photo">
+        <img src="assets/originalteam.jpg" alt="The 1978 Grunion Rugby Football Club team photo" />
+      </figure>
+      <p class="team-caption"><b>Back Row, left to right:</b> Lance Mason (President), Tom Burns, Larry Ferguson, Dale Hoffman, Ray Dunning, Gary Alexander, Charles Kaska, Chris Carroll, Mike McMahan, Joe Fonte, Ernie Saenez, Bob Riggs. <b>Middle:</b> Ron Rohde, Gary Kittle, Mel Gregory (Coach), Andres Martinez, David Spear, John Ryan, Larry Folinsbee. <b>Front:</b> Jim Harasta (Captain), Bob McPhillips, Jim Rodgers (Social Secretary), Jim Mathis, Steve Bellefuille.</p>
+      <h3>Match Results from 1978-79</h3>
+      <div class="results">
+        <div class="res"><span class="gr">Grunions 33</span><span class="opp">Cal Poly 10</span></div>
+        <div class="res"><span class="gr">Grunions 6</span><span class="opp">LARC 0</span></div>
+        <div class="res"><span class="gr">Grunions 16</span><span class="opp">Del Mar 14</span></div>
+        <div class="res"><span class="gr">Grunions 4</span><span class="opp">Long Beach 0</span></div>
+        <div class="res"><span class="gr">Grunions 17</span><span class="opp">San Luis 3</span></div>
+        <div class="res"><span class="gr">Grunions 18</span><span class="opp">San Fernando 17</span></div>
+        <div class="res"><span class="gr">Grunions 21</span><span class="opp">Eagle Rock 10</span></div>
+        <div class="res"><span class="gr">Grunions 29</span><span class="opp">Moorpark 7</span></div>
+        <div class="res"><span class="gr">Grunions 30</span><span class="opp">Santa Monica 0</span></div>
+        <div class="res"><span class="gr">Grunions 22</span><span class="opp">Pleasant Valley 4</span></div>
+      </div>
+    </section>
+
+    <!-- THE CONSTITUTION -->
+    <section class="hist-block const" id="the-constitution" aria-labelledby="const-h">
+      <span class="kicker">Est. 1978</span>
+      <h2 id="const-h">Constitution &amp; By-laws</h2>
+      <div class="const-head">
+        <img src="assets/grunionlogo.jpg" alt="Grunion Rugby Club crest" />
+        <span class="ch-title">Constitution and By-laws of the Grunion Rugby Football Club — Established 1978</span>
+      </div>
+
+      <h4>Name and Constitution</h4>
+      <p>The name of the organization shall be "The Grunion Rugby Football Club" and shall have it's headquarters at Santa Barbara, California.</p>
+      <p class="amend">Amendment I passed Oct. 22, 1998 Grunion AGM. We hereby reaffirm the name Grunion Rugby Football Club as our organization title. The words Grunion Rugby Football Club or Grunion Rugby Club will proceed any other designations such as: Santa Barbara or Santa Barbara/Ventura. We will be registered in this manner with the National Union, Local Union and Territory and in the National Directory.</p>
+      <p>The objects and purposes of the club are:</p>
+      <ul>
+        <li>the promotion, encouragement, and extension of Rugby Union football.</li>
+        <li>to develop and maintain a high standard of competition.</li>
+        <li>to provide an organizational vehicle for fulfilling social interaction.</li>
+      </ul>
+      <p>Finances of the club shall be handled as follows:</p>
+      <ul>
+        <li>the club's income shall be obtained primarily from the dues of it's members, which shall be established prior to the beginning of each season.</li>
+        <li>secondarily, the club shall obtain income from fund raising events.</li>
+        <li>the club's net income shall be used for the whole or any one or more of the club's goals as shall be decided by a team vote.</li>
+      </ul>
+
+      <h4>Membership</h4>
+      <p>The club membership shall be open to any person willing to contribute to the interests and goals of the club.</p>
+      <p>Requirements for membership are:</p>
+      <ul>
+        <li>payment of dues in full and by established deadline.</li>
+        <li>involvement in club functions.</li>
+        <li>a member will cease to be a member if at the judgment of the executive committee, the said member has failed to meet the requirements and has insufficient justification.</li>
+      </ul>
+      <p>The membership shall consist of two forms:</p>
+      <p class="amend">Amendment II passed Oct. 22, 1998 Grunion AGM. The membership shall include a third form, "Lifetime Member" -- one who has paid an amount set by the executive committee ($250 in 1998) and open to persons meeting the following criteria: Age 35 or older or person of any age making substantial financial contributions to the club (ie sponsors). The Lifetime Member will be issued a membership card and will be entitled to:</p>
+      <ol>
+        <li>Free from club annual dues for life.</li>
+        <li>All game fees waived.</li>
+        <li>Recognized as an honored member of the Grunion RFC.</li>
+        <li>Entitled to wear the designation "Lifetime Member" on all club memorabilia, jerseys etc.</li>
+        <li>Eligible for discounts to club events.</li>
+      </ol>
+      <p>The Playing Member - one who has paid his dues in full, attends practices, participates in matches, and is involved in club functions.</p>
+      <p>The Non-Playing Member - one who has paid his dues, set at half the amount of a Playing Member, and is involved in club functions.</p>
+
+      <h4>The Executive Committee</h4>
+      <p>The affairs of the club shall be administered by a committee which shall consist of elected representatives from the club's members. The number of representatives of the committee shall be fixed for each season prior to that season at the general team meeting. The committee shall serve until the following year's opening election.</p>
+      <p>The Committee shall have these responsibilities to it's members:</p>
+      <ul>
+        <li>to provide leadership to determine and address areas of concern, objectives, and potential problems as voiced by members of the club at the opening General Meeting.</li>
+        <li>to provide the structure and organization necessary to meet the club's needs.</li>
+        <li>to represent the club at Union meetings and maintain official correspondence.</li>
+        <li>to set up a playing schedule.</li>
+        <li>to provide a roster and schedule.</li>
+        <li>to manage the club's finances and make reports.</li>
+        <li>to set up and chair meetings.</li>
+        <li>to keep records of meetings and business.</li>
+        <li>to provide channels of communication.</li>
+        <li>to provide fields and practice.</li>
+        <li>to make uniforms available.</li>
+        <li>to address issues of morale.</li>
+        <li>to arrange post game activities and social events.</li>
+        <li>to provide a social calendar.</li>
+        <li>to provide a formal statement of the committee's organization detailing the breakdown of it's structure and the responsibilities of it's members. To include in that statement the objectives and methods of the Committee.</li>
+      </ul>
+      <p>The Committee shall in particular have the following powers:</p>
+      <ul>
+        <li>to assess the workload for the season and to distribute the load evenly among the Committee's members according to interest and capabilities of it's members.</li>
+        <li>to appoint a chairman to chair all meetings and maintain overview of the club's activities.</li>
+        <li>to appoint subcommittees to deal with any affairs of the club, with such powers as the Committee may determine.</li>
+        <li>to call for club meetings as need arises.</li>
+        <li>to have control of the club funds.</li>
+        <li>to expel or suspend any member for serious violations of the law or actions contrary to the interests of the club.</li>
+      </ul>
+
+      <h4>Amendments</h4>
+      <p>This constitution may be amended by a two-thirds vote of the club members present at the club meeting. The details of any proposed amendment shall be published and circulated to the club members not less than 10 days or more than 21 days prior to the meeting. Any proposed amendment must be submitted to the Committee at least 21 days prior to the meeting at which it will be decided on.</p>
+
+      <h4>By-Laws</h4>
+      <p>The club shall propose and administer a set of by-laws which will, one: address the specific necessities of the Team or playing dimension of the club, and two; detail more fully the organization and it's process, which shall be revised on an annual basis.</p>
+      <p>The by-laws will deal with the following:</p>
+      <ul>
+        <li>membership</li>
+        <li>general meetings</li>
+        <li>Fiji time</li>
+        <li>flakes</li>
+        <li>social dimension</li>
+        <li>the judicial board</li>
+        <li>the selection process and form</li>
+      </ul>
+
+      <h4>Membership</h4>
+      <p>Playing Member Requirements:</p>
+      <ol>
+        <li>fixed dues paid in full prior to first game.</li>
+        <li>attendance at practice.</li>
+        <li>possession of a full uniform (including socks, which are green)</li>
+        <li>involvement in club functions.</li>
+      </ol>
+      <p>Non-Playing Member Requirements:</p>
+      <ol>
+        <li>half the amount of fixed dues paid in full prior to Jan. 1 of season.</li>
+        <li>involvement in club functions.</li>
+      </ol>
+
+      <h4>General Meetings</h4>
+      <p>The general meetings shall be held at least twice per season. The meeting prior to the season shall be for election purposes. The meetings shall be called by the executive committee no later than 10 days and no more than 21 days prior to the meeting. A quorum shall consist of 1/3 of all members of the club. A quorum is needed before business can be conducted. The meeting shall be chaired by a member of the executive committee who will also provide the agenda for the meeting and see to it's dissemination in advance of the meeting.</p>
+      <p>The format of the meeting shall be as follows:</p>
+      <ul>
+        <li>the chair will call roll and briefly read the agenda items under consideration.</li>
+        <li>each item will be taken in turn following the process of: item identification and detailing of the issue at stake, discussion, vote</li>
+        <li>members wishing to have the floor must raise their hands until recognized by the chair.</li>
+        <li>the vote shall be a simple "thumbs up" or "thumbs down" with a majority carrying the vote.</li>
+        <li>disorderly conduct will be recognized by the chair and acted on.</li>
+      </ul>
+
+      <h4>Fiji Time</h4>
+      <p>Fiji Time shall be defined as one half hour after the official time. All events shall be scheduled one half hour early. The one half hour Fiji Time period shall be the 'bullshit' period, thereby alleviating the need to bullshit during business. Abuse of Fiji Time is an offense which shall be recorded in "The Book". Abuse is cumulative and shall be judged and penalized accordingly by the judicial board.</p>
+
+      <h4>Flakes</h4>
+      <p>A "flake" shall be defined as one who:</p>
+      <ul>
+        <li>shirks responsibility</li>
+        <li>fails to show</li>
+        <li>comes late</li>
+        <li>leaves early</li>
+        <li>is prone to incommunicado</li>
+      </ul>
+      <p>Flakes shall be dealt with by the judicial board. All members are responsible for being informed and are also responsible for input.</p>
+
+      <h4>The Social Dimension</h4>
+      <ul>
+        <li>All members are required to support the social events and hosting efforts as much as possible.</li>
+        <li>All members shall be versed in the party manual.</li>
+        <li>All members shall be familiar with the social calendar and give notice in advance as to their ability to support the calendar events as they come up.</li>
+        <li>All members shall have valid excuses and shall notify the appropriate party of their inability to support. (please make it plausible).</li>
+      </ul>
+
+      <h4>The Judicial Board</h4>
+      <p>The judicial board shall be comprised of three members appointed by the executive committee. They shall function as judges and their terms shall run for a year. Jurisdiction is restricted to the social level and areas of "slop". There shall also be a prosecuting attorney and a defense attorney similarly appointed by the committee.</p>
+
+      <h4>The Selection Process and Committee</h4>
+      <p>The selection guidelines as established by team meeting and vote are as follows:</p>
+      <ul>
+        <li>selectee must have paid dues in full</li>
+        <li>must have attended practice prior to match in question or notified the selection committee of inability to attend (in advance)</li>
+        <li>notified selection committee of status regarding health, fitness, or ability to show, etc. prior to the match date if it is an issue.</li>
+        <li>selectors will weigh factors of fitness, experience, health, previous performance, and suitability of player to particular match needs.</li>
+        <li>All disputes shall be directed to the selection committee.</li>
+        <li>At all times that it is possible, players shall be selected from the ranks of the playing members.</li>
+      </ul>
+      <p>The selection committee shall consist of 5 members.</p>
+      <ul>
+        <li>a) there shall be 2 forward selectors and 2 back selectors established by a team vote and to last for a period of one season.</li>
+        <li>b) the principal selector shall be the coach who shall carry the deciding vote.</li>
+      </ul>
+      <p>Selection results shall be made known as far in advance of the match as possible. Players shall arrive no later than one hour before the match time. Tardiness will result in the substitution of the alternate.</p>
+
+      <h4>Preamble to the Grunion Constitution 1979-80</h4>
+      <p>We, the members of the Grunion Rugby Football Club, in order to achieve a quality of enjoyment missing in our ordinary mundane and strife-ridden lives, come together through the medium of Rugby to celebrate and promote that self-evident and God-given right to enjoyment by honoring the tradition on which Rugby stands and through association with characters of diverse make up and circumstance. To this end we commit ourselves to establishing clear principles of order and insuring high drama and light relief...for ourselves, our community, and whereever else we shall be gathered and known as..."The Grunions". In short, through the medium of Rugby, we are sworn to enjoying ourselves and to being enjoyed.</p>
+
+      <h4>Formal Statement of the 1980-81 Grunion Executive Committee</h4>
+      <p>This executive committee, consisting of Jim Rodgers, Frank Rizzo, Dave Davidson, and Bob McPhillips, has as its aim the development and leadership of the Grunion Rugby Football Club. The scope of this aim, we understand, will be qualified only by the interest of the club and the surrounding community...and it's own internal capacity for effectiveness.</p>
+      <p>To this end we strive to provide:</p>
+      <ol>
+        <li>an efficient organizational structure</li>
+        <li>a healthy morale</li>
+        <li>and the basis for fielding a competitive playing unit</li>
+      </ol>
+      <p>In the interests of organization we have restructured the executive body, composed traditionally of the Pres., The V.P., The Secretary, and The Treasurer, and developed the "Executive Committee". This committee has addressed the workload of this season at numerous meetings and defined areas of individual responsibility, which are listed below.</p>
+      <p><b>J.R. Rogers:</b> leadership, organization, articulation, committee assessment, publicity, recruitment, historian, information.</p>
+      <p><b>Frank Rizzo:</b> leadership, union rep., scheduling, fields &amp; practice, social calendar, uniforms.</p>
+      <p><b>Dave Davidson:</b> leadership, communication, phone calling, social calendar, transportation, post game events, minutes, billiting.</p>
+      <p><b>Bob McPhillips:</b> leadership, budget/accounting, financial reports, fund raising, dues, check availability.</p>
+      <p>This restructuring was done in order to distribute the workload more evenly upon the members of the executive body and with regard to their personal interests and individual capabilities. It is experimental and will probably undergo some changes during the season, but we are optimistic about achieving our objectives and providing the members of this club with the basis for enjoying this season.</p>
+    </section>
+
+  </div>
+</section>
+</main>
+<hr class="rule101" />
+<footer class="site-foot">
+  <hr class="rule101" />
+  <div class="chip">
+    <div class="wrap chip-grid">
+      <div>
+        <span class="kicker">Chip In</span>
+        <h3>Donate Any Amount</h3>
+        <p>Any amount helps the Grunion keep playing. SBRFC is a 501(c)(3) — your gift is tax-deductible.</p>
+      </div>
+      <div class="chip-cta"><a href="#" data-link="donate" class="btn btn-gold arrow">Donate to the Grunion</a></div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="foot-sponsors">
+      <span class="fs-lab">Proud sponsors</span>
+      <a class="fs-logo" href="https://www.sharkeez.net" target="_blank" rel="noopener">Baja Sharkeez</a>
+      <a class="fs-logo" href="https://www.rinconbrewery.com/" target="_blank" rel="noopener">Rincon Brewery</a>
+      <a class="fs-logo" href="https://www.goldenroostersb.com/" target="_blank" rel="noopener">Golden Rooster Transportation</a>
+      <a href="index.html#sponsors" class="fs-logo" style="color:var(--gold-soft);border-color:var(--gold-soft)">Become a sponsor →</a>
+    </div>
+  </div>
+
+  <div class="wrap foot-main">
+    <div class="foot-brand">
+      <b>Grunion RFC</b>
+      <p>Grunion Rugby Football Club. Playing since 1978, founded 1980. For the promotion, encouragement, and extension of Rugby Union football.</p>
+    </div>
+    <div class="foot-col">
+      <h4>Club</h4>
+      <a href="index.html#fixtures">Fixtures</a>
+      <a href="index.html#play">Play</a>
+      <a href="history.html">History</a>
+    </div>
+    <div class="foot-col">
+      <h4>Support</h4>
+      <a href="the-78-club.html">The '78 Club</a>
+      <a href="index.html#sponsors">Sponsors</a>
+      <a href="#" data-link="donate">Donate</a>
+    </div>
+    <div class="foot-col">
+      <h4>Connect</h4>
+      <a href="https://www.facebook.com/GrunionRugby" target="_blank" rel="noopener">Facebook</a>
+      <a href="https://www.instagram.com/santabarbaragrunionrugby" target="_blank" rel="noopener">Instagram</a>
+      <a href="index.html#news">Newsletter</a>
+      <a href="index.html#contact">Contact</a>
+    </div>
+    <div class="foot-col">
+      <h4>Family</h4>
+      <a href="https://sbwomensrugby.com" target="_blank" rel="noopener">Mermaids</a>
+      <a href="https://stingraysrfc.com" target="_blank" rel="noopener">Stingrays</a>
+    </div>
+  </div>
+
+  <div class="wrap foot-legal">
+    <span>© <span id="year">2026</span> Grunion Rugby Football Club · Santa Barbara, CA</span>
+    <span>Proud member of the SBRFC, a 501(c)(3) non-profit organization · Tax ID: 93-4659131</span>
+  </div>
+</footer>
+<script src="site.js"></script>
+</body>
+</html>

@@ -373,6 +373,9 @@ body[data-hero="duotone"] .hero-media{background:var(--ocean-700)}
 .pk.top .pk-amt{color:var(--gold-soft)}
 .pk p{font-size:.92rem;color:var(--ink-soft);margin-top:14px;line-height:1.5}
 .pk.top p{color:rgba(255,255,255,.8)}
+.pk ul{margin:14px 0 0;padding-left:18px;font-size:.85rem;color:var(--ink-soft);line-height:1.5}
+.pk ul li{margin:6px 0}
+.pk.top ul{color:rgba(255,255,255,.82)}
 .pk .pk-prev{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:var(--gray-101);margin-top:auto;padding-top:14px}
 .sp-cta{margin-top:34px;display:flex;flex-wrap:wrap;gap:16px;align-items:center}
 .sp-distinct{margin-top:24px;font-size:.9rem;color:var(--ink-soft);max-width:74ch;border-left:3px solid var(--gray-101);padding-left:16px}
