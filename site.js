@@ -17,6 +17,13 @@ var CONFIG = {
   // Leave "" to keep the "YOUR NAME HERE" placeholders on the wall.
   PATRONS_DOC_URL: "",
 
+  // Hall of Fame (history.html ▸ Greatest Grunions): paste a PUBLISHED Google Sheet CSV URL.
+  // File ▸ Share ▸ Publish to web ▸ choose the "Hall of Fame" sheet ▸ Comma-separated values (.csv).
+  // Two columns (header row): Name, Year  — Year is the first year with the Grunions (e.g. 78),
+  // and may be left blank. Rows render in sheet order, top to bottom.
+  // Leave "" to keep the built-in list already printed on the page.
+  HOF_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRRlKXYhf97sQcT0SKa_91oXBuJv_dmYm3m_5k5Jp7Df49Fm3HuQbRML14GlEsETyNgoWeZNLKBMelv/pub?gid=1804498175&single=true&output=csv",
+
   // Newsletter: Formspree form endpoint. Submissions email grunionrugby@gmail.com
   // with subject "Add me to MerMers" (set via the hidden _subject field in index.html).
   // Leave "" for a graceful "saved locally" confirmation message.
@@ -350,6 +357,53 @@ metaEl.hidden=false;
       else if(cur){ groups[cur].push(l); }
     });
     return groups;
+  }
+})();
+
+/* ============================ HALL OF FAME — GREATEST GRUNIONS ============================ */
+/* The list on history.html auto-updates from CONFIG.HOF_CSV_URL (published Google Sheet, CSV).
+   Until that's connected, the names already printed in the page stay put. */
+(function(){
+  var list = document.getElementById('greatsList');
+  if(!list) return;                // only on the history page
+  if(!CONFIG.HOF_CSV_URL) return;  // not connected yet — keep the built-in list
+
+  fetch(CONFIG.HOF_CSV_URL).then(function(r){ if(!r.ok) throw 0; return r.text(); })
+    .then(function(txt){
+      var people = parseHOF(txt);
+      if(!people.length) return;   // empty / unreadable — leave the built-in list
+      list.innerHTML='';
+      people.forEach(function(p){
+        var li=document.createElement('li');
+        li.textContent = p.year ? p.name+" ('"+p.year+")" : p.name;
+        list.appendChild(li);
+      });
+    })
+    .catch(function(){ /* unreachable source — leave the built-in list */ });
+
+  function splitLine(line){
+    var res=[],cur='',q=false;
+    for(var i=0;i<line.length;i++){var c=line[i];
+      if(c==='"'){ if(q&&line[i+1]==='"'){cur+='"';i++;} else q=!q; }
+      else if(c===','&&!q){res.push(cur);cur='';}
+      else cur+=c;
+    }
+    res.push(cur); return res;
+  }
+  function parseHOF(text){
+    var lines=text.replace(/\r/g,'').split('\n').filter(function(l){return l.trim().length;});
+    if(lines.length<2) return [];
+    var headers=splitLine(lines[0]).map(function(h){return h.trim().toLowerCase().replace(/[^a-z]/g,'');});
+    var ni=headers.indexOf('name'); var yi=headers.indexOf('year');
+    if(ni===-1) ni=0;                // no header? assume column 1 is the name
+    var out=[];
+    for(var i=1;i<lines.length;i++){
+      var cells=splitLine(lines[i]);
+      var name=(cells[ni]||'').trim();
+      var year=yi>-1?(cells[yi]||'').trim().replace(/^'+/,''):'';
+      if(name) out.push({name:name, year:year});
+    }
+    return out;
   }
 })();
 
