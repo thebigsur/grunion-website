@@ -107,6 +107,12 @@ button{font-family:inherit;cursor:pointer}
 .nav-links a:hover::after{right:0}
 .nav-club{color:var(--gold-soft)!important}
 .nav-links a.nav-merchives{text-transform:none;letter-spacing:.04em}
+/* Fossils: a deliberate retro callout echoing the old Fossils-site "Home" link */
+.nav-links a.nav-fossils{font-family:"Times New Roman",Times,serif;text-transform:none;
+  letter-spacing:normal;font-weight:700;font-size:1.04rem;color:#2c5499;
+  text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
+.nav-links a.nav-fossils:hover{color:#3a6dba}
+.nav-links a.nav-fossils::after{display:none}
 /* Brand spelling: keep "MERchives" mixed-case anywhere headings/nav would uppercase it */
 .merchives{text-transform:none}
 .nav-actions{display:flex;align-items:center;gap:16px}

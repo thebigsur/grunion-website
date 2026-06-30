@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Central Coast Fossils R.F.C.</title>
+<meta name="description" content="The Central Coast Fossils — a rejuvenated Olde Boys rugby side originally founded in 1978. A drinking team with a rugby problem." />
+<!-- Modern site header (menu bar) styles + fonts, shared with the rest of the site -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800;900&family=Libre+Franklin:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+/* =====================================================================
+   FOSSILS R.F.C. — faithful recreation of the original 2000's site.
+   Deliberately standalone (Times New Roman, blue text, sidebar layout);
+   it does NOT use the modern Grunion styles.css and will look distinct.
+   ===================================================================== */
+:root{
+  --blue:#336699;    /* titles, intro text, captions */
+  --navy:#1f3a5f;    /* sidebar bold headings */
+  --link:#1a4f8c;    /* hyperlinks */
+  --bold:#1f5c99;    /* bold announcement text */
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-size:18px;line-height:1.4}
+
+/* Modern menu bar forced solid (this page is white, so the default transparent
+   header would hide its white text) + clear space for the fixed header. */
+.site-head{background:var(--ocean-950);box-shadow:0 1px 0 rgba(255,255,255,.08),0 8px 30px rgba(0,0,0,.25)}
+#fossils-home{padding-top:104px}
+@media(max-width:680px){ #fossils-home{padding-top:92px} }
+
+.fpage{max-width:1000px;margin:0 auto;padding:18px 24px 60px;
+  display:grid;grid-template-columns:200px 1fr;gap:34px;border-top:1px solid #fff}
+.fpage + .fpage{border-top:2px solid #e6e6e6;margin-top:4px}
+
+/* ---- sidebar ---- */
+.fside{text-align:center}
+.fside .logo-fosters{width:100px;height:auto;margin:4px auto 26px;display:block}
+.fside .logo-grunion{width:150px;height:auto;margin:0 auto 6px;display:block}
+.fside .home{display:block;font-weight:bold;color:var(--link);text-decoration:underline;
+  font-size:22px;margin:6px 0 40px}
+.fside .head{font-family:Arial,Helvetica,sans-serif;font-weight:bold;color:var(--navy);
+  font-size:21px;margin:26px 0 8px}
+.fside .smile{font-family:Arial,Helvetica,sans-serif;color:var(--navy);font-size:20px;margin:10px 0 0}
+.fside .news{text-align:left;margin-top:6px}
+.fside .news a,.fside .news .dead{display:block;color:var(--link);text-decoration:underline;
+  font-size:18px;margin:18px 0;line-height:1.25}
+.fside .news .dead{color:var(--link);cursor:default}
+
+/* ---- main column ---- */
+.fmain{min-width:0}
+.fossils-logo{display:block;max-width:300px;width:60%;height:auto;margin:0 0 18px auto}
+.fmain.center-logo .fossils-logo{margin:0 auto 18px}
+.banner{display:block;max-width:520px;width:100%;height:auto;margin:0 0 30px}
+
+.ptitle{font-family:"Times New Roman",Times,serif;color:var(--blue);font-weight:normal;
+  font-size:46px;line-height:1.05;margin:6px 0 26px;text-transform:none;letter-spacing:normal}
+
+.intro{color:var(--blue);font-size:19px;margin:0 0 22px}
+.intro.big{font-size:28px;margin:26px 0}
+
+.announce{font-family:Arial,Helvetica,sans-serif;color:var(--bold);font-weight:bold;
+  font-size:19px;line-height:1.5;margin:0 0 22px;text-transform:uppercase}
+.announce a{color:var(--bold);text-decoration:underline}
+.announce .redact{color:#7f8aa0}
+
+.photo{display:block;max-width:600px;width:100%;height:auto;margin:26px 0;border:0}
+.caption{color:var(--blue);font-family:Arial,Helvetica,sans-serif;font-size:18px;margin:-8px 0 26px}
+
+/* ---- member of ---- */
+.memberof{text-align:center;margin:48px 0 10px}
+.memberof .mlabel{font-family:Arial,Helvetica,sans-serif;font-style:italic;font-weight:bold;
+  color:var(--bold);font-size:22px;margin-bottom:14px}
+.memberof img{max-width:300px;width:70%;height:auto;display:block;margin:0 auto}
+.memberof .corp{font-weight:bold;color:var(--bold);font-size:22px;margin-top:14px}
+
+/* ---- roster table (Catalina) ---- */
+.roster{border-collapse:collapse;margin:22px 0 30px;width:360px;max-width:100%}
+.roster td{border:1px solid #000;padding:4px 10px;color:var(--blue);font-size:18px}
+
+/* ---- schedule table (Catalina) ---- */
+.sched{border-collapse:collapse;margin:14px 0 30px;font-size:17px;width:100%;max-width:680px}
+.sched th,.sched td{padding:3px 10px;text-align:left;vertical-align:top;color:var(--bold);
+  font-family:Arial,Helvetica,sans-serif}
+.sched .schhead{font-weight:bold;font-size:20px;color:var(--bold)}
+.sched .time{white-space:nowrap;font-weight:bold}
+.sched .vs{color:#000;font-weight:bold;font-family:"Times New Roman",Times,serif}
+.sched .special{font-style:italic}
+.sched tr.hl td{background:#fff34d}
+
+@media(max-width:680px){
+  .fpage{grid-template-columns:1fr;gap:18px}
+  .fside{border-bottom:1px solid #ddd;padding-bottom:18px}
+  .fossils-logo{margin:0 auto 18px}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#fossils-home">Skip to content</a>
+
+<!-- ============================ MODERN SITE HEADER (menu bar) ============================ -->
+<header class="site-head solid" id="siteHead">
+  <div class="wrap nav">
+    <a class="brand" href="index.html#top" aria-label="Grunion Rugby Football Club — home">
+      <img class="crest" src="assets/grunion-crest.png" alt="Grunion RFC crest" />
+      <span><b>Grunion R.F.C.</b><i>Santa Barbara · Est. 1978</i></span>
+    </a>
+    <nav class="nav-links" id="navLinks" aria-label="Primary">
+      <a href="index.html#fixtures">Fixtures</a>
+      <a href="index.html#play">Play</a>
+      <a href="history.html">History</a>
+      <a href="index.html#news">News</a>
+      <a href="the-78-club.html" class="nav-club">'78 Club</a>
+      <a href="MERchives.html" class="nav-merchives">MERchives</a>
+      <a href="fossils.html" class="nav-fossils" aria-current="page">Fossils</a>
+      <a href="index.html#sponsors">Sponsors</a>
+    </nav>
+    <div class="nav-actions">
+      <a href="index.html#play" class="btn btn-gold btn-sm">Join</a>
+      <button class="burger" id="burger" aria-label="Menu" aria-expanded="false" aria-controls="navLinks"><span></span></button>
+    </div>
+  </div>
+</header>
+
+<!-- =========================================================== -->
+<!-- HOME                                                        -->
+<!-- =========================================================== -->
+<section class="fpage" id="fossils-home">
+  <aside class="fside">
+    <a href="index.html"><img class="logo-fosters" src="assets/fossils-fosters.png" alt="Foster's" /></a>
+    <a href="index.html"><img class="logo-grunion" src="assets/fossils-grunion-oval.png" alt="Grunion Rugby" /></a>
+    <a class="home" href="#fossils-home">Home</a>
+    <div class="head">Coming up:</div>
+    <div class="smile">:)</div>
+    <div class="head">News &amp; Photos:</div>
+    <div class="news">
+      <a href="#catalina">5/7/05 CATALINA</a>
+      <span class="dead">02/05/05 FOSSILS 10 vs LOS JAGUARS 26</span>
+      <a href="#smog">10/20/04 FOSSILS 24 vs L.A. SMOG 10</a>
+    </div>
+  </aside>
+
+  <main class="fmain">
+    <img class="fossils-logo" src="assets/fossils-logo.jpg" alt="Fossils Rugby Football Club" />
+    <img class="banner" src="assets/fossils-banner.png" alt="Fossils R.F.C. — a drinking team with a rugby problem · Olde Boys Side California's Central Coast" />
+
+    <p class="intro">THE CENTRAL COAST FOSSILS IS A rejuvinated OLDE BOYS SIDE THAT WAS ORIGINALLY FOUNDED IN 1978.</p>
+    <p class="intro big">Check latest update on the menu on the left!!!</p>
+
+    <img class="photo" src="assets/originalteam.jpg" alt="The original Grunion / Fossils side" />
+
+    <p class="announce">We are in the process of scheduling games to be played at our home pitch at Elings Park in Santa Barbara in conjunction with the Santa Barbara Grunions. We have excellent match facilities that include BBQ, rugby pro shop, beer garden and family play ground for kids.</p>
+    <p class="announce">We will play either &ldquo;O 35&rdquo; or &ldquo;O 40&rdquo; sides that are looking for a friendly. Our club now has an active member ship of 45 players that reside from San Luis Obispo to the San Fernando Valley.</p>
+    <p class="announce">For further info. you can call Bob Schwartz at <span class="redact">805-xxx-xxxx</span> or e mail us at <a href="mailto:grunionrugby@gmail.com">grunionrugby@gmail.com</a></p>
+
+    <img class="photo" src="assets/fossils-team.jpg" alt="The Fossils side at Elings Park" />
+    <img class="photo" src="assets/fossils-plaque.jpg" alt="A Fossil holds the California Olde Boys Rugby Series bone plaque" />
+
+    <div class="memberof">
+      <div class="mlabel">MEMBER OF</div>
+      <img src="assets/fossils-sbra.jpg" alt="Santa Barbara Rugby Association" />
+      <div class="corp">a 501[c][3] Corporation</div>
+    </div>
+  </main>
+</section>
+
+<!-- =========================================================== -->
+<!-- CATALINA 05                                                 -->
+<!-- =========================================================== -->
+<section class="fpage" id="catalina">
+  <aside class="fside">
+    <a href="index.html"><img class="logo-fosters" src="assets/fossils-fosters.png" alt="Foster's" /></a>
+    <a href="index.html"><img class="logo-grunion" src="assets/fossils-grunion-oval.png" alt="Grunion Rugby" /></a>
+    <a class="home" href="#fossils-home">Home</a>
+    <div class="head">Coming up:</div>
+    <div class="smile">:)</div>
+    <div class="head">News &amp; Photos:</div>
+    <div class="news">
+      <a href="#catalina">5/7/05 CATALINA</a>
+      <span class="dead">02/05/05 FOSSILS 10 vs LOS JAGUARS 26</span>
+      <a href="#smog">10/20/04 FOSSILS 24 vs L.A. SMOG 10</a>
+    </div>
+  </aside>
+
+  <main class="fmain">
+    <img class="fossils-logo" src="assets/fossils-logo.jpg" alt="Fossils Rugby Football Club" />
+    <h1 class="ptitle">Catalina 05</h1>
+
+    <img class="photo" src="assets/catalina-team.jpg" alt="The Fossils at the Catalina Island rugby festival, 2005" />
+
+    <table class="roster">
+      <tr><td>DAVE CROOKS&nbsp;&nbsp;scrum &frac12;</td></tr>
+      <tr><td>ANDRES&nbsp;&nbsp;back</td></tr>
+      <tr><td>CRAIG MARLO&nbsp;&nbsp;forward</td></tr>
+      <tr><td>MC HALE&nbsp;&nbsp;prop</td></tr>
+      <tr><td>SCHWARTZ&nbsp;&nbsp;loose forward</td></tr>
+      <tr><td>WRIGHT&nbsp;&nbsp;back</td></tr>
+      <tr><td>CROMBY&nbsp;&nbsp;full back/boot</td></tr>
+      <tr><td>SPENCE&nbsp;&nbsp;back</td></tr>
+      <tr><td>GERRY BALL&nbsp;&nbsp;prop</td></tr>
+      <tr><td>SHORTNESS&nbsp;&nbsp;back</td></tr>
+      <tr><td>JOE WILSON&nbsp;&nbsp;forward</td></tr>
+      <tr><td>ANDY ADAMS&nbsp;&nbsp;?</td></tr>
+      <tr><td>PAUL CAPPELLANO</td></tr>
+      <tr><td>Bill PATEE</td></tr>
+      <tr><td>PAUL MAXWELL</td></tr>
+      <tr><td>PAUL FRITZ</td></tr>
+    </table>
+
+    <img class="photo" src="assets/catalina-3guys.jpg" alt="Three Fossils in their dinosaur-crest jerseys" />
+    <img class="photo" src="assets/catalina-beers.jpg" alt="Two Fossils with beers at the festival" />
+    <img class="photo" src="assets/catalina-grumpy.jpg" alt="Fossils clowning around at Catalina" />
+    <img class="photo" src="assets/catalina-sitting.jpg" alt="Fossils relaxing between matches" />
+
+    <table class="sched">
+      <tr><td class="schhead">Schedule</td><td class="schhead" colspan="3">Saturday May 7</td></tr>
+      <tr><td class="time">8:35 a.m.</td><td>Back Bay Old Boys</td><td class="vs">vs.</td><td>Colusa County Old Boys</td></tr>
+      <tr><td class="time">9:10 a.m.</td><td>Northwest Old Growth</td><td class="vs">vs.</td><td>Lunchtime Legends</td></tr>
+      <tr class="hl"><td class="time">9:45 a.m.</td><td>Red Rock Roaches</td><td class="vs">vs.</td><td>SMOG/Fossils</td></tr>
+      <tr><td class="time">10:20 a.m.</td><td>Oxy Old Boys</td><td class="vs">vs.</td><td>Riverside Old Boys</td></tr>
+      <tr class="hl"><td class="time">10:55 a.m.</td><td>SMOG/Fossils</td><td class="vs">vs.</td><td>Back Bay Old Boys</td></tr>
+      <tr><td class="time">11:30 a.m.</td><td>Riverside Old Boys</td><td class="vs">vs.</td><td>Northwest Old Growth</td></tr>
+      <tr><td class="time">12:05 p.m.</td><td>Lunchtime Legends</td><td class="vs">vs.</td><td>Oxy Old Boys</td></tr>
+      <tr><td class="time">1:00 p.m.</td><td class="special" colspan="3">*** Over 50's Game ***</td></tr>
+      <tr><td class="time">1:50 p.m.</td><td>Colusa Cnty Old Boys</td><td class="vs">vs.</td><td>Red Rock Roaches</td></tr>
+      <tr><td class="time">2:25 p.m.</td><td>Riverside Old Boys</td><td class="vs">vs.</td><td>Lunchtime Legends</td></tr>
+      <tr class="hl"><td class="time">3:00 p.m.</td><td>SMOG/Fossils</td><td class="vs">vs.</td><td>Colusa County Old Boys</td></tr>
+      <tr><td class="time">3:35 p.m.</td><td>Northwest Old Growth</td><td class="vs">vs.</td><td>Oxy Old Boys</td></tr>
+      <tr><td class="time">4:10 p.m.</td><td>Back Bay Old Boys</td><td class="vs">vs.</td><td>Red Rock Roaches</td></tr>
+      <tr><td class="time">4:45 p.m.</td><td class="special" colspan="3">*** Cocktails ***</td></tr>
+    </table>
+
+    <div class="memberof">
+      <div class="mlabel">MEMBER OF</div>
+      <img src="assets/fossils-sbra.jpg" alt="Santa Barbara Rugby Association" />
+      <div class="corp">a 501[c][3] Corporation</div>
+    </div>
+  </main>
+</section>
+
+<!-- =========================================================== -->
+<!-- FOSSILS vs SMOG 05                                          -->
+<!-- =========================================================== -->
+<section class="fpage" id="smog">
+  <aside class="fside">
+    <a href="index.html"><img class="logo-fosters" src="assets/fossils-fosters.png" alt="Foster's" /></a>
+    <a href="index.html"><img class="logo-grunion" src="assets/fossils-grunion-oval.png" alt="Grunion Rugby" /></a>
+    <a class="home" href="#fossils-home">Home</a>
+    <div class="head">Coming up:</div>
+    <div class="smile">:)</div>
+    <div class="head">News &amp; Photos:</div>
+    <div class="news">
+      <a href="#catalina">5/7/05 CATALINA</a>
+      <span class="dead">02/05/05 FOSSILS 10 vs LOS JAGUARS 26</span>
+      <a href="#smog">10/20/04 FOSSILS 24 vs L.A. SMOG 10</a>
+    </div>
+  </aside>
+
+  <main class="fmain">
+    <img class="fossils-logo" src="assets/fossils-logo.jpg" alt="Fossils Rugby Football Club" />
+    <h1 class="ptitle">Fossils vs Smog 05</h1>
+
+    <img class="photo" src="assets/smog-team.jpg" alt="Fossils and SMOG sides together after the match" />
+    <p class="caption">First annual smog/fossils game 2005.</p>
+
+    <img class="photo" src="assets/smog-crooks.jpg" alt="Crooks passing from the back of a ruck" />
+    <p class="caption">Crooks</p>
+
+    <img class="photo" src="assets/smog-sexsmith.jpg" alt="Mike Sexsmith on attack" />
+    <p class="caption">Mike Sexsmith on attack.</p>
+
+    <div class="memberof">
+      <div class="mlabel">MEMBER OF</div>
+      <img src="assets/fossils-sbra.jpg" alt="Santa Barbara Rugby Association" />
+      <div class="corp">a 501[c][3] Corporation</div>
+    </div>
+  </main>
+</section>
+
+<!-- minimal menu-bar behavior (mobile burger toggle); header stays solid via CSS -->
+<script>
+(function(){
+  var head=document.getElementById('siteHead'), burger=document.getElementById('burger');
+  if(burger){ burger.addEventListener('click', function(){
+    var open=head.classList.toggle('open');
+    burger.setAttribute('aria-expanded', open?'true':'false');
+  }); }
+  head.querySelectorAll('.nav-links a').forEach(function(a){
+    a.addEventListener('click', function(){ head.classList.remove('open'); });
+  });
+})();
+</script>
+</body>
+</html>
