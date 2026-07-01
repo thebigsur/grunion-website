@@ -22,3 +22,22 @@
   from = "/members"
   to = "/MERchives.html"
   status = 301
+
+# Pretty URLs for the History and Fossils pages (matches /the-78-club and /MERchives)
+[[redirects]]
+  from = "/history"
+  to = "/history.html"
+  status = 200
+
+[[redirects]]
+  from = "/fossils"
+  to = "/fossils.html"
+  status = 200
+
+# Cache images for a day. Long enough to speed up repeat visits; short enough
+# that the "replace a photo with the same filename" update trick still shows
+# within a day (shift-reload shows it immediately).
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"

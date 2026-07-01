@@ -291,8 +291,8 @@ body[data-hero="duotone"] .hero-media{background:var(--ocean-700)}
 #club78 .wrap{position:relative}
 .club-head{max-width:74ch}
 .club-head .kicker{color:var(--gold-soft)}
-.club-head h2{font-size:clamp(2.8rem,7.5vw,5.8rem);margin-top:14px}
-.club-head h2 .alt{color:var(--gold-soft)}
+.club-head h1,.club-head h2{font-size:clamp(2.8rem,7.5vw,5.8rem);margin-top:14px}
+.club-head h1 .alt,.club-head h2 .alt{color:var(--gold-soft)}
 .club-mission{font-size:clamp(1.1rem,1.7vw,1.4rem);line-height:1.6;color:rgba(255,255,255,.85);margin-top:26px;max-width:70ch}
 .club-mission b{color:#fff}
 .tax-badge{display:inline-flex;align-items:center;gap:10px;margin-top:24px;font-family:var(--font-mono);
@@ -473,7 +473,7 @@ body[data-page="club78"] main > .section:first-child{padding-top:clamp(104px,12v
 .p78-back:hover{color:#fff}
 
 /* ---- hero action photo (full-bleed) ---- */
-.hero-photo{background-image:url('assets/hero-action.png');background-size:cover;background-position:center 16%;background-repeat:no-repeat}
+.hero-photo{background-image:url('assets/hero-action.jpg');background-size:cover;background-position:center 16%;background-repeat:no-repeat}
 
 /* ---- filled photo placeholder (team photos, etc.) ---- */
 .ph.photo{background-size:cover;background-position:center;background-repeat:no-repeat}

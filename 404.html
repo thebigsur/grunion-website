@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fish Lost in Open Play — Grunion RFC</title>
+<meta name="robots" content="noindex" />
+<link rel="icon" type="image/png" href="assets/favicon.png" />
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800;900&family=Libre+Franklin:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+/* ============================ 404 (page-local) ============================ */
+.nf{position:relative;overflow:hidden;background:var(--ocean-950);color:#fff;
+  min-height:100vh;display:flex;align-items:center;
+  padding:clamp(140px,18vh,190px) 0 clamp(56px,8vw,96px)}
+.nf::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(120% 80% at 80% 0%, rgba(34,107,73,.22), transparent 55%),
+            radial-gradient(90% 70% at 0% 100%, rgba(194,146,46,.12), transparent 60%)}
+.nf .wrap{position:relative}
+.nf-grid{display:grid;grid-template-columns:minmax(220px,320px) 1fr;
+  gap:clamp(36px,6vw,84px);align-items:start}
+
+/* the fish in question — framed like a History-page exhibit */
+.nf-figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:14px;
+  position:sticky;top:140px}
+.nf-figure img{width:100%;max-width:300px;height:auto;display:block;background:#f4f1e8;
+  padding:16px;border:1px solid rgba(255,255,255,.22);border-radius:4px;
+  box-shadow:0 18px 40px rgba(0,0,0,.35);transform:rotate(-2deg)}
+.nf-figure figcaption{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.08em;
+  color:rgba(255,255,255,.55);text-align:center;max-width:32ch}
+
+.nf-kicker{color:var(--gold-soft)}
+.nf h1{font-size:clamp(3rem,8vw,6.4rem);margin-top:14px;line-height:.92;
+  font-weight:900;letter-spacing:.005em}
+.nf h1 .alt{color:var(--gold-soft)}
+.nf-code{margin-top:22px;font-family:var(--font-mono);font-size:.86rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--gold-soft);display:flex;align-items:center;gap:12px}
+.nf-code::before{content:"";width:26px;height:2px;background:var(--gold);flex:none}
+.nf-lede{margin-top:20px;font-size:clamp(1.05rem,1.6vw,1.28rem);line-height:1.6;
+  color:rgba(255,255,255,.82);max-width:58ch}
+.nf-notry{margin-top:26px;font-family:var(--font-display);font-weight:800;text-transform:uppercase;
+  letter-spacing:.03em;font-size:clamp(1.3rem,2.6vw,1.8rem);line-height:1.25;color:#fff}
+.nf-notry span{color:var(--gold-soft)}
+
+.nf-what{margin-top:clamp(36px,5vw,52px)}
+.nf-links{margin-top:20px;display:grid;gap:12px;max-width:640px}
+.nf-links a{display:flex;flex-direction:column;gap:5px;padding:18px 20px;text-decoration:none;
+  border:1px solid rgba(255,255,255,.16);border-radius:3px;color:#fff;
+  transition:border-color .15s ease,background .15s ease,transform .12s ease}
+.nf-links a:hover{border-color:var(--gold-soft);background:rgba(255,255,255,.04);transform:translateY(-1px)}
+.nf-links .k{font-family:var(--font-display);font-weight:800;text-transform:uppercase;
+  letter-spacing:.02em;font-size:1.35rem;line-height:1;color:var(--gold-soft);
+  display:inline-flex;align-items:center;gap:.5em}
+.nf-links .k::after{content:"→";font-family:var(--font-body);font-weight:400;font-size:1.05rem}
+.nf-links .v{font-size:.98rem;color:rgba(255,255,255,.78);line-height:1.5}
+.nf-menu{margin-top:18px;font-size:.98rem;font-style:italic;color:rgba(255,255,255,.6);max-width:58ch}
+
+.nf-reminder{margin-top:clamp(36px,5vw,52px);max-width:640px;display:flex;gap:14px;align-items:flex-start;
+  border:1px solid rgba(216,177,95,.45);border-radius:3px;padding:16px 18px;
+  background:rgba(216,177,95,.07)}
+.nf-reminder::before{content:"";width:9px;height:9px;flex:none;margin-top:5px;
+  background:var(--gold);transform:rotate(45deg)}
+.nf-reminder p{font-family:var(--font-mono);font-size:.76rem;letter-spacing:.06em;
+  line-height:1.7;color:rgba(255,255,255,.75)}
+.nf-reminder b{color:var(--gold-soft);letter-spacing:.14em;text-transform:uppercase}
+
+@media(max-width:820px){
+  .nf-grid{grid-template-columns:1fr}
+  .nf-figure{position:static;order:1;margin-top:34px}
+  .nf-figure img{max-width:240px}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#nf-h">Skip to content</a>
+
+<header class="site-head solid" id="siteHead">
+  <div class="wrap nav">
+    <a class="brand" href="index.html#top" aria-label="Grunion Rugby Football Club — home">
+      <img class="crest" src="assets/grunion-crest.png" alt="Grunion RFC crest" />
+      <span><b>Grunion R.F.C.</b><i>Santa Barbara · Est. 1978</i></span>
+    </a>
+    <nav class="nav-links" id="navLinks" aria-label="Primary">
+      <a href="index.html#fixtures">Fixtures</a>
+      <a href="index.html#play">Play</a>
+      <a href="history.html">History</a>
+      <a href="index.html#news">News</a>
+      <a href="the-78-club.html" class="nav-club">'78 Club</a>
+      <a href="MERchives.html" class="nav-merchives">MERchives</a>
+      <a href="fossils.html" class="nav-fossils">Fossils</a>
+      <a href="index.html#sponsors">Sponsors</a>
+    </nav>
+    <div class="nav-actions">
+      <a href="index.html#play" class="btn btn-gold btn-sm">Join</a>
+      <button class="burger" id="burger" aria-label="Menu" aria-expanded="false" aria-controls="navLinks"><span></span></button>
+    </div>
+  </div>
+</header>
+
+<main class="nf">
+  <div class="wrap">
+    <div class="nf-grid">
+
+      <div>
+        <span class="kicker nf-kicker">Match Report · Incident at the Touchline</span>
+        <h1 id="nf-h">Fish Lost <span class="alt">in Open Play</span></h1>
+        <p class="nf-code">404 — The page has gone missing somewhere near touch.</p>
+        <p class="nf-lede">The Grunion pack established good field position, won clean ball, and then somebody kicked this page directly into the shrubbery.</p>
+        <p class="nf-notry">No try. <span>No conversion.</span> No useful link.</p>
+
+        <div class="nf-what">
+          <span class="kicker nf-kicker">What Now?</span>
+          <div class="nf-links">
+            <a href="index.html">
+              <span class="k">Home Pitch</span>
+              <span class="v">Return to the Home Pitch before the referee notices.</span>
+            </a>
+            <a href="index.html#fixtures">
+              <span class="k">The Schedule</span>
+              <span class="v">Check the Schedule for coming matches, socials, and other acts of Mer responsibility.</span>
+            </a>
+            <a href="index.html#news">
+              <span class="k">Club News</span>
+              <span class="v">Visit Club News for dues, announcements, and stern little reminders from the deep.</span>
+            </a>
+          </div>
+          <p class="nf-menu">Or use the menu above, which is probably what you should have done in the first place.</p>
+        </div>
+
+        <div class="nf-reminder">
+          <p><b>Mer Reminder:</b> Missing pages, like missing jerseys, should be reported immediately and with suitable embarrassment.</p>
+        </div>
+      </div>
+
+      <figure class="nf-figure">
+        <img src="assets/grunionlogoOG.jpg" alt="The original 1979 Grunion artwork — the fish in question" />
+        <figcaption>Exhibit A — the fish in question, c. 1979. Last seen heading for touch.</figcaption>
+      </figure>
+
+    </div>
+  </div>
+</main>
+
+<script src="site.js"></script>
+</body>
+</html>

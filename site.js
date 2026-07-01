@@ -71,7 +71,8 @@ var CONFIG = {
 
 /* ---------- apply CONFIG to the page ---------- */
 (function applyConfig(){
-  document.getElementById('year').textContent = new Date().getFullYear();
+  var yearEl=document.getElementById('year');
+  if(yearEl) yearEl.textContent = new Date().getFullYear(); // not every page has a footer year
 
   // EIN everywhere
   document.querySelectorAll('[data-ein]').forEach(function(el){
@@ -207,8 +208,16 @@ var CONFIG = {
     var s=[]; rows.forEach(function(r){ if(r.Season && s.indexOf(r.Season)===-1) s.push(r.Season); });
     s.sort().reverse(); return s;
   }
+  // Parse dates as LOCAL time. new Date('2025-04-12') is treated as UTC midnight,
+  // which displays as the previous day in California — so YYYY-MM-DD is parsed by hand.
+  function parseDate(d){
+    if(!d) return new Date(NaN);
+    var m=/^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(String(d).trim());
+    if(m) return new Date(+m[1], +m[2]-1, +m[3]);
+    return new Date(d);
+  }
   function fmtDate(d){
-    var dt=new Date(d); if(isNaN(dt)) return d||'';
+    var dt=parseDate(d); if(isNaN(dt)) return d||'';
     return dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
   }
   function result(r){
@@ -242,7 +251,7 @@ var CONFIG = {
 
   function paint(rows, season){
     var list=rows.filter(function(r){ return (r.Season||'—')===season; });
-    list.sort(function(a,b){ return new Date(b.Date)-new Date(a.Date); });
+    list.sort(function(a,b){ return parseDate(b.Date)-parseDate(a.Date); });
     if(!list.length){ listEl.innerHTML='<div class="mc-state">No fixtures posted yet — check back soon.</div>'; metaEl.hidden=true; return; }
     // record line
     var w=0,l=0,d=0;
@@ -271,7 +280,7 @@ metaEl.hidden=false;
     // Compare against today's date (local midnight) so LAST/NEXT track the calendar,
     // not just the sheet's Status column.
     var today=new Date(); today.setHours(0,0,0,0);
-    function dayOf(r){ var d=new Date(r.Date); if(isNaN(d)) return null; d.setHours(0,0,0,0); return d; }
+    function dayOf(r){ var d=parseDate(r.Date); if(isNaN(d)) return null; d.setHours(0,0,0,0); return d; }
     function played(r){ return result(r).cls!=='r-up'; } // has a final score
 
     // LAST = most recent game that has been played and is on/before today.
@@ -299,19 +308,32 @@ metaEl.hidden=false;
   start();
 })();
 
-/* ---------- Facebook Page plugin (graceful: fallback stays if SDK blocked) ---------- */
+/* ---------- Facebook Page plugin (graceful: fallback stays if SDK blocked) ----------
+   The SDK is heavy, so it only loads once the news section scrolls near the viewport. */
 (function(){
-  if(!document.querySelector('.fb-page')) return; // FB plugin lives on the homepage only
-  var s=document.createElement('script');
-  s.async=true; s.defer=true; s.crossOrigin='anonymous';
-  s.src='https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v19.0';
-  s.onload=function(){
-    setTimeout(function(){
-      var fb=document.querySelector('.fb-page');
-      if(fb && fb.offsetHeight>60){ var fbk=document.getElementById('fbFallback'); if(fbk) fbk.style.display='none'; }
-    }, 1800);
-  };
-  document.body.appendChild(s);
+  var fb=document.querySelector('.fb-page');
+  if(!fb) return; // FB plugin lives on the homepage only
+  var loaded=false;
+  function loadSDK(){
+    if(loaded) return; loaded=true;
+    var s=document.createElement('script');
+    s.async=true; s.defer=true; s.crossOrigin='anonymous';
+    s.src='https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v19.0';
+    s.onload=function(){
+      setTimeout(function(){
+        if(fb.offsetHeight>60){ var fbk=document.getElementById('fbFallback'); if(fbk) fbk.style.display='none'; }
+      }, 1800);
+    };
+    document.body.appendChild(s);
+  }
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(entries){
+      if(entries.some(function(e){return e.isIntersecting;})){ loadSDK(); io.disconnect(); }
+    }, {rootMargin:'600px'});
+    io.observe(fb.closest('.fb-shell')||fb);
+  } else {
+    loadSDK();
+  }
 })();
 
 /* ============================ '78 CLUB PATRON ROSTER ============================ */
@@ -345,8 +367,9 @@ metaEl.hidden=false;
       }
       return out;
     }
-    // Published Google Doc (HTML export or plain text): tier headings, then names
-    var tierKeys={foundersxv:1,reserves:1,supportersunion:1};
+    // Published Google Doc (HTML export or plain text): tier headings, then names.
+    // "reserves" is kept as a legacy alias for the renamed "Second XV" tier.
+    var tierKeys={foundersxv:1,secondxv:1,reserves:1,supportersunion:1};
     var plain = text.indexOf('<')>-1 ? text.replace(/<[^>]+>/g,'\n') : text;
     plain = plain.replace(/&amp;/g,'&').replace(/&#39;/g,"'").replace(/&nbsp;/g,' ');
     var rows = plain.split('\n').map(function(l){return l.trim();}).filter(Boolean);
@@ -356,6 +379,8 @@ metaEl.hidden=false;
       if(tierKeys[k]){ cur=k; groups[cur]=groups[cur]||[]; }
       else if(cur){ groups[cur].push(l); }
     });
+    // legacy alias: a doc still using a "Reserves" heading fills the Second XV slot
+    if(groups.reserves && !groups.secondxv) groups.secondxv = groups.reserves;
     return groups;
   }
 })();
@@ -642,7 +667,9 @@ var PER_PAGE = 16;   // 4 rows × 4 columns
       var slice = files.slice(start, start + PER_PAGE);
       grid.innerHTML='';
       slice.forEach(function(f){
-        var full = 'https://drive.google.com/uc?export=view&id=' + f.id;
+        // drive.google.com/uc?export=view was deprecated by Google (returns 403 for
+        // many files) — the file/d/{id}/view page is the reliable full-size link.
+        var full = 'https://drive.google.com/file/d/' + f.id + '/view';
         var thumb = f.thumbnailLink ? f.thumbnailLink.replace(/=s\d+$/, '=s600') : full;
         var a=document.createElement('a');
         a.className='member-photo';

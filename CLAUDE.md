@@ -6,10 +6,14 @@ are pushed to the `main` branch.
 
 ## Files
 - index.html — home page
-- members.html — members page
-- the-78-club.html — The 78 Club page
+- the-78-club.html — The '78 Club page
+- history.html — club history page
+- MERchives.html — photo & document archive (Google Drive-backed)
+- fossils.html — Central Coast Fossils retro page
+- 404.html — not-found page
 - styles.css — site styles
-- site.js — site scripts
+- site.js — site scripts + CONFIG block (all external links/IDs)
+- netlify.toml — pretty URLs & caching
 - assets/ — images and other media
 
 ## Workflow when I ask you to update the site
