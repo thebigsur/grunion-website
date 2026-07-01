@@ -269,18 +269,24 @@ body[data-hero="duotone"] .hero-media{background:var(--ocean-700)}
 .nl-block .kicker{color:var(--gold-soft)}
 .nl-block h3{margin-top:10px}
 .nl-block p{color:rgba(255,255,255,.8);margin-bottom:22px}
-.nl-form{display:flex;gap:10px;flex-wrap:wrap}
-.nl-form input{flex:1 1 200px;min-width:0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.25);color:#fff;
+.nl-form{display:grid;grid-template-columns:1fr auto;gap:10px}
+.nl-form .nl-name{grid-column:1/-1}
+.nl-form input{min-width:0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.25);color:#fff;
   padding:13px 16px;border-radius:2px;font-family:var(--font-body);font-size:1rem}
 .nl-form input::placeholder{color:rgba(255,255,255,.5)}
 .nl-form input:focus{border-color:var(--gold);outline:none}
+@media(max-width:420px){.nl-form{grid-template-columns:1fr}}
 .nl-micro{margin-top:14px;font-family:var(--font-mono);font-size:.72rem;letter-spacing:.06em;color:rgba(255,255,255,.6)}
-.nl-msg{margin-top:14px;font-size:.95rem;color:var(--gold-soft);min-height:1.2em}
 .socials{display:flex;gap:14px;margin-top:26px;flex-wrap:wrap}
 .socials a{display:inline-flex;align-items:center;gap:9px;text-decoration:none;font-family:var(--font-mono);
   font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.85);
   border:1px solid rgba(255,255,255,.25);padding:10px 14px;border-radius:2px}
 .socials a:hover{border-color:var(--gold-soft);color:#fff}
+/* light variant — socials live under the Facebook block, on paper background.
+   Two equal-width buttons spanning the card, so they read as part of it. */
+.socials-light{margin-top:14px;gap:10px}
+.socials-light a{flex:1;justify-content:center;color:var(--ink);border-color:var(--line);background:#fff}
+.socials-light a:hover{border-color:var(--gold);color:var(--ink)}
 @media(max-width:860px){.news-grid{grid-template-columns:1fr}}
 
 /* ---- newsletter archive (past issues) ---- */

@@ -24,10 +24,8 @@ var CONFIG = {
   // Leave "" to keep the built-in list already printed on the page.
   HOF_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRRlKXYhf97sQcT0SKa_91oXBuJv_dmYm3m_5k5Jp7Df49Fm3HuQbRML14GlEsETyNgoWeZNLKBMelv/pub?gid=1804498175&single=true&output=csv",
 
-  // Newsletter: Formspree form endpoint. Submissions email grunionrugby@gmail.com
-  // with subject "Add me to MerMers" (set via the hidden _subject field in index.html).
-  // Leave "" for a graceful "saved locally" confirmation message.
-  NEWSLETTER_ACTION_URL: "https://formspree.io/f/mqeordnp",
+  // Newsletter: handled by Campaign Monitor's embedded form (markup + script
+  // live in index.html). Subscribers go straight to the MER List.
 
   // The '78 Club — Legacy Donor program
   JOIN_78_URL:        "#",   // payment / registration link
@@ -121,34 +119,10 @@ var CONFIG = {
   if(v==='split'||v==='duotone'||v==='fullbleed') document.body.setAttribute('data-hero', v);
 })();
 
-/* ---------- newsletter form ---------- */
-(function(){
-  var form=document.getElementById('nlForm'), msg=document.getElementById('nlMsg'), input=document.getElementById('nlEmail');
-  if(!form) return; // newsletter form lives on the homepage only
-  var endpoint=CONFIG.NEWSLETTER_ACTION_URL;
-  form.addEventListener('submit', function(e){
-    e.preventDefault(); // always handle in JS so it never sends without a valid email
-    var ok = input.checkValidity() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.value.trim());
-    if(!ok){ msg.textContent='Please enter a valid email address.'; input.focus(); return; }
-    if(!endpoint){
-      msg.textContent='Thanks — you’re on the list.';
-      form.reset(); return;
-    }
-    msg.textContent='Sending…';
-    fetch(endpoint, { method:'POST', body:new FormData(form), headers:{'Accept':'application/json'} })
-      .then(function(r){
-        if(r.ok){
-          msg.textContent='Thanks — you’re on the list for MerMers from the Deep.';
-          form.reset();
-        } else {
-          r.json().then(function(d){
-            msg.textContent=(d && d.errors && d.errors.length) ? d.errors[0].message : 'Something went wrong — please try again.';
-          }).catch(function(){ msg.textContent='Something went wrong — please try again.'; });
-        }
-      })
-      .catch(function(){ msg.textContent='Network error — please try again.'; });
-  });
-})();
+/* ---------- newsletter form ----------
+   Handled entirely by Campaign Monitor's embedded-form script
+   (copypastesubscribeformlogic.js, loaded in index.html). It validates
+   the email and submits directly to the MER List — no code needed here. */
 
 /* ---------- newsletter archive (past issues) ---------- */
 /* The Campaign Monitor script in index.html document.writes one

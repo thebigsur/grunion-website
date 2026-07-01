@@ -36,7 +36,6 @@ marks and save. Nothing else in the file needs editing.
 SHEET_CSV_URL          Match Centre fixtures — published Google Sheet (CSV)
 HOF_CSV_URL            Hall of Fame list (history page) — published Google Sheet (CSV)
 PATRONS_DOC_URL        '78 Club patron wall — published Google Doc or Sheet
-NEWSLETTER_ACTION_URL  Newsletter signup — Formspree form URL
 JOIN_78_URL            "Join The '78 Club" button — payment/registration link
 DONATE_URL             Footer "Donate Any Amount" button — payment link
 SPONSOR_EMAIL          Where sponsorship inquiries are emailed

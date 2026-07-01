@@ -283,23 +283,26 @@
             <a class="btn btn-solid-ink btn-sm arrow" href="https://www.facebook.com/GrunionRugby" target="_blank" rel="noopener">Open facebook.com/GrunionRugby</a>
           </div>
         </div>
+        <div class="socials socials-light">
+          <a href="https://www.facebook.com/GrunionRugby" target="_blank" rel="noopener">Facebook</a>
+          <a href="https://www.instagram.com/santabarbaragrunionrugby" target="_blank" rel="noopener">Instagram</a>
+        </div>
       </div>
       <div class="nl-block">
         <span class="kicker">Newsletter</span>
         <h3>MerMers from the Deep</h3>
         <p>Match reports, socials, fundraisers and the occasional tale from the third half — sign up for our Mermers from the Deep newsletter.</p>
-        <form class="nl-form" id="nlForm" novalidate>
+        <!-- Campaign Monitor embedded form — submissions go straight to the
+             MER List. copypastesubscribeformlogic.js (loaded at the bottom of
+             the page) handles validation and submission. -->
+        <form class="nl-form js-cm-form" id="nlForm" action="https://www.createsend.com/t/subscribeerror?description=" method="post" data-id="191722FC90141D02184CB1B62AB3DC26C187EDB678161A8D99155A00F983E8AB152129B2B63B2B6BC6DA57903D7AF579ABD3A8803D4B5EB0D466055D54F8CE8D">
+          <label for="nlName" style="position:absolute;left:-9999px">Name</label>
+          <input id="nlName" class="nl-name" type="text" name="cm-name" maxlength="200" placeholder="Your name" required autocomplete="name" />
           <label for="nlEmail" style="position:absolute;left:-9999px">Email address</label>
-          <input id="nlEmail" type="email" name="email" placeholder="you@example.com" required autocomplete="email" />
-          <input type="hidden" name="_subject" value="Add me to MerMers" />
+          <input id="nlEmail" class="js-cm-email-input qa-input-email" type="email" name="cm-tdjybd-tdjybd" maxlength="200" placeholder="you@example.com" required autocomplete="email" />
           <button class="btn btn-gold" type="submit">Subscribe</button>
         </form>
-        <p class="nl-micro">No spam. Just quality rugby content & club updates.</p>
-        <p class="nl-msg" id="nlMsg" role="status"></p>
-        <div class="socials">
-          <a href="https://www.facebook.com/GrunionRugby" target="_blank" rel="noopener">Facebook</a>
-          <a href="https://www.instagram.com/santabarbaragrunionrugby" target="_blank" rel="noopener">Instagram</a>
-        </div>
+        <p class="nl-micro">No spam. Just quality rugby content &amp; club updates.</p>
       </div>
     </div>
 
@@ -458,6 +461,7 @@
 </footer>
 
 <div id="fb-root"></div>
+<script type="text/javascript" src="https://js.createsend1.com/javascript/copypastesubscribeformlogic.js"></script>
 <script src="site.js"></script>
 </body>
 </html>
