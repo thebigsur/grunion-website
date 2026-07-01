@@ -150,6 +150,51 @@ var CONFIG = {
   });
 })();
 
+/* ---------- newsletter archive (past issues) ---------- */
+/* The Campaign Monitor script in index.html document.writes one
+   <div class="campaign">DATE — <a href>NAME</a></div> per sent issue.
+   This restyles each into a document-style row (icon / title / date / read link).
+   If the markup ever changes, parsing fails safely and the raw list stays visible. */
+(function(){
+  var list=document.getElementById('nlArchiveList');
+  if(!list) return; // archive lives on the homepage only
+  function enhance(){
+    var items=list.querySelectorAll('div.campaign');
+    if(!items.length){
+      // script blocked or no campaigns sent yet — show a quiet note
+      if(!list.querySelector('.nl-archive-empty') && !list.querySelector('.nl-issue')){
+        var empty=document.createElement('p');
+        empty.className='nl-archive-empty';
+        empty.textContent='No issues in the archive yet — subscribe above and be first in the water.';
+        list.appendChild(empty);
+      }
+      return;
+    }
+    items.forEach(function(item){
+      var link=item.querySelector('a');
+      if(!link) return; // leave unrecognized markup untouched
+      // date = the campaign div's text minus the link text and separator dashes
+      var date=(item.textContent||'').replace(link.textContent||'',
+        '').replace(/[–—-]\s*$/,'').replace(/^\s*[–—-]/,'').trim();
+      var row=document.createElement('a');
+      row.className='nl-issue';
+      row.href=link.href;
+      row.target='_blank'; row.rel='noopener';
+      row.innerHTML='<span class="nli-icon" aria-hidden="true">MER</span>'+
+        '<span class="nli-main"><span class="nli-title"></span>'+
+        (date?'<span class="nli-date"></span>':'')+'</span>'+
+        '<span class="nli-read">Read</span>';
+      row.querySelector('.nli-title').textContent=link.textContent||'Untitled issue';
+      if(date) row.querySelector('.nli-date').textContent=date;
+      item.replaceWith(row);
+    });
+  }
+  // the archive script is synchronous document.write, so its output exists by
+  // DOMContentLoaded; run now if ready, otherwise wait.
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', enhance);
+  else enhance();
+})();
+
 /* ============================ MATCH CENTRE ============================ */
 (function(){
   var listEl=document.getElementById('mcList'),

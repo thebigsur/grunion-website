@@ -283,6 +283,42 @@ body[data-hero="duotone"] .hero-media{background:var(--ocean-700)}
 .socials a:hover{border-color:var(--gold-soft);color:#fff}
 @media(max-width:860px){.news-grid{grid-template-columns:1fr}}
 
+/* ---- newsletter archive (past issues) ---- */
+.nl-archive{margin-top:clamp(44px,6vw,68px)}
+.nl-archive-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:12px 24px}
+.nl-archive-head h3{font-size:clamp(1.7rem,3vw,2.3rem)}
+.nl-archive-note{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
+.nl-archive-list{margin-top:clamp(18px,2.6vw,26px);border-top:2px solid var(--ink)}
+/* raw fallback (before/without JS enhancement) */
+.nl-archive-list .campaign{padding:16px 6px;border-bottom:1px solid var(--line);font-family:var(--font-mono);font-size:.86rem;color:var(--ink-soft)}
+.nl-archive-list .campaign a{color:var(--gold-deep);font-weight:600;text-decoration:none}
+.nl-archive-list .campaign a:hover{color:var(--ink);text-decoration:underline}
+/* enhanced document-style rows (built by site.js from the raw .campaign divs) */
+.nl-issue{display:grid;grid-template-columns:auto 1fr auto;gap:20px;align-items:center;
+  padding:16px 6px;border-bottom:1px solid var(--line);text-decoration:none;color:var(--ink);
+  transition:background .15s ease}
+.nl-issue:hover{background:rgba(20,32,43,.05)}
+.nl-issue:focus-visible{outline:3px solid var(--gold);outline-offset:-2px}
+.nli-icon{width:46px;height:46px;flex:none;display:grid;place-items:center;border-radius:3px;
+  border:1px solid rgba(156,115,32,.5);background:rgba(194,146,46,.1);
+  font-family:var(--font-mono);font-size:.62rem;font-weight:600;letter-spacing:.08em;color:var(--gold-deep)}
+.nli-main{min-width:0}
+.nli-title{display:block;font-family:var(--font-display);font-weight:700;text-transform:uppercase;letter-spacing:.01em;
+  font-size:clamp(1.15rem,2vw,1.45rem);line-height:1.05;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nli-date{display:block;font-family:var(--font-mono);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin-top:7px}
+.nli-read{flex:none;font-family:var(--font-display);font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+  font-size:1rem;color:var(--gold-deep);display:inline-flex;align-items:center;gap:.5em;white-space:nowrap}
+.nli-read::after{content:"→";font-family:var(--font-body);font-weight:400}
+.nl-issue:hover .nli-read{color:var(--ink)}
+.nl-archive-empty{padding:22px 6px;border-bottom:1px solid var(--line);
+  font-family:var(--font-mono);font-size:.8rem;letter-spacing:.08em;color:var(--ink-soft)}
+@media(max-width:560px){
+  .nl-issue{grid-template-columns:auto 1fr;grid-template-areas:"icon main" "read read";row-gap:12px}
+  .nli-icon{grid-area:icon}.nli-main{grid-area:main}.nli-read{grid-area:read;justify-self:start}
+  .nli-title{white-space:normal}
+}
+
 /* ============================ THE '78 CLUB ============================ */
 #club78{background:var(--ocean-950);color:#fff;position:relative}
 #club78::before{content:"";position:absolute;inset:0;pointer-events:none;
