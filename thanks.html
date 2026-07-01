@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Thanks from the Deep — Grunion R.F.C.</title>
+<meta name="description" content="Your subscription to MerMers from the Deep has been confirmed. Welcome aboard." />
+<meta name="robots" content="noindex" />
+<link rel="canonical" href="https://grunionrugby.com/thanks" />
+<link rel="icon" type="image/png" href="assets/favicon.png" />
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+<style>
+/* =====================================================================
+   THANKS FROM THE DEEP — newsletter confirmation page, done in the
+   style of the retro Fossils page (Times New Roman, blue text,
+   sidebar layout). Deliberately standalone; no modern styles.css.
+   ===================================================================== */
+:root{
+  --blue:#336699;    /* titles, intro text */
+  --navy:#1f3a5f;    /* sidebar bold headings */
+  --link:#1a4f8c;    /* hyperlinks */
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-size:18px;line-height:1.4}
+
+.fpage{max-width:1000px;margin:0 auto;padding:38px 24px 60px;
+  display:grid;grid-template-columns:200px 1fr;gap:34px}
+
+/* ---- sidebar ---- */
+.fside{text-align:center}
+.fside .logo-fosters{width:100px;height:auto;margin:4px auto 26px;display:block}
+.fside .logo-grunion{width:150px;height:auto;margin:0 auto 6px;display:block}
+.fside .home{display:block;font-weight:bold;color:var(--link);text-decoration:underline;
+  font-size:22px;margin:6px 0 40px}
+.fside .head{font-family:Arial,Helvetica,sans-serif;font-weight:bold;color:var(--navy);
+  font-size:21px;margin:26px 0 8px}
+.fside .smile{font-family:Arial,Helvetica,sans-serif;color:var(--navy);font-size:20px;margin:10px 0 0}
+
+/* ---- main column ---- */
+.fmain{min-width:0}
+.grunion-logo{display:block;max-width:300px;width:60%;height:auto;margin:0 0 18px auto}
+.banner{display:block;max-width:520px;width:100%;height:auto;margin:0 0 30px}
+
+.ptitle{font-family:"Times New Roman",Times,serif;color:var(--blue);font-weight:normal;
+  font-size:46px;line-height:1.05;margin:6px 0 26px}
+
+.intro{color:var(--blue);font-size:22px;margin:0 0 22px}
+.intro a{color:var(--link);text-decoration:underline}
+
+@media(max-width:680px){
+  .fpage{grid-template-columns:1fr;gap:18px}
+  .fside{border-bottom:1px solid #ddd;padding-bottom:18px}
+  .grunion-logo{margin:0 auto 18px}
+}
+</style>
+</head>
+<body>
+
+<section class="fpage" id="thanks">
+  <aside class="fside">
+    <a href="index.html"><img class="logo-fosters" src="assets/fossils-fosters.png" alt="Foster's" /></a>
+    <a href="index.html"><img class="logo-grunion" src="assets/fossils-grunion-oval.png" alt="Grunion Rugby" /></a>
+    <a class="home" href="index.html">Home</a>
+    <div class="head">Coming up:</div>
+    <div class="smile">:)</div>
+  </aside>
+
+  <main class="fmain">
+    <img class="grunion-logo" src="assets/thanks-grunion-logo.png" alt="Grunion Rugby Football Club" />
+    <img class="banner" src="assets/thanks-grunion-banner.png" alt="Grunion R.F.C. — a drinking team with a rugby problem · Mens side California's Central Coast" />
+
+    <h1 class="ptitle">THANKS FROM THE DEEP</h1>
+
+    <p class="intro">Your subscription has been confirmed. You have been hauled aboard the list and will hear from the Grunion soon.</p>
+
+    <p class="intro"><a href="index.html">Click here</a> to return to the site, before the tide changes and someone asks you for dues.</p>
+  </main>
+</section>
+
+</body>
+</html>

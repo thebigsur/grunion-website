@@ -10,6 +10,7 @@ are pushed to the `main` branch.
 - history.html — club history page
 - MERchives.html — photo & document archive (Google Drive-backed)
 - fossils.html — Central Coast Fossils retro page
+- thanks.html — newsletter confirmation page, retro Fossils style (Campaign Monitor redirects here)
 - 404.html — not-found page
 - styles.css — site styles
 - site.js — site scripts + CONFIG block (all external links/IDs)

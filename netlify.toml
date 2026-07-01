@@ -34,6 +34,12 @@
   to = "/fossils.html"
   status = 200
 
+# Newsletter confirmation page (Campaign Monitor redirects here after signup)
+[[redirects]]
+  from = "/thanks"
+  to = "/thanks.html"
+  status = 200
+
 # Cache images for a day. Long enough to speed up repeat visits; short enough
 # that the "replace a photo with the same filename" update trick still shows
 # within a day (shift-reload shows it immediately).
