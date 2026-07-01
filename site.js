@@ -165,7 +165,7 @@ var CONFIG = {
       if(!list.querySelector('.nl-archive-empty') && !list.querySelector('.nl-issue')){
         var empty=document.createElement('p');
         empty.className='nl-archive-empty';
-        empty.textContent='No issues in the archive yet — subscribe above and be first in the water.';
+        empty.textContent='The archive is temporarily becalmed. Subscribe above and stand by; the next MerMers will surface when the Fish get their act together.';
         list.appendChild(empty);
       }
       return;
