@@ -173,9 +173,27 @@ var CONFIG = {
 
   function start(){
     if(CONFIG.SHEET_CSV_URL){
+      // Google's published-CSV endpoint can be slow (1–10s). Render the last-seen
+      // sheet from localStorage instantly, then fetch fresh data in the background
+      // and only re-render if it actually changed.
+      var CACHE_KEY='grunion-fixtures-csv', cached=null;
+      try{ cached=localStorage.getItem(CACHE_KEY); }catch(e){}
+      if(cached){
+        var cachedRows=parseCSV(cached);
+        if(cachedRows.length){ isSample=false; render(cachedRows); } else { cached=null; }
+      }
       fetch(CONFIG.SHEET_CSV_URL).then(function(r){ if(!r.ok) throw 0; return r.text(); })
-        .then(function(txt){ var rows=parseCSV(txt); if(rows.length){ isSample=false; render(rows); } else { render(SAMPLE); } })
-        .catch(function(){ render(SAMPLE); });
+        .then(function(txt){
+          var rows=parseCSV(txt);
+          if(rows.length){
+            isSample=false;
+            try{ localStorage.setItem(CACHE_KEY, txt); }catch(e){}
+            if(txt!==cached) render(rows); // unchanged data → don't reset the season toggle
+          } else if(!cached){
+            render(SAMPLE);
+          }
+        })
+        .catch(function(){ if(!cached) render(SAMPLE); });
     } else {
       render(SAMPLE);
     }
