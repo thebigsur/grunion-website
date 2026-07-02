@@ -263,7 +263,9 @@ body[data-hero="duotone"] .hero-media{background:var(--ocean-700)}
 #news{background:var(--paper)}
 .news-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:clamp(30px,5vw,56px);align-items:start}
 .fb-block h3,.nl-block h3{font-size:1.7rem;margin-bottom:16px}
-.fb-shell{border:1.5px solid var(--line);border-radius:3px;background:#fff;min-height:420px;overflow:hidden;display:grid;place-items:center;max-width:100%}
+/* FB renders at 500px max no matter how wide the column is — cap the shell
+   so the card hugs the feed instead of showing empty white to the right. */
+.fb-shell{border:1.5px solid var(--line);border-radius:3px;background:#fff;min-height:420px;overflow:hidden;display:grid;place-items:center;max-width:500px}
 /* The FB SDK renders its iframe at the data-width (500px) regardless of screen size,
    which forced the whole page wider than a phone viewport. Clamp it to the container. */
 .fb-page,.fb-page span,.fb-page iframe{max-width:100%!important;width:100%!important}
@@ -288,9 +290,12 @@ body[data-hero="duotone"] .hero-media{background:var(--ocean-700)}
 .socials a:hover{border-color:var(--gold-soft);color:#fff}
 /* light variant — socials live under the Facebook block, on paper background.
    Two equal-width buttons spanning the card, so they read as part of it. */
-.socials-light{margin-top:14px;gap:10px}
-.socials-light a{flex:1;justify-content:center;color:var(--ink);border-color:var(--line);background:#fff}
-.socials-light a:hover{border-color:var(--gold);color:var(--ink)}
+.socials-light{margin-top:14px;gap:10px;max-width:500px}
+.socials-light a{flex:1;justify-content:center;color:var(--ink);border:2px solid var(--ink);background:transparent;
+  font-family:var(--font-display);font-weight:700;font-size:.98rem;letter-spacing:.04em;padding:12px 18px;
+  transition:background .15s ease,color .15s ease,border-color .15s ease}
+.socials-light a::after{content:"→";font-family:var(--font-body);font-weight:400}
+.socials-light a:hover{background:var(--ocean-900);border-color:var(--ocean-900);color:#fff}
 @media(max-width:860px){.news-grid{grid-template-columns:1fr}}
 
 /* ---- newsletter archive (past issues) ---- */
