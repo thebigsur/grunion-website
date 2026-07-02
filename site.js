@@ -345,12 +345,15 @@ metaEl.hidden=false;
   start();
 })();
 
-/* ---------- Facebook Page plugin (graceful: fallback stays if SDK blocked) ----------
-   The SDK is heavy, so it only loads once the news section scrolls near the viewport. */
+/* ---------- Facebook Page plugin (graceful: fallback shown only if SDK blocked) ----------
+   The SDK is heavy, so it only loads once the news section scrolls near the viewport.
+   The fallback starts hidden (see index.html) and is revealed only when the feed
+   fails to render — blocked SDK, network error — so normal visitors see no flash. */
 (function(){
   var fb=document.querySelector('.fb-page');
   if(!fb) return; // FB plugin lives on the homepage only
   var loaded=false;
+  function showFallback(){ var fbk=document.getElementById('fbFallback'); if(fbk) fbk.hidden=false; }
   function loadSDK(){
     if(loaded) return; loaded=true;
     var s=document.createElement('script');
@@ -358,9 +361,10 @@ metaEl.hidden=false;
     s.src='https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v19.0';
     s.onload=function(){
       setTimeout(function(){
-        if(fb.offsetHeight>60){ var fbk=document.getElementById('fbFallback'); if(fbk) fbk.style.display='none'; }
+        if(fb.offsetHeight<=60) showFallback(); // SDK loaded but feed didn't render
       }, 1800);
     };
+    s.onerror=showFallback; // SDK blocked or unreachable
     document.body.appendChild(s);
   }
   if('IntersectionObserver' in window){

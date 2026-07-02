@@ -275,7 +275,9 @@
         <h3>Latest from Facebook</h3>
         <div class="fb-shell">
           <div class="fb-page" data-href="https://www.facebook.com/GrunionRugby" data-tabs="timeline" data-width="500" data-height="420" data-small-header="false" data-adapt-container-width="true" data-hide-cover="false" data-show-facepile="true"></div>
-          <div class="fb-fallback" id="fbFallback">
+          <!-- Hidden by default; site.js reveals it only if the FB feed fails to
+               render (ad blockers etc.), so normal visitors never see it flash. -->
+          <div class="fb-fallback" id="fbFallback" hidden>
             <span class="kicker" style="justify-content:center">Facebook</span>
             <p>Match reports and game-day updates post to our official page.</p>
             <a class="btn btn-solid-ink btn-sm arrow" href="https://www.facebook.com/GrunionRugby" target="_blank" rel="noopener">Open facebook.com/GrunionRugby</a>
