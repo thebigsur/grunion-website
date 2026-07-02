@@ -500,6 +500,42 @@ metaEl.hidden=false;
       strip.scrollBy({left:b.getAttribute('data-gal')==='next'?dx:-dx, behavior:'smooth'});
     });
   });
+
+  /* Live photos: pull 5 random shots from the MERchives "Current Season" Drive
+     folder. Every page load gets a fresh random selection. If the Drive API is
+     unreachable (or the folder is empty), the static slots above stay put —
+     so the gallery never looks broken. */
+  (function(){
+    var KEY=CONFIG.MEMBERS_DRIVE_API_KEY, FID=CONFIG.MEMBERS_DRIVE_CURRENT_FOLDER_ID;
+    if(!KEY || !FID) return;
+    var q="'"+FID+"' in parents and mimeType contains 'image/' and trashed=false";
+    var url='https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)
+      +'&pageSize=200&fields='+encodeURIComponent('files(id,name,thumbnailLink)')
+      +'&key='+encodeURIComponent(KEY);
+    fetch(url).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(j){
+        var files=((j&&j.files)||[]).filter(function(f){ return f.thumbnailLink; });
+        if(!files.length) return;
+        // Fisher–Yates shuffle, then take the first 5
+        for(var i=files.length-1;i>0;i--){
+          var k=Math.floor(Math.random()*(i+1)); var t=files[i]; files[i]=files[k]; files[k]=t;
+        }
+        var pick=files.slice(0,5);
+        strip.innerHTML='';
+        pick.forEach(function(f){
+          var fig=document.createElement('figure'); fig.className='g-item';
+          var a=document.createElement('a');
+          a.className='ph photo';
+          a.href='https://drive.google.com/file/d/'+f.id+'/view';
+          a.target='_blank'; a.rel='noopener';
+          a.setAttribute('aria-label','Open match photo (Google Drive)');
+          a.style.backgroundImage="url('"+f.thumbnailLink.replace(/=s\d+$/,'=s1200')+"')";
+          fig.appendChild(a);
+          strip.appendChild(fig);
+        });
+      })
+      .catch(function(){ /* Drive unreachable — keep the static gallery */ });
+  })();
 })();
 
 /* ============================ HISTORY ASIDE — ARCHIVE SLIDESHOW ============================ */
@@ -613,6 +649,17 @@ metaEl.hidden=false;
         renderPhotos(grid, files);
         totalPhotos += files.length;
         if(metaEl) metaEl.textContent = files.length + (files.length===1?' photo':' photos');
+        // landing tile: random cover photo + count (tile markup lives in MERchives.html)
+        var tile=document.querySelector('[data-index-tile="'+label+'"]');
+        if(tile){
+          var pick=files[Math.floor(Math.random()*files.length)];
+          var cover=tile.querySelector('[data-index-cover]');
+          if(cover && pick && pick.thumbnailLink){
+            cover.style.backgroundImage="url('"+pick.thumbnailLink.replace(/=s\d+$/,'=s600')+"')";
+          }
+          var cnt=tile.querySelector('[data-index-count]');
+          if(cnt) cnt.textContent = files.length + (files.length===1?' photo':' photos');
+        }
         finishCount();
       });
     });

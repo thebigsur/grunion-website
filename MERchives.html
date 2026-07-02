@@ -111,6 +111,31 @@
   .md-icon{grid-area:icon}.md-main{grid-area:main}.md-dl{grid-area:dl;justify-self:start}
 }
 
+/* ---- section index (landing view) ---- */
+.mlib-index{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:clamp(24px,3.5vw,36px)}
+@media(max-width:920px){.mlib-index{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.mlib-index{grid-template-columns:1fr}}
+.mx-tile{display:flex;flex-direction:column;text-decoration:none;color:#fff;
+  background:var(--ocean-800);border:1px solid rgba(255,255,255,.14);border-radius:4px;overflow:hidden;
+  transition:border-color .18s ease,transform .18s ease}
+.mx-tile:hover{border-color:var(--gold-soft);transform:translateY(-2px)}
+.mx-tile:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.mx-cover{display:block;aspect-ratio:4/3;background-color:var(--ocean-800);
+  background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.045) 0 14px,transparent 14px 28px);
+  background-size:cover;background-position:center}
+.mx-cover--docs{display:grid;place-items:center;background-size:auto}
+.mx-cover--docs img{width:42%;height:auto;opacity:.9;filter:drop-shadow(0 6px 18px rgba(0,0,0,.5))}
+.mx-body{padding:16px 18px 18px;border-top:1px solid rgba(255,255,255,.12);display:flex;flex-direction:column;gap:7px}
+.mx-name{font-family:var(--font-display);font-weight:800;text-transform:uppercase;letter-spacing:.01em;
+  font-size:1.35rem;line-height:.95;display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.mx-name::after{content:"→";font-family:var(--font-body);font-weight:400;color:var(--gold-soft)}
+.mx-meta{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.5)}
+
+/* back link (shown inside a section view) */
+.mlib-back{display:inline-flex;align-items:center;gap:.5em;font-family:var(--font-mono);font-size:.74rem;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft);text-decoration:none;margin-bottom:26px}
+.mlib-back:hover{color:#fff}
+
 /* ---- in-page footer note ---- */
 .mlib-sync{margin-top:clamp(40px,6vw,64px);display:flex;flex-wrap:wrap;align-items:flex-start;gap:14px 18px;
   border-top:1px solid rgba(255,255,255,.16);padding-top:26px}
@@ -152,20 +177,45 @@
       <p class="lede">Here you will find match photography (current &amp; past), event galleries, Board minutes, and club documents. Browse the photos below or download some club history.</p>
     </div>
 
-    <!-- PHOTO GALLERY -->
-    <div class="mlib-block">
+    <!-- SECTION INDEX (landing view) — one tile per archive section. Each photo
+         tile's cover is a RANDOM image from that section's Drive folder,
+         set by site.js once the folder list loads. -->
+    <div class="mlib-block" id="mlibIndexBlock">
       <div class="mlib-head">
         <div>
           <span class="kicker">From The Archive</span>
-          <h3 id="gallery-h" style="margin-top:12px">Photo Gallery</h3>
+          <h3 id="gallery-h" style="margin-top:12px">Browse the Archive</h3>
         </div>
         <span class="mlib-count" id="memberGalleryCount" aria-hidden="true"></span>
       </div>
+      <nav class="mlib-index" aria-label="Archive sections">
+        <a class="mx-tile" href="#current" data-index-tile="Current Season">
+          <span class="mx-cover" data-index-cover aria-hidden="true"></span>
+          <span class="mx-body"><span class="mx-name">Current Season</span><span class="mx-meta" data-index-count>Photo gallery</span></span>
+        </a>
+        <a class="mx-tile" href="#prior" data-index-tile="Prior Season">
+          <span class="mx-cover" data-index-cover aria-hidden="true"></span>
+          <span class="mx-body"><span class="mx-name">Prior Season</span><span class="mx-meta" data-index-count>Photo gallery</span></span>
+        </a>
+        <a class="mx-tile" href="#legacy" data-index-tile="Legacy Photos">
+          <span class="mx-cover" data-index-cover aria-hidden="true"></span>
+          <span class="mx-body"><span class="mx-name">Legacy Photos</span><span class="mx-meta" data-index-count>Photo gallery</span></span>
+        </a>
+        <a class="mx-tile" href="#documents" data-index-tile="Documents">
+          <span class="mx-cover mx-cover--docs" aria-hidden="true"><img src="assets/grunion-crest.png" alt="" /></span>
+          <span class="mx-body"><span class="mx-name">Documents</span><span class="mx-meta" id="memberDocsCount">Papers &amp; briefings</span></span>
+        </a>
+      </nav>
+    </div>
+
+    <!-- SECTION VIEWS — hidden until a tile is chosen (hash routing below) -->
+    <div class="mlib-block" id="mlibViews" hidden>
+      <a class="mlib-back" href="#top">← All sections</a>
 
       <div id="memberGallery" aria-busy="true" aria-labelledby="gallery-h">
         <!-- Each .member-folder maps to a sub-folder in the shared Drive. The script
              fills the [data-folder-grid] list, replacing its loading child. -->
-        <section class="member-folder" data-folder="Current Season" aria-labelledby="folder-current-h">
+        <section class="member-folder" data-view="current" data-folder="Current Season" aria-labelledby="folder-current-h" hidden>
           <div class="folder-head">
             <h4 class="folder-name" id="folder-current-h">Current Season</h4>
             <span class="folder-meta" data-folder-count>Auto-synced</span>
@@ -178,7 +228,7 @@
           </div>
         </section>
 
-        <section class="member-folder" data-folder="Prior Season" aria-labelledby="folder-prior-h">
+        <section class="member-folder" data-view="prior" data-folder="Prior Season" aria-labelledby="folder-prior-h" hidden>
           <div class="folder-head">
             <h4 class="folder-name" id="folder-prior-h">Prior Season</h4>
             <span class="folder-meta" data-folder-count>Auto-synced</span>
@@ -191,7 +241,7 @@
           </div>
         </section>
 
-        <section class="member-folder" data-folder="Legacy Photos" aria-labelledby="folder-legacy-h">
+        <section class="member-folder" data-view="legacy" data-folder="Legacy Photos" aria-labelledby="folder-legacy-h" hidden>
           <div class="folder-head">
             <h4 class="folder-name" id="folder-legacy-h">Legacy Photos</h4>
             <span class="folder-meta" data-folder-count>Auto-synced</span>
@@ -204,28 +254,49 @@
           </div>
         </section>
       </div>
-    </div>
 
-    <!-- DOCUMENTS -->
-    <div class="mlib-block">
-      <div class="mlib-head">
-        <div>
-          <span class="kicker">Papers &amp; Briefings</span>
-          <h3 id="docs-h" style="margin-top:12px">Documents</h3>
+      <!-- DOCUMENTS -->
+      <section class="member-folder" data-view="documents" aria-labelledby="docs-h" hidden>
+        <div class="folder-head">
+          <h4 class="folder-name" id="docs-h">Documents</h4>
+          <span class="folder-meta">Papers &amp; Briefings</span>
         </div>
-        <span class="mlib-count" id="memberDocsCount" aria-hidden="true"></span>
-      </div>
-      <div class="member-docs" id="memberDocs" role="list" aria-busy="true" aria-labelledby="docs-h">
-        <div class="member-doc-loading" id="memberDocsLoading">
-          <span class="dl-dot" aria-hidden="true"></span>
-          <span>Loading documents…</span>
+        <div class="member-docs" id="memberDocs" role="list" aria-busy="true" aria-labelledby="docs-h">
+          <div class="member-doc-loading" id="memberDocsLoading">
+            <span class="dl-dot" aria-hidden="true"></span>
+            <span>Loading documents…</span>
+          </div>
         </div>
-      </div>
+      </section>
     </div>
 
   </div>
 </section>
 </main>
+
+<!-- Hash routing: #current / #prior / #legacy / #documents open a section;
+     no hash (or anything else) shows the tile index. Browser back returns
+     to the index naturally. -->
+<script>
+(function(){
+  var indexBlock=document.getElementById('mlibIndexBlock');
+  var viewsBlock=document.getElementById('mlibViews');
+  var views=viewsBlock.querySelectorAll('[data-view]');
+  var VALID={current:1,prior:1,legacy:1,documents:1};
+  function route(){
+    var h=(location.hash||'').replace('#','');
+    var active=VALID[h]?h:'';
+    indexBlock.hidden=!!active;
+    viewsBlock.hidden=!active;
+    views.forEach(function(v){ v.hidden = v.getAttribute('data-view')!==active; });
+    // land at the top of the archive either way
+    var lib=document.getElementById('memberlib');
+    if(lib) window.scrollTo({top:lib.getBoundingClientRect().top+window.scrollY-90});
+  }
+  window.addEventListener('hashchange', route);
+  if(VALID[(location.hash||'').replace('#','')]) route();
+})();
+</script>
 <hr class="rule101" />
 <footer class="site-foot">
   <hr class="rule101" />
