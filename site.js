@@ -520,23 +520,57 @@ metaEl.hidden=false;
       .then(function(j){
         var files=((j&&j.files)||[]).filter(function(f){ return f.thumbnailLink; });
         if(!files.length) return;
-        // Fisher–Yates shuffle, then take the first 5
+        // Fisher–Yates shuffle
         for(var i=files.length-1;i>0;i--){
           var k=Math.floor(Math.random()*(i+1)); var t=files[i]; files[i]=files[k]; files[k]=t;
         }
-        var pick=files.slice(0,5);
-        strip.innerHTML='';
-        pick.forEach(function(f){
-          var fig=document.createElement('figure'); fig.className='g-item';
-          var a=document.createElement('a');
-          a.className='ph photo';
-          a.href='https://drive.google.com/file/d/'+f.id+'/view';
-          a.target='_blank'; a.rel='noopener';
-          a.setAttribute('aria-label','Open match photo (Google Drive)');
-          a.style.backgroundImage="url('"+f.thumbnailLink.replace(/=s\d+$/,'=s1200')+"')";
-          fig.appendChild(a);
-          strip.appendChild(fig);
-        });
+        /* Google's thumbnailLink URLs (lh3.googleusercontent.com) are short-lived
+           and rate-limited, so some randomly fail — and a failed CSS background
+           renders as a blank white card. Fix: preload each thumbnail first, fall
+           back to the stable drive.google.com/thumbnail endpoint if it fails,
+           skip the file if both fail, and only swap the strip in once we have
+           real, loaded images. */
+        var WANT=Math.min(5,files.length), queue=files.slice(), got=[], inflight=0, done=false;
+
+        function finish(){
+          if(done) return; done=true;
+          if(!got.length) return; // every thumbnail failed — keep the static gallery
+          strip.innerHTML='';
+          got.forEach(function(g){
+            var fig=document.createElement('figure'); fig.className='g-item';
+            var a=document.createElement('a');
+            a.className='ph photo';
+            a.href='https://drive.google.com/file/d/'+g.id+'/view';
+            a.target='_blank'; a.rel='noopener';
+            a.setAttribute('aria-label','Open match photo (Google Drive)');
+            a.style.backgroundImage="url('"+g.src+"')";
+            fig.appendChild(a);
+            strip.appendChild(fig);
+          });
+        }
+
+        function load(f){
+          inflight++;
+          var probe=new Image(), triedAlt=false;
+          probe.onload=function(){
+            inflight--; got.push({id:f.id, src:probe.src});
+            if(got.length>=WANT) finish(); else pump();
+          };
+          probe.onerror=function(){
+            if(!triedAlt){ triedAlt=true;
+              probe.src='https://drive.google.com/thumbnail?id='+encodeURIComponent(f.id)+'&sz=w1200';
+              return;
+            }
+            inflight--; pump(); // both URLs failed — try the next file instead
+          };
+          probe.src=f.thumbnailLink.replace(/=s\d+$/,'=s1200');
+        }
+
+        function pump(){
+          while(inflight<(WANT-got.length) && queue.length) load(queue.shift());
+          if(!inflight && (got.length>=WANT || !queue.length)) finish();
+        }
+        pump();
       })
       .catch(function(){ /* Drive unreachable — keep the static gallery */ });
   })();
