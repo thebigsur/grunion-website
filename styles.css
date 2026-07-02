@@ -485,8 +485,15 @@ body[data-hero="duotone"] .hero-media{background:var(--ocean-700)}
 @media(max-width:760px){.chip-grid{grid-template-columns:1fr}.chip-cta{justify-self:start}}
 .foot-sponsors{display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding-block:26px;border-bottom:1px solid rgba(255,255,255,.12)}
 .foot-sponsors .fs-lab{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-right:8px}
-.foot-sponsors .fs-logo{flex:0 0 auto;height:38px;min-width:96px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.16);border-radius:2px;
-  font-family:var(--font-mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);padding:0 14px}
+/* sponsors carry the visual weight; the become-a-sponsor link stays quiet (see .fs-become) */
+.foot-sponsors .fs-logo{flex:0 0 auto;height:38px;min-width:96px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.38);border-radius:2px;
+  font-family:var(--font-mono);font-size:.66rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.92);padding:0 14px;
+  text-decoration:none;transition:border-color .15s,color .15s}
+.foot-sponsors a.fs-logo:hover{border-color:var(--gold-soft);color:#fff}
+.foot-sponsors .fs-become{flex:0 0 auto;height:38px;display:inline-flex;align-items:center;padding:0 6px;
+  font-family:var(--font-mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;
+  color:rgba(216,177,95,.8);text-decoration:none;transition:color .15s}
+.foot-sponsors .fs-become:hover{color:var(--gold-soft);text-decoration:underline;text-underline-offset:3px}
 .foot-main{display:grid;grid-template-columns:1.4fr repeat(4,1fr);gap:32px;padding-block:clamp(44px,5vw,64px)}
 .foot-brand b{font-family:var(--font-display);font-weight:800;font-size:1.7rem;text-transform:uppercase;display:block}
 .foot-brand p{color:rgba(255,255,255,.7);font-size:.92rem;margin-top:14px;max-width:38ch;line-height:1.55}
