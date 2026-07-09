@@ -54,14 +54,19 @@ var CONFIG = {
   // One read-only Google Drive API key (restricted to the Drive API):
   MEMBERS_DRIVE_API_KEY:           "AIzaSyAV74KmGRq3dJANP7uSq2_VKGMlZ1sMlOI",
   //
-  // The four folder IDs. A folder's ID is the long code in its URL when
-  // you open it in Drive: drive.google.com/drive/folders/THIS_PART_HERE
-  //   • DOCS  = the TOP-LEVEL shared folder. PDFs / Word docs go loose in here.
-  //   • the three season sub-folders live inside it; photos go in these.
-  MEMBERS_DRIVE_DOCS_FOLDER_ID:    "19oPNqh96-WQINhEHmshhGiljlqcjLBsj",  // top-level folder (holds the documents)
-  MEMBERS_DRIVE_CURRENT_FOLDER_ID: "17QEKqr1FbUFtinEVDKmHhyhj0APBUsBK",  // "Current Season" sub-folder
-  MEMBERS_DRIVE_PRIOR_FOLDER_ID:   "1egjcuVHrw_aaraITJD9pJllfo1gsw3Ki",  // "Prior Season" sub-folder
-  MEMBERS_DRIVE_LEGACY_FOLDER_ID:  "1HgGxrtE4oqlNix6Rc1hyogaLCaom1ltd",  // "Legacy Photos" sub-folder
+  // Folder IDs. A folder's ID is the long code in its URL when you open
+  // it in Drive: drive.google.com/drive/folders/THIS_PART_HERE
+  //   • ROOT = the TOP-LEVEL shared "MERchives" folder. Photo sub-folders
+  //     live inside it and are DISCOVERED AUTOMATICALLY — add / rename /
+  //     remove folders in Drive and the archive page updates itself.
+  //   • DOCS = the "Documents" sub-folder inside it. PDFs / Word docs go
+  //     loose in here → the "Documents" list. (It's excluded from the
+  //     photo tiles automatically.)
+  //   • CURRENT is only used by the home-page "match gallery" strip, which
+  //     pulls a few random shots from the Current Season folder.
+  MEMBERS_DRIVE_ROOT_FOLDER_ID:    "18u1BehBRJyhk9b9tOKaUhZQpQhuiIZHj",  // top-level "MERchives" folder
+  MEMBERS_DRIVE_DOCS_FOLDER_ID:    "19oPNqh96-WQINhEHmshhGiljlqcjLBsj",  // "Documents" sub-folder
+  MEMBERS_DRIVE_CURRENT_FOLDER_ID: "17QEKqr1FbUFtinEVDKmHhyhj0APBUsBK",  // "Current Season" sub-folder (home page only)
 
   // Where any MERchives link points — the in-site archive page.
   MEMBERS_AREA_URL:   "MERchives.html"
@@ -640,73 +645,140 @@ metaEl.hidden=false;
 /* Lives on MERchives.html only. Pulls photos + documents live from a shared Google
    Drive folder via the Drive API (read-only key in CONFIG).
 
-   Drive layout (set up once, then pure drag-and-drop forever after):
-     TOP-LEVEL FOLDER  ......  PDFs / Word docs go loose in here → "Documents" list
-       ├─ Current Season  ...  photos → "Current Season" grid
-       ├─ Prior Season    ...  photos → "Prior Season" grid
-       └─ Legacy Photos   ...  photos → "Legacy Photos" grid
+   Drive layout — pure drag-and-drop, nothing here ever needs editing:
+     TOP-LEVEL "MERchives" FOLDER
+       ├─ Documents ............... PDFs / Word docs → the "Documents" list
+       ├─ Current Season .......... photo sub-folder → tile under RECENT PHOTOS
+       ├─ Last Season ............. photo sub-folder → tile under RECENT PHOTOS
+       ├─ 2020, 2015, … ........... year folders     → tiles under LEGACY PHOTOS
+       └─ Legacy Photos ........... catch-all folder → tile under LEGACY PHOTOS
 
-   Each season you just move files down a level in Drive (Current→Prior→Legacy).
-   No edits to this file or MERchives.html — the folder IDs and labels never change.
+   Sub-folders are DISCOVERED AUTOMATICALLY on every page load:
+     • a folder named as a 4-digit year ("2015") or containing the word
+       "legacy" files under LEGACY PHOTOS (years newest-first, "Legacy
+       Photos" last); every other folder files under RECENT PHOTOS
+       ("Current Season" first, then "Last Season", then A-Z).
+     • add, rename, or remove a folder in Drive and the page follows along —
+       tile names come straight from the Drive folder names.
 
-   If the API key or a folder ID is blank, that section shows a calm "not
-   connected yet" message instead of a broken grid. */
+   If the API key or the top-level folder ID is blank, the page shows a calm
+   "not connected yet" message instead of a broken grid. */
 (function(){
   var galleryHost = document.getElementById('memberGallery');
   var docsHost    = document.getElementById('memberDocs');
   if(!galleryHost && !docsHost) return;   // only on MERchives.html
 
-  var KEY = CONFIG.MEMBERS_DRIVE_API_KEY;
+  var KEY  = CONFIG.MEMBERS_DRIVE_API_KEY;
+  var ROOT = CONFIG.MEMBERS_DRIVE_ROOT_FOLDER_ID;   // top-level "MERchives" folder
 
-  // map each gallery section to its CONFIG folder id, by the section's data-folder-grid
-  var FOLDERS = {
-    'Current Season': CONFIG.MEMBERS_DRIVE_CURRENT_FOLDER_ID,
-    'Prior Season':   CONFIG.MEMBERS_DRIVE_PRIOR_FOLDER_ID,
-    'Legacy Photos':  CONFIG.MEMBERS_DRIVE_LEGACY_FOLDER_ID
-  };
+  /* ---------- PHOTO GALLERIES (auto-discovered sub-folders) ---------- */
+  var recentTiles = document.getElementById('recentTiles');
+  var legacyTiles = document.getElementById('legacyTiles');
 
-  /* ---------- PHOTO GALLERIES ---------- */
-  if(galleryHost){
-    var totalPhotos = 0, gridsPending = 0, gridsDone = 0;
-    var grids = galleryHost.querySelectorAll('[data-folder-grid]');
-
-    grids.forEach(function(grid){
-      var label = grid.getAttribute('data-folder-grid');
-      var fid   = FOLDERS[label];
-      var metaEl = grid.closest('.member-folder').querySelector('[data-folder-count]');
-
-      if(!KEY || !fid){
-        emptyGrid(grid, metaEl, 'Not connected yet', 'Add this folder\u2019s ID in the site settings to show its photos here.');
-        return;
-      }
-      gridsPending++;
-      listImages(fid, function(err, files){
-        gridsDone++;
-        if(err){ emptyGrid(grid, metaEl, 'Couldn\u2019t load', 'This folder couldn\u2019t be reached just now. Try a refresh.'); finishCount(); return; }
-        if(!files.length){ emptyGrid(grid, metaEl, 'No photos yet', 'Photos dropped into this Drive folder will appear here automatically.'); finishCount(); return; }
-        renderPhotos(grid, files);
-        totalPhotos += files.length;
-        if(metaEl) metaEl.textContent = files.length + (files.length===1?' photo':' photos');
-        // landing tile: random cover photo + count (tile markup lives in MERchives.html)
-        var tile=document.querySelector('[data-index-tile="'+label+'"]');
-        if(tile){
-          var pick=files[Math.floor(Math.random()*files.length)];
-          var cover=tile.querySelector('[data-index-cover]');
-          if(cover && pick && pick.thumbnailLink){
-            cover.style.backgroundImage="url('"+pick.thumbnailLink.replace(/=s\d+$/,'=s600')+"')";
-          }
-          var cnt=tile.querySelector('[data-index-count]');
-          if(cnt) cnt.textContent = files.length + (files.length===1?' photo':' photos');
+  if(galleryHost && recentTiles && legacyTiles){
+    if(!KEY || !ROOT){
+      tilesMessage(recentTiles, 'Not connected yet \u2014 add the shared folder\u2019s ID in the site settings.');
+      tilesMessage(legacyTiles, 'Not connected yet');
+    } else {
+      listFolders(ROOT, function(err, folders){
+        if(err){
+          tilesMessage(recentTiles, 'Couldn\u2019t load \u2014 the shared Drive couldn\u2019t be reached just now. Try a refresh.');
+          tilesMessage(legacyTiles, 'Couldn\u2019t load');
+          return;
         }
-        finishCount();
-      });
-    });
+        // split: 4-digit-year names + anything "legacy" go to LEGACY; the rest
+        // to RECENT. The "Documents" folder is handled by the docs list below.
+        var recent=[], legacy=[];
+        folders.forEach(function(f){
+          var name=(f.name||'').trim();
+          if(f.id===CONFIG.MEMBERS_DRIVE_DOCS_FOLDER_ID || /^documents$/i.test(name)) return;
+          if(/^\d{4}$/.test(name) || /legacy/i.test(name)) legacy.push(f);
+          else recent.push(f);
+        });
+        // Recent: Current Season first, then Last Season, then A-Z
+        var lead={'current season':0,'last season':1};
+        recent.sort(function(a,b){
+          var ra=lead[(a.name||'').trim().toLowerCase()], rb=lead[(b.name||'').trim().toLowerCase()];
+          ra=(ra===undefined)?9:ra; rb=(rb===undefined)?9:rb;
+          if(ra!==rb) return ra-rb;
+          return (a.name||'').localeCompare(b.name||'', undefined, {numeric:true});
+        });
+        // Legacy: year folders newest-first, non-year folders ("Legacy Photos") last
+        legacy.sort(function(a,b){
+          var ya=/^\d{4}$/.test((a.name||'').trim()), yb=/^\d{4}$/.test((b.name||'').trim());
+          if(ya && yb) return (b.name||'').trim()-(a.name||'').trim();
+          if(ya!==yb) return ya?-1:1;
+          return (a.name||'').localeCompare(b.name||'');
+        });
 
-    function finishCount(){
-      if(gridsPending && gridsDone>=gridsPending){
-        var c=document.getElementById('memberGalleryCount');
-        if(c && totalPhotos) c.textContent = totalPhotos + (totalPhotos===1?' photo':' photos');
-      }
+        recentTiles.innerHTML=''; legacyTiles.innerHTML='';
+        if(!recent.length) tilesMessage(recentTiles, 'No folders yet \u2014 add a photo folder to the shared Drive.');
+        if(!legacy.length) tilesMessage(legacyTiles, 'No folders yet \u2014 add a year folder (e.g. \u201c2015\u201d) to the shared Drive.');
+
+        var totalPhotos=0, pending=recent.length+legacy.length;
+        recent.forEach(function(f){ buildFolder(f, recentTiles); });
+        legacy.forEach(function(f){ buildFolder(f, legacyTiles); });
+
+        // views exist now \u2014 let the page's hash router re-check the URL
+        document.dispatchEvent(new Event('mlib:folders-ready'));
+
+        function buildFolder(folder, tileHost){
+          var slug=slugify(folder.name);
+
+          // landing tile
+          var tile=document.createElement('a');
+          tile.className='mx-tile'; tile.href='#'+slug;
+          var cover=document.createElement('span'); cover.className='mx-cover'; cover.setAttribute('aria-hidden','true');
+          var body=document.createElement('span'); body.className='mx-body';
+          var nm=document.createElement('span'); nm.className='mx-name'; nm.textContent=folder.name;
+          var tMeta=document.createElement('span'); tMeta.className='mx-meta'; tMeta.textContent='Photo gallery';
+          body.appendChild(nm); body.appendChild(tMeta);
+          tile.appendChild(cover); tile.appendChild(body);
+          tileHost.appendChild(tile);
+
+          // gallery section (hidden until its hash is visited)
+          var section=document.createElement('section');
+          section.className='member-folder'; section.hidden=true;
+          section.setAttribute('data-view', slug);
+          section.innerHTML=
+            '<div class="folder-head">'+
+              '<h4 class="folder-name">'+esc(folder.name)+'</h4>'+
+              '<span class="folder-meta" data-folder-count>Auto-synced</span>'+
+            '</div>'+
+            '<div class="member-gallery" data-folder-grid role="list">'+
+              '<div class="member-gallery-loading">'+
+                '<span class="gl-label">Loading photos\u2026</span>'+
+                '<span class="gl-sub">Pulling the '+esc(folder.name)+' folder from the club\u2019s shared Drive.</span>'+
+              '</div>'+
+            '</div>';
+          galleryHost.appendChild(section);
+          var grid=section.querySelector('[data-folder-grid]');
+          var metaEl=section.querySelector('[data-folder-count]');
+
+          listImages(folder.id, function(err, files){
+            pending--;
+            if(err){ emptyGrid(grid, metaEl, 'Couldn\u2019t load', 'This folder couldn\u2019t be reached just now. Try a refresh.'); tMeta.textContent='Couldn\u2019t load'; finishCount(); return; }
+            if(!files.length){ emptyGrid(grid, metaEl, 'No photos yet', 'Photos dropped into this Drive folder will appear here automatically.'); tMeta.textContent='No photos yet'; finishCount(); return; }
+            renderPhotos(grid, files);
+            totalPhotos += files.length;
+            var label = files.length + (files.length===1?' photo':' photos');
+            if(metaEl) metaEl.textContent = label;
+            tMeta.textContent = label;
+            var pick=files[Math.floor(Math.random()*files.length)];
+            if(pick && pick.thumbnailLink){
+              cover.style.backgroundImage="url('"+pick.thumbnailLink.replace(/=s\d+$/,'=s600')+"')";
+            }
+            finishCount();
+          });
+        }
+
+        function finishCount(){
+          if(pending<=0){
+            var c=document.getElementById('memberGalleryCount');
+            if(c && totalPhotos) c.textContent = totalPhotos + (totalPhotos===1?' photo':' photos');
+          }
+        }
+      });
     }
   }
 
@@ -727,6 +799,19 @@ metaEl.hidden=false;
   }
 
   /* ---------- Drive API calls ---------- */
+  // sub-folders of a folder (the archive sections), A-Z
+  function listFolders(folderId, cb){
+    var q = "'"+folderId+"' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false";
+    var url = 'https://www.googleapis.com/drive/v3/files'
+      + '?q=' + encodeURIComponent(q)
+      + '&orderBy=' + encodeURIComponent('name')
+      + '&pageSize=100'
+      + '&fields=' + encodeURIComponent('files(id,name)')
+      + '&key=' + encodeURIComponent(KEY);
+    fetch(url).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(j){ cb(null, (j && j.files) || []); })
+      .catch(function(){ cb(true, null); });
+  }
   // images in a folder, newest first
   function listImages(folderId, cb){
     var q = "'"+folderId+"' in parents and mimeType contains 'image/' and trashed=false";
@@ -869,7 +954,16 @@ var PER_PAGE = 16;   // 4 rows × 4 columns
       '</div>';
   }
 
+  function tilesMessage(host, text){
+    host.innerHTML = '<div class="mx-loading">'+esc(text)+'</div>';
+  }
+
   /* ---------- helpers ---------- */
+  // "Current Season" → "current-season" (used as the tile's #hash)
+  function slugify(n){
+    return String(n||'').toLowerCase().trim()
+      .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'') || 'folder';
+  }
   function cleanName(n){
     if(!n) return '';
     return n.replace(/\.(jpe?g|png|gif|webp|heic|pdf|docx?|)$/i,'').replace(/[_-]+/g,' ').trim();

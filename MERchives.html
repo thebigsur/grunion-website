@@ -131,6 +131,13 @@
 .mx-name::after{content:"→";font-family:var(--font-body);font-weight:400;color:var(--gold-soft)}
 .mx-meta{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.5)}
 
+/* striped placeholder shown while the folder list loads (or if it can't) */
+.mx-loading{grid-column:1 / -1;min-height:150px;display:grid;place-items:center;text-align:center;padding:24px;
+  border-radius:4px;background-color:var(--ocean-800);
+  background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.045) 0 14px,transparent 14px 28px);
+  border:1px solid rgba(255,255,255,.12);
+  font-family:var(--font-mono);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+
 /* back link (shown inside a section view) */
 .mlib-back{display:inline-flex;align-items:center;gap:.5em;font-family:var(--font-mono);font-size:.74rem;
   letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft);text-decoration:none;margin-bottom:26px}
@@ -177,83 +184,55 @@
       <p class="lede">Here you will find match photography (current &amp; past), event galleries, Board minutes, and club documents. Browse the photos below or download some club history.</p>
     </div>
 
-    <!-- SECTION INDEX (landing view) — one tile per archive section. Each photo
-         tile's cover is a RANDOM image from that section's Drive folder,
-         set by site.js once the folder list loads. -->
-    <div class="mlib-block" id="mlibIndexBlock">
-      <div class="mlib-head">
-        <div>
-          <span class="kicker">From The Archive</span>
-          <h3 id="gallery-h" style="margin-top:12px">Browse the Archive</h3>
+    <!-- SECTION INDEX (landing view) — tiles are built by site.js, one per
+         sub-folder of the shared Drive folder. Folders named as a 4-digit
+         year ("2015") or containing "Legacy" file under LEGACY PHOTOS;
+         everything else files under RECENT PHOTOS. Add / rename / remove a
+         folder in Drive and this page follows along automatically. Each
+         tile's cover is a RANDOM image from its folder. -->
+    <div id="mlibIndexBlock">
+      <div class="mlib-block">
+        <div class="mlib-head">
+          <div>
+            <span class="kicker">From The Archive</span>
+            <h3 id="gallery-h" style="margin-top:12px">Recent Photos</h3>
+          </div>
+          <span class="mlib-count" id="memberGalleryCount" aria-hidden="true"></span>
         </div>
-        <span class="mlib-count" id="memberGalleryCount" aria-hidden="true"></span>
+        <nav class="mlib-index" id="recentTiles" aria-label="Recent photo folders">
+          <div class="mx-loading">Loading folders…</div>
+        </nav>
       </div>
-      <nav class="mlib-index" aria-label="Archive sections">
-        <a class="mx-tile" href="#current" data-index-tile="Current Season">
-          <span class="mx-cover" data-index-cover aria-hidden="true"></span>
-          <span class="mx-body"><span class="mx-name">Current Season</span><span class="mx-meta" data-index-count>Photo gallery</span></span>
-        </a>
-        <a class="mx-tile" href="#prior" data-index-tile="Prior Season">
-          <span class="mx-cover" data-index-cover aria-hidden="true"></span>
-          <span class="mx-body"><span class="mx-name">Prior Season</span><span class="mx-meta" data-index-count>Photo gallery</span></span>
-        </a>
-        <a class="mx-tile" href="#legacy" data-index-tile="Legacy Photos">
-          <span class="mx-cover" data-index-cover aria-hidden="true"></span>
-          <span class="mx-body"><span class="mx-name">Legacy Photos</span><span class="mx-meta" data-index-count>Photo gallery</span></span>
-        </a>
-        <a class="mx-tile" href="#documents" data-index-tile="Documents">
-          <span class="mx-cover mx-cover--docs" aria-hidden="true"><img src="assets/grunion-crest.png" alt="" /></span>
-          <span class="mx-body"><span class="mx-name">Documents</span><span class="mx-meta" id="memberDocsCount">Papers &amp; briefings</span></span>
-        </a>
-      </nav>
+
+      <div class="mlib-block">
+        <div class="mlib-head">
+          <h3 id="legacy-h">Legacy Photos</h3>
+        </div>
+        <nav class="mlib-index" id="legacyTiles" aria-label="Legacy photo folders">
+          <div class="mx-loading">Loading folders…</div>
+        </nav>
+      </div>
+
+      <div class="mlib-block">
+        <div class="mlib-head">
+          <h3 id="docs-index-h">Documents</h3>
+        </div>
+        <nav class="mlib-index" aria-label="Documents">
+          <a class="mx-tile" href="#documents">
+            <span class="mx-cover mx-cover--docs" aria-hidden="true"><img src="assets/grunion-crest.png" alt="" /></span>
+            <span class="mx-body"><span class="mx-name">Documents</span><span class="mx-meta" id="memberDocsCount">Papers &amp; briefings</span></span>
+          </a>
+        </nav>
+      </div>
     </div>
 
     <!-- SECTION VIEWS — hidden until a tile is chosen (hash routing below) -->
     <div class="mlib-block" id="mlibViews" hidden>
       <a class="mlib-back" href="#top">← All sections</a>
 
-      <div id="memberGallery" aria-busy="true" aria-labelledby="gallery-h">
-        <!-- Each .member-folder maps to a sub-folder in the shared Drive. The script
-             fills the [data-folder-grid] list, replacing its loading child. -->
-        <section class="member-folder" data-view="current" data-folder="Current Season" aria-labelledby="folder-current-h" hidden>
-          <div class="folder-head">
-            <h4 class="folder-name" id="folder-current-h">Current Season</h4>
-            <span class="folder-meta" data-folder-count>Auto-synced</span>
-          </div>
-          <div class="member-gallery" data-folder-grid="Current Season" id="folder-current" role="list">
-            <div class="member-gallery-loading">
-              <span class="gl-label">Loading photos…</span>
-              <span class="gl-sub">Pulling the Current Season folder from the club's shared Drive.</span>
-            </div>
-          </div>
-        </section>
-
-        <section class="member-folder" data-view="prior" data-folder="Prior Season" aria-labelledby="folder-prior-h" hidden>
-          <div class="folder-head">
-            <h4 class="folder-name" id="folder-prior-h">Prior Season</h4>
-            <span class="folder-meta" data-folder-count>Auto-synced</span>
-          </div>
-          <div class="member-gallery" data-folder-grid="Prior Season" id="folder-prior" role="list">
-            <div class="member-gallery-loading">
-              <span class="gl-label">Loading photos…</span>
-              <span class="gl-sub">Pulling the Prior Season folder from the club's shared Drive.</span>
-            </div>
-          </div>
-        </section>
-
-        <section class="member-folder" data-view="legacy" data-folder="Legacy Photos" aria-labelledby="folder-legacy-h" hidden>
-          <div class="folder-head">
-            <h4 class="folder-name" id="folder-legacy-h">Legacy Photos</h4>
-            <span class="folder-meta" data-folder-count>Auto-synced</span>
-          </div>
-          <div class="member-gallery" data-folder-grid="Legacy Photos" id="folder-legacy" role="list">
-            <div class="member-gallery-loading">
-              <span class="gl-label">Loading photos…</span>
-              <span class="gl-sub">Pulling the Legacy Photos folder from the club's shared Drive.</span>
-            </div>
-          </div>
-        </section>
-      </div>
+      <!-- site.js builds one .member-folder gallery section in here per Drive
+           sub-folder, each tagged data-view="<slug>" for the hash router. -->
+      <div id="memberGallery" aria-busy="true" aria-labelledby="gallery-h"></div>
 
       <!-- DOCUMENTS -->
       <section class="member-folder" data-view="documents" aria-labelledby="docs-h" hidden>
@@ -274,27 +253,33 @@
 </section>
 </main>
 
-<!-- Hash routing: #current / #prior / #legacy / #documents open a section;
-     no hash (or anything else) shows the tile index. Browser back returns
-     to the index naturally. -->
+<!-- Hash routing: #documents, or any folder slug built by site.js
+     (#current-season, #last-season, #2015, #legacy-photos, …) opens that
+     section; no hash (or an unknown one) shows the tile index. Browser back
+     returns to the index naturally. site.js fires "mlib:folders-ready" once
+     the folder views exist, so a hash that arrived before the Drive folder
+     list loaded still routes correctly. -->
 <script>
 (function(){
   var indexBlock=document.getElementById('mlibIndexBlock');
   var viewsBlock=document.getElementById('mlibViews');
-  var views=viewsBlock.querySelectorAll('[data-view]');
-  var VALID={current:1,prior:1,legacy:1,documents:1};
-  function route(){
-    var h=(location.hash||'').replace('#','');
-    var active=VALID[h]?h:'';
+  function route(allowScroll){
+    var h=(location.hash||'').replace('#','').toLowerCase();
+    var views=viewsBlock.querySelectorAll('[data-view]');
+    var active=null;
+    views.forEach(function(v){ if(v.getAttribute('data-view')===h) active=v; });
     indexBlock.hidden=!!active;
     viewsBlock.hidden=!active;
-    views.forEach(function(v){ v.hidden = v.getAttribute('data-view')!==active; });
-    // land at the top of the archive either way
-    var lib=document.getElementById('memberlib');
-    if(lib) window.scrollTo({top:lib.getBoundingClientRect().top+window.scrollY-90});
+    views.forEach(function(v){ v.hidden = v!==active; });
+    // land at the top of the archive
+    if(allowScroll || active){
+      var lib=document.getElementById('memberlib');
+      if(lib) window.scrollTo({top:lib.getBoundingClientRect().top+window.scrollY-90});
+    }
   }
-  window.addEventListener('hashchange', route);
-  if(VALID[(location.hash||'').replace('#','')]) route();
+  window.addEventListener('hashchange', function(){ route(true); });
+  document.addEventListener('mlib:folders-ready', function(){ route(false); });
+  if(location.hash) route(false);
 })();
 </script>
 <hr class="rule101" />
