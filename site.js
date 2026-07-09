@@ -56,12 +56,13 @@ var CONFIG = {
   //
   // Folder IDs. A folder's ID is the long code in its URL when you open
   // it in Drive: drive.google.com/drive/folders/THIS_PART_HERE
-  //   • ROOT = the TOP-LEVEL shared "MERchives" folder. Photo sub-folders
-  //     live inside it and are DISCOVERED AUTOMATICALLY — add / rename /
-  //     remove folders in Drive and the archive page updates itself.
-  //   • DOCS = the "Documents" sub-folder inside it. PDFs / Word docs go
-  //     loose in here → the "Documents" list. (It's excluded from the
-  //     photo tiles automatically.)
+  //   • ROOT = the TOP-LEVEL shared "MERchives" folder. Inside it live the
+  //     "Recent Photos" and "Legacy Photos" master folders — every folder
+  //     placed inside a master becomes a tile in that section of the page,
+  //     DISCOVERED AUTOMATICALLY. Add / rename / remove folders in Drive
+  //     and the archive page updates itself.
+  //   • DOCS = the "Documents" sub-folder. PDFs / Word docs go loose in
+  //     here → the "Documents" list. (Excluded from the photo tiles.)
   //   • CURRENT is only used by the home-page "match gallery" strip, which
   //     pulls a few random shots from the Current Season folder.
   MEMBERS_DRIVE_ROOT_FOLDER_ID:    "18u1BehBRJyhk9b9tOKaUhZQpQhuiIZHj",  // top-level "MERchives" folder
@@ -647,17 +648,20 @@ metaEl.hidden=false;
 
    Drive layout — pure drag-and-drop, nothing here ever needs editing:
      TOP-LEVEL "MERchives" FOLDER
-       ├─ Documents ............... PDFs / Word docs → the "Documents" list
-       ├─ Current Season .......... photo sub-folder → tile under RECENT PHOTOS
-       ├─ Last Season ............. photo sub-folder → tile under RECENT PHOTOS
-       ├─ 2020, 2015, … ........... year folders     → tiles under LEGACY PHOTOS
-       └─ Legacy Photos ........... catch-all folder → tile under LEGACY PHOTOS
+       ├─ Recent Photos ........... MASTER: each folder inside it is a tile
+       │    ├─ Current Season          under RECENT PHOTOS ("Current Season"
+       │    └─ Last Season             first, then "Last Season", then A-Z)
+       ├─ Legacy Photos ........... MASTER: each folder inside it is a tile
+       │    ├─ 2022, 2020, 2015, …     under LEGACY PHOTOS (years newest-
+       │    └─ (any other folder)      first, then others A-Z)
+       └─ Documents ............... PDFs / Word docs → the "Documents" list
 
-   Sub-folders are DISCOVERED AUTOMATICALLY on every page load:
-     • a folder named as a 4-digit year ("2015") or containing the word
-       "legacy" files under LEGACY PHOTOS (years newest-first, "Legacy
-       Photos" last); every other folder files under RECENT PHOTOS
-       ("Current Season" first, then "Last Season", then A-Z).
+   Folders are DISCOVERED AUTOMATICALLY on every page load:
+     • photos loose in a master folder (not in any sub-folder) get the
+       master's own tile, shown last in its section — so photos dropped
+       straight into "Legacy Photos" appear under a "Legacy Photos" tile.
+     • any folder loose in the top-level MERchives folder (outside the
+       masters) still shows under RECENT PHOTOS, so nothing goes missing.
      • add, rename, or remove a folder in Drive and the page follows along —
        tile names come straight from the Drive folder names.
 
@@ -680,30 +684,42 @@ metaEl.hidden=false;
       tilesMessage(recentTiles, 'Not connected yet \u2014 add the shared folder\u2019s ID in the site settings.');
       tilesMessage(legacyTiles, 'Not connected yet');
     } else {
-      listFolders(ROOT, function(err, folders){
+      listFolders(ROOT, function(err, rootFolders){
         if(err){
           tilesMessage(recentTiles, 'Couldn\u2019t load \u2014 the shared Drive couldn\u2019t be reached just now. Try a refresh.');
           tilesMessage(legacyTiles, 'Couldn\u2019t load');
           return;
         }
-        // split: 4-digit-year names + anything "legacy" go to LEGACY; the rest
-        // to RECENT. The "Documents" folder is handled by the docs list below.
-        var recent=[], legacy=[];
-        folders.forEach(function(f){
+        // find the master folders; anything else loose in the root files
+        // under RECENT PHOTOS (so a folder dropped in the wrong level still shows)
+        var recentMaster=null, legacyMaster=null, rootExtras=[];
+        rootFolders.forEach(function(f){
           var name=(f.name||'').trim();
           if(f.id===CONFIG.MEMBERS_DRIVE_DOCS_FOLDER_ID || /^documents$/i.test(name)) return;
-          if(/^\d{4}$/.test(name) || /legacy/i.test(name)) legacy.push(f);
-          else recent.push(f);
+          if(!recentMaster && /^recent photos$/i.test(name)){ recentMaster=f; return; }
+          if(!legacyMaster && /^legacy photos$/i.test(name)){ legacyMaster=f; return; }
+          rootExtras.push(f);
         });
+
+        // pull each master's sub-folders (a master may not exist yet)
+        var recentSubs=[], legacySubs=[], toFetch=0, fetched=0, totalPhotos=0, pending=0;
+        if(recentMaster){ toFetch++; listFolders(recentMaster.id, function(e, fs){ recentSubs=e?[]:fs; fetched++; maybeBuild(); }); }
+        if(legacyMaster){ toFetch++; listFolders(legacyMaster.id, function(e, fs){ legacySubs=e?[]:fs; fetched++; maybeBuild(); }); }
+        maybeBuild();
+        function maybeBuild(){ if(fetched>=toFetch){ toFetch=-1; buildAll(); } }
+
+        function buildAll(){
         // Recent: Current Season first, then Last Season, then A-Z
         var lead={'current season':0,'last season':1};
+        var recent=rootExtras.concat(recentSubs);
         recent.sort(function(a,b){
           var ra=lead[(a.name||'').trim().toLowerCase()], rb=lead[(b.name||'').trim().toLowerCase()];
           ra=(ra===undefined)?9:ra; rb=(rb===undefined)?9:rb;
           if(ra!==rb) return ra-rb;
           return (a.name||'').localeCompare(b.name||'', undefined, {numeric:true});
         });
-        // Legacy: year folders newest-first, non-year folders ("Legacy Photos") last
+        // Legacy: year folders newest-first, then other folders A-Z
+        var legacy=legacySubs.slice();
         legacy.sort(function(a,b){
           var ya=/^\d{4}$/.test((a.name||'').trim()), yb=/^\d{4}$/.test((b.name||'').trim());
           if(ya && yb) return (b.name||'').trim()-(a.name||'').trim();
@@ -712,17 +728,21 @@ metaEl.hidden=false;
         });
 
         recentTiles.innerHTML=''; legacyTiles.innerHTML='';
-        if(!recent.length) tilesMessage(recentTiles, 'No folders yet \u2014 add a photo folder to the shared Drive.');
-        if(!legacy.length) tilesMessage(legacyTiles, 'No folders yet \u2014 add a year folder (e.g. \u201c2015\u201d) to the shared Drive.');
 
-        var totalPhotos=0, pending=recent.length+legacy.length;
+        pending = recent.length + legacy.length + (recentMaster?1:0) + (legacyMaster?1:0);
         recent.forEach(function(f){ buildFolder(f, recentTiles); });
         legacy.forEach(function(f){ buildFolder(f, legacyTiles); });
+        // photos loose in a master folder get the master's own tile, shown
+        // last in its section (and removed again if the master has none)
+        if(recentMaster) buildFolder(recentMaster, recentTiles, true);
+        if(legacyMaster) buildFolder(legacyMaster, legacyTiles, true);
+        if(!pending) finishCount();
 
         // views exist now \u2014 let the page's hash router re-check the URL
         document.dispatchEvent(new Event('mlib:folders-ready'));
+        }
 
-        function buildFolder(folder, tileHost){
+        function buildFolder(folder, tileHost, removeIfEmpty){
           var slug=slugify(folder.name);
 
           // landing tile
@@ -758,6 +778,7 @@ metaEl.hidden=false;
           listImages(folder.id, function(err, files){
             pending--;
             if(err){ emptyGrid(grid, metaEl, 'Couldn\u2019t load', 'This folder couldn\u2019t be reached just now. Try a refresh.'); tMeta.textContent='Couldn\u2019t load'; finishCount(); return; }
+            if(!files.length && removeIfEmpty){ tile.remove(); section.remove(); finishCount(); return; }
             if(!files.length){ emptyGrid(grid, metaEl, 'No photos yet', 'Photos dropped into this Drive folder will appear here automatically.'); tMeta.textContent='No photos yet'; finishCount(); return; }
             renderPhotos(grid, files);
             totalPhotos += files.length;
@@ -774,6 +795,10 @@ metaEl.hidden=false;
 
         function finishCount(){
           if(pending<=0){
+            if(!recentTiles.querySelector('.mx-tile'))
+              tilesMessage(recentTiles, 'No folders yet — add a photo folder inside “Recent Photos” in the shared Drive.');
+            if(!legacyTiles.querySelector('.mx-tile'))
+              tilesMessage(legacyTiles, 'No folders yet — add a year folder (e.g. “2022”) inside “Legacy Photos” in the shared Drive.');
             var c=document.getElementById('memberGalleryCount');
             if(c && totalPhotos) c.textContent = totalPhotos + (totalPhotos===1?' photo':' photos');
           }
