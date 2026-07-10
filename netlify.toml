@@ -40,6 +40,18 @@
   to = "/thanks.html"
   status = 200
 
+# Site-wide security headers. Deliberately conservative: no Content-Security-Policy,
+# because the Campaign Monitor archive (document.write), inline styles/handlers, and
+# third-party sponsor/Google/Facebook assets would make a strict CSP break silently.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
+    Strict-Transport-Security = "max-age=31536000"
+
 # Cache images for a day. Long enough to speed up repeat visits; short enough
 # that the "replace a photo with the same filename" update trick still shows
 # within a day (shift-reload shows it immediately).

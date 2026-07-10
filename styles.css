@@ -202,6 +202,8 @@ body[data-hero="duotone"] .hero-media{background:var(--ocean-700)}
 .mc-state{padding:46px 6px;font-family:var(--font-mono);font-size:.9rem;letter-spacing:.06em;color:var(--ink-soft);border-bottom:1px solid var(--line)}
 .mc-foot{margin-top:22px;font-size:.92rem;color:var(--ink-soft);max-width:70ch}
 .sample-flag{display:inline-block;margin-left:8px;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-deep);border:1px solid var(--gold);padding:2px 7px;border-radius:2px;vertical-align:middle}
+.mc-updated{display:inline-block;margin-left:8px;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);border:1px solid var(--line);padding:2px 7px;border-radius:2px;vertical-align:middle}
+.mc-state a{color:var(--ink-soft);text-decoration:underline}
 @media(max-width:780px){
   .mc-row{grid-template-columns:1fr auto;grid-template-areas:"date res" "opp res" "comp loc";row-gap:6px;column-gap:14px}
   .mc-row .m-date{grid-area:date}.mc-row .m-opp{grid-area:opp;font-size:1.3rem}

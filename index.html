@@ -15,6 +15,29 @@
 <meta property="og:url" content="https://grunionrugby.com/" />
 <meta property="og:image" content="https://grunionrugby.com/assets/og-image.jpg" />
 <meta name="twitter:card" content="summary_large_image" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SportsTeam",
+  "name": "Grunion Rugby Football Club",
+  "alternateName": "The Grunion",
+  "sport": "Rugby Union",
+  "url": "https://grunionrugby.com/",
+  "logo": "https://grunionrugby.com/assets/grunion-crest.png",
+  "image": "https://grunionrugby.com/assets/og-image.jpg",
+  "foundingDate": "1980",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Santa Barbara",
+    "addressRegion": "CA",
+    "addressCountry": "US"
+  },
+  "sameAs": [
+    "https://www.facebook.com/GrunionRugby",
+    "https://www.instagram.com/santabarbaragrunionrugby"
+  ]
+}
+</script>
 <link rel="preload" as="image" href="assets/hero-action.jpg" />
 
 <!-- ============================================================= -->
@@ -37,7 +60,7 @@
 <header class="site-head" id="siteHead">
   <div class="wrap nav">
     <a class="brand" href="#top" aria-label="Grunion Rugby Football Club — home">
-      <img class="crest" src="assets/grunion-crest.png" alt="Grunion RFC crest" />
+      <img class="crest" src="assets/grunion-crest.png" alt="Grunion RFC crest" width="400" height="400" />
       <span><b>Grunion R.F.C.</b><i>Santa Barbara · Est. 1978</i></span>
     </a>
     <nav class="nav-links" id="navLinks" aria-label="Primary">
@@ -142,18 +165,20 @@
       <a class="sp-feature" href="https://www.sharkeez.net" target="_blank" rel="noopener">
         <span class="kicker">Featured Sponsor</span>
         <div class="spf-body">
-          <span class="spf-logo"><img src="assets/sharkeez-logo.png" alt="Baja Sharkeez" onerror="this.onerror=null;this.src='https://sharkeez.net/wp-content/uploads/2025/09/sharkeez-light.png';this.classList.add('spf-img-mascot')" /></span>
+          <span class="spf-logo"><img src="assets/sharkeez-logo.png" alt="Baja Sharkeez" width="360" height="239" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://sharkeez.net/wp-content/uploads/2025/09/sharkeez-light.png';this.classList.add('spf-img-mascot')" /></span>
           <span class="spf-name">Baja Sharkeez</span>
           <p>Our home away from home and host of the third half. The club gathers here every Thursday after training and after home matches.</p>
         </div>
         <div class="sp-addr">416 State St · Santa Barbara &nbsp;·&nbsp; Visit website →</div>
       </a>
       <a class="sp-logo sp-named" href="https://www.rinconbrewery.com/" target="_blank" rel="noopener">
-        <img src="https://www.rinconbrewery.com/favicon.png" alt="Rincon Brewery" loading="lazy" onerror="this.remove()" />
+        <!-- local logo first; falls back to the remote copy until assets/rincon-logo.png exists -->
+        <img src="assets/rincon-logo.png" alt="Rincon Brewery" loading="lazy" onerror="this.onerror=function(){this.remove()};this.src='https://www.rinconbrewery.com/favicon.png'" />
         <span>Rincon Brewery</span>
       </a>
       <a class="sp-logo sp-named" href="https://www.goldenroostersb.com/" target="_blank" rel="noopener">
-        <img src="https://storage.googleapis.com/wzukusers/user-29017026/images/fav-ee4c346946734a4eb46b03ace15156ea/mstile-150x150.png" alt="Golden Rooster Transportation" loading="lazy" onerror="this.remove()" />
+        <!-- local logo first; falls back to the remote copy until assets/golden-rooster-logo.png exists -->
+        <img src="assets/golden-rooster-logo.png" alt="Golden Rooster Transportation" loading="lazy" onerror="this.onerror=function(){this.remove()};this.src='https://storage.googleapis.com/wzukusers/user-29017026/images/fav-ee4c346946734a4eb46b03ace15156ea/mstile-150x150.png'" />
         <span>Golden Rooster Transportation</span>
       </a>
       <div class="sp-logo">Sponsor logo</div>
@@ -343,7 +368,8 @@
         </div>
       </a>
       <a class="fam-card" href="https://stingraysrfc.com" target="_blank" rel="noopener">
-        <div class="ph photo" style="background-image:url('https://images.squarespace-cdn.com/content/v1/672e83d9472ba44258bdb8a4/9d4e0eaa-09dc-4896-b007-6475c86af97d/20250118_110138.jpg?format=1200w')" role="img" aria-label="Santa Barbara Stingrays youth rugby"></div>
+        <!-- local photo layered above the remote copy; remote shows until assets/stingrays-youth.jpg exists -->
+        <div class="ph photo" style="background-image:url('assets/stingrays-youth.jpg'),url('https://images.squarespace-cdn.com/content/v1/672e83d9472ba44258bdb8a4/9d4e0eaa-09dc-4896-b007-6475c86af97d/20250118_110138.jpg?format=1200w')" role="img" aria-label="Santa Barbara Stingrays youth rugby"></div>
         <div class="fc-body">
           <span class="fc-tag">Youth Rugby</span>
           <h3>Santa Barbara Stingrays</h3>

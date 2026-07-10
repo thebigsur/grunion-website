@@ -4,8 +4,9 @@
 var CONFIG = {
   // Match Centre: paste the PUBLISHED Google Sheet CSV URL.
   // File ▸ Share ▸ Publish to web ▸ choose the sheet ▸ Comma-separated values (.csv).
-  // Columns (header row, any order): Season, Date, Opponent, Competition, Location, Status, GrunionScore, OpponentScore
-  // Leave "" to show the built-in sample fixtures below.
+  // Columns (header row, any order): Season, Division, Date, Time, Opponent, Competition, Location, Status, GrunionScore, OpponentScore
+  // Time is optional (e.g. "1:00 PM") — shown as the kickoff time on upcoming matches.
+  // Leave "" to show the built-in sample fixtures below (setup preview only).
   SHEET_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRRlKXYhf97sQcT0SKa_91oXBuJv_dmYm3m_5k5Jp7Df49Fm3HuQbRML14GlEsETyNgoWeZNLKBMelv/pub?gid=0&single=true&output=csv",
 
   // The '78 Club patron roster: paste a PUBLISHED Google Doc OR Google Sheet URL.
@@ -182,7 +183,10 @@ var CONFIG = {
       metaEl=document.getElementById('mcMeta');
   if(!listEl) return; // Match Centre lives on the homepage only
 
-  // built-in sample fixtures — shown until SHEET_CSV_URL is set. SWAP via the sheet.
+  // built-in sample fixtures — shown ONLY while SHEET_CSV_URL is "" (setup preview).
+  // Once the sheet is connected these never render: if the sheet can't be reached,
+  // the Match Centre shows the last-loaded results (with an "Updated" tag) or an
+  // honest "temporarily unavailable" note — never fake data.
   var SAMPLE = [
     {Season:'2024–25', Division:'SoCal Division 3', Date:'2025-04-12', Opponent:'Ventura',        Competition:'SoCal D3', Location:'Home', Status:'Result', GrunionScore:'31', OpponentScore:'17'},
     {Season:'2024–25', Division:'SoCal Division 3', Date:'2025-03-22', Opponent:'Kern County',    Competition:'SoCal D3', Location:'Away', Status:'Result', GrunionScore:'19', OpponentScore:'24'},
@@ -195,40 +199,67 @@ var CONFIG = {
   ];
 
   var isSample=true;
+  var staleTs=null; // set when we're showing cached data because a refresh failed
 
   function start(){
     if(CONFIG.SHEET_CSV_URL){
       // Google's published-CSV endpoint can be slow (1–10s). Render the last-seen
       // sheet from localStorage instantly, then fetch fresh data in the background
       // and only re-render if it actually changed.
-      var CACHE_KEY='grunion-fixtures-csv', cached=null;
-      try{ cached=localStorage.getItem(CACHE_KEY); }catch(e){}
+      var CACHE_KEY='grunion-fixtures-csv', TS_KEY='grunion-fixtures-ts', cached=null, cachedTs=null;
+      try{ cached=localStorage.getItem(CACHE_KEY); cachedTs=parseInt(localStorage.getItem(TS_KEY),10)||null; }catch(e){}
       if(cached){
         var cachedRows=parseCSV(cached);
         if(cachedRows.length){ isSample=false; render(cachedRows); } else { cached=null; }
       }
-      fetch(CONFIG.SHEET_CSV_URL).then(function(r){ if(!r.ok) throw 0; return r.text(); })
+      // 10s timeout so a stalled Google request can't hang the section forever
+      var ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+      if(ctrl) setTimeout(function(){ ctrl.abort(); }, 10000);
+      fetch(CONFIG.SHEET_CSV_URL, ctrl?{signal:ctrl.signal}:undefined)
+        .then(function(r){ if(!r.ok) throw 0; return r.text(); })
         .then(function(txt){
           var rows=parseCSV(txt);
           if(rows.length){
-            isSample=false;
-            try{ localStorage.setItem(CACHE_KEY, txt); }catch(e){}
-            if(txt!==cached) render(rows); // unchanged data → don't reset the season toggle
+            isSample=false; staleTs=null;
+            try{ localStorage.setItem(CACHE_KEY, txt); localStorage.setItem(TS_KEY, String(Date.now())); }catch(e){}
+            if(txt!==cached) render(rows); else stampMeta(); // unchanged data → don't reset the season toggle
           } else if(!cached){
-            render(SAMPLE);
+            unavailable();
           }
         })
-        .catch(function(){ if(!cached) render(SAMPLE); });
+        .catch(function(){
+          if(cached){ staleTs=cachedTs; stampMeta(); } // keep last-known-good, note its age
+          else unavailable();
+        });
     } else {
-      render(SAMPLE);
+      render(SAMPLE); // setup preview only — SHEET_CSV_URL is blank
     }
+  }
+
+  // Honest failure state — never present sample data as if it were real.
+  function unavailable(){
+    toggleEl.innerHTML='';
+    metaEl.hidden=true;
+    listEl.innerHTML='<div class="mc-state">Fixtures are temporarily unavailable — please try again in a minute. '+
+      'Game-day updates also post to <a href="https://www.facebook.com/GrunionRugby" target="_blank" rel="noopener">Facebook</a> and '+
+      '<a href="https://www.instagram.com/santabarbaragrunionrugby" target="_blank" rel="noopener">Instagram</a>.</div>';
+  }
+
+  // "Updated <date>" tag on the record line while showing cached data whose
+  // background refresh failed. Cleared again after a successful fetch.
+  function stampMeta(){
+    var el=metaEl.querySelector('.mc-updated');
+    if(!staleTs){ if(el) el.remove(); return; }
+    var txt='Updated '+new Date(staleTs).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    if(!el){ el=document.createElement('span'); el.className='mc-updated'; metaEl.appendChild(el); }
+    el.textContent=txt;
   }
 
   function parseCSV(text){
     var lines=text.replace(/\r/g,'').split('\n').filter(function(l){return l.trim().length;});
     if(lines.length<2) return [];
     var headers=splitLine(lines[0]).map(function(h){return h.trim().toLowerCase();});
-    var map={season:'Season',division:'Division',date:'Date',opponent:'Opponent',competition:'Competition',location:'Location',status:'Status',grunionscore:'GrunionScore',opponentscore:'OpponentScore'};
+    var map={season:'Season',division:'Division',date:'Date',time:'Time',kickoff:'Time',kickofftime:'Time',opponent:'Opponent',competition:'Competition',location:'Location',status:'Status',grunionscore:'GrunionScore',opponentscore:'OpponentScore'};
     var out=[];
     for(var i=1;i<lines.length;i++){
       var cells=splitLine(lines[i]); var o={};
@@ -265,9 +296,14 @@ var CONFIG = {
   }
   function result(r){
     if((r.Status||'').toLowerCase().indexOf('up')===0 || (!r.GrunionScore&&!r.OpponentScore)){
-      return {cls:'r-up', badge:'Upcoming', score:'Kickoff TBD'};
+      var t=String(r.Time||'').trim();
+      return {cls:'r-up', badge:'Upcoming', score:(t?esc(t):'Kickoff TBD')};
     }
     var g=parseInt(r.GrunionScore,10), o=parseInt(r.OpponentScore,10);
+    if(!isFinite(g)||!isFinite(o)){
+      // marked as played but the scores aren't readable numbers — don't guess a result
+      return {cls:'r-up', badge:'TBC', score:'—'};
+    }
     var cls='r-draw', b='Draw';
     if(g>o){cls='r-win';b='Win';} else if(g<o){cls='r-loss';b='Loss';}
     return {cls:cls, badge:b, score:g+'–'+o};
@@ -312,11 +348,12 @@ metaEl.hidden=false;
         '<div class="m-date">'+fmtDate(r.Date)+'</div>'+
         '<div class="m-opp">'+esc(r.Opponent||'TBD')+'</div>'+
         '<div class="m-comp">'+esc(r.Competition||'')+'</div>'+
-        '<div class="m-loc">'+(/(^a)/i.test(r.Location||'')?'Away':'Home')+'</div>'+
+        '<div class="m-loc">'+locLabel(r.Location)+'</div>'+
         '<div class="m-res"><span class="m-score">'+res.score+'</span><span class="badge">'+res.badge+'</span></div>'+
       '</div>';
     });
     listEl.innerHTML=html;
+    stampMeta(); // re-apply the "Updated" tag if we're on cached data
   }
 
   function fillTicker(rows){
@@ -342,11 +379,20 @@ metaEl.hidden=false;
     var nextOppEl=document.getElementById('nextOpp'),
         nextDateEl=document.getElementById('nextDate');
     if(nextOppEl && nextDateEl){
-      if(next){ nextOppEl.textContent=next.Opponent||'TBD'; nextDateEl.textContent=fmtDate(next.Date); }
+      if(next){ nextOppEl.textContent=next.Opponent||'TBD'; nextDateEl.textContent=fmtDate(next.Date)+(next.Time?' · '+String(next.Time).trim():''); }
       else    { nextOppEl.textContent='—'; nextDateEl.textContent='TBD'; }
     }
   }
   function esc(s){ return String(s).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
+  // Venue label: explicit Home/Away; anything else (Neutral, Tournament, …)
+  // renders as written in the sheet instead of being guessed as Home.
+  function locLabel(v){
+    v=String(v||'').trim();
+    if(!v) return '';
+    if(/^h/i.test(v)) return 'Home';
+    if(/^a/i.test(v)) return 'Away';
+    return esc(v);
+  }
 
   start();
 })();

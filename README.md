@@ -53,9 +53,19 @@ nothing looks broken.
 
 ### Update fixtures & results
 The Match Centre reads from a Google Sheet. Publish a sheet with these column
-headers — `Season, Division, Date, Opponent, Competition, Location, Status,
+headers — `Season, Division, Date, Time, Opponent, Competition, Location, Status,
 GrunionScore, OpponentScore` — then paste its published-CSV link into
 `SHEET_CSV_URL` in `site.js`. After that, editing the sheet updates the site.
+
+Notes on the columns:
+- `Time` is optional — e.g. `1:00 PM`. If filled in, upcoming matches show the
+  kickoff time instead of "Kickoff TBD".
+- `Location` should be `Home` or `Away`; anything else (e.g. `Neutral`) is
+  shown exactly as written.
+
+If Google can't be reached, the site shows the last-loaded results with a small
+"Updated <date>" tag, or an honest "temporarily unavailable" note — it never
+shows made-up fixtures.
 
 ### Update the Hall of Fame
 Same idea: a published Google Sheet with `Name, Year` columns, linked via
@@ -78,8 +88,12 @@ for that name, so it updates automatically.
 - `assets/grunion-crest.png` — the logo / crest
 - `assets/hero-action.jpg` — the big homepage hero photo (**.jpg**, not .png)
 - `assets/mermaids-team.jpg` — photo on the rugby-family section (**.jpg**)
+- `assets/stingrays-youth.jpg` — Stingrays photo on the rugby-family section (**.jpg**)
 - `assets/history-1.jpg` … `assets/history-3.jpg` — gallery photos
 - `assets/gallery-4.jpg` … `assets/gallery-6.jpg` — extra Match Gallery slots
+- `assets/rincon-logo.png` / `assets/golden-rooster-logo.png` — sponsor logos
+  (sponsor logos are served from this folder so a sponsor's own website can't
+  silently break ours; if a file is missing the site falls back to the remote copy)
 
 For the gallery: any slot without a matching file shows a labeled placeholder,
 so the section never looks broken. Use `.jpg`. Please keep photos under about
@@ -98,6 +112,6 @@ publishes automatically. `netlify.toml` provides the pretty URLs
 (/the-78-club, /MERchives, /history, /fossils) and asset caching.
 
 One admin note: the Google Drive API key in `site.js` is public by design
-(the browser needs it), but it should be restricted in the Google Cloud
-Console to the Drive API only **and** to the `grunionrugby.com` referrer, so
-nobody else can use it.
+(the browser needs it), but it must stay restricted in the Google Cloud
+Console to the Drive API only **and** to the `grunionrugby.com` referrers, so
+nobody else can use it. (Verified and locked down July 2026.)
