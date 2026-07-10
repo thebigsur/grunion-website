@@ -837,10 +837,12 @@ metaEl.hidden=false;
       .then(function(j){ cb(null, (j && j.files) || []); })
       .catch(function(){ cb(true, null); });
   }
-  // images in a folder, newest first
+  // images in a folder, newest first. "description" is the file's Description
+  // field in Drive (select a photo → View details → Description) — when present
+  // it renders as a caption below the photo; when blank, no caption shows.
   function listImages(folderId, cb){
     var q = "'"+folderId+"' in parents and mimeType contains 'image/' and trashed=false";
-    driveList(q, 'files(id,name,thumbnailLink,imageMediaMetadata)', cb);
+    driveList(q, 'files(id,name,description,thumbnailLink,imageMediaMetadata)', cb);
   }
   // PDFs + Word docs in a folder, newest first
   function listDocs(folderId, cb){
@@ -903,18 +905,29 @@ var PER_PAGE = 16;   // 4 rows × 4 columns
         // many files) — the file/d/{id}/view page is the reliable full-size link.
         var full = 'https://drive.google.com/file/d/' + f.id + '/view';
         var thumb = f.thumbnailLink ? f.thumbnailLink.replace(/=s\d+$/, '=s600') : full;
+        // each grid cell is a <figure>: the photo tile plus (only when the Drive
+        // file has a Description) a caption below it. No description, no caption.
+        var cell=document.createElement('figure');
+        cell.className='member-cell';
         var a=document.createElement('a');
         a.className='member-photo';
         a.href=full; a.target='_blank'; a.rel='noopener';
         a.setAttribute('role','listitem');
-        a.setAttribute('aria-label','Open photo: '+(f.name||'photo'));
+        a.setAttribute('aria-label','Open photo: '+(f.description||f.name||'photo'));
         var img=document.createElement('img');
-        img.loading='lazy'; img.src=thumb; img.alt=cleanName(f.name)||'Club photo';
-        img.onerror=function(){ a.remove(); };
+        img.loading='lazy'; img.src=thumb; img.alt=(f.description||cleanName(f.name))||'Club photo';
+        img.onerror=function(){ cell.remove(); };
         a.appendChild(img);
         var open=document.createElement('span'); open.className='mp-open'; open.setAttribute('aria-hidden','true'); open.textContent='\u2197';
         a.appendChild(open);
-        grid.appendChild(a);
+        cell.appendChild(a);
+        if(f.description){
+          var cap=document.createElement('figcaption');
+          cap.className='mp-desc';
+          cap.textContent=f.description;
+          cell.appendChild(cap);
+        }
+        grid.appendChild(cell);
       });
       if(pager){
         pageLabel.textContent = 'Page ' + (page+1) + ' of ' + totalPages;

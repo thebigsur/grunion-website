@@ -70,6 +70,11 @@
   font-family:var(--font-mono);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.85);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
+/* grid cell = photo + optional caption. The caption comes from the Drive file's
+   Description field and only renders when one is set — no description, no caption. */
+.member-cell{margin:0;min-width:0;display:flex;flex-direction:column}
+.mp-desc{margin-top:9px;font-size:.86rem;line-height:1.5;color:rgba(255,255,255,.7)}
+
 /* striped loading / empty tile — styled like the site's .ph placeholder */
 .member-gallery-loading{grid-column:1 / -1;min-height:220px;display:grid;place-items:center;gap:10px;text-align:center;
   border-radius:4px;background-color:var(--ocean-800);
