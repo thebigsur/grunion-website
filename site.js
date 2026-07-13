@@ -826,7 +826,7 @@ metaEl.hidden=false;
             if(err){ emptyGrid(grid, metaEl, 'Couldn\u2019t load', 'This folder couldn\u2019t be reached just now. Try a refresh.'); tMeta.textContent='Couldn\u2019t load'; finishCount(); return; }
             if(!files.length && removeIfEmpty){ tile.remove(); section.remove(); finishCount(); return; }
             if(!files.length){ emptyGrid(grid, metaEl, 'No photos yet', 'Photos dropped into this Drive folder will appear here automatically.'); tMeta.textContent='No photos yet'; finishCount(); return; }
-            renderPhotos(grid, files);
+            renderPhotos(grid, files, folder.name);
             totalPhotos += files.length;
             var label = files.length + (files.length===1?' photo':' photos');
             if(metaEl) metaEl.textContent = label;
@@ -913,7 +913,7 @@ metaEl.hidden=false;
   /* ---------- renderers ---------- */
 var PER_PAGE = 16;   // 4 rows × 4 columns
 
-  function renderPhotos(grid, files){
+  function renderPhotos(grid, files, folderName){
     var page = 0;
     var totalPages = Math.ceil(files.length / PER_PAGE);
     var folderSection = grid.closest('.member-folder');
@@ -972,6 +972,15 @@ var PER_PAGE = 16;   // 4 rows × 4 columns
           cap.className='mp-desc';
           cap.textContent=f.description;
           cell.appendChild(cap);
+        } else if(photoInfo){
+          // no caption yet — quiet invitation to tell the club what this is
+          var know=document.createElement('button');
+          know.type='button'; know.className='mp-know';
+          know.textContent='Know this photo? Tell us';
+          know.addEventListener('click', function(){
+            photoInfo.open(f, f.thumbnailLink?thumb:'', folderName, know);
+          });
+          cell.appendChild(know);
         }
         grid.appendChild(cell);
       });
@@ -1020,6 +1029,89 @@ var PER_PAGE = 16;   // 4 rows × 4 columns
       docsHost.appendChild(a);
     });
   }
+
+  /* ---------- "Know this photo?" — visitor info submissions ---------- */
+  /* Uncaptioned photos get a quiet link (built in renderPhotos above) that
+     opens the photo-info modal in MERchives.html. Submissions post to
+     Netlify Forms, which stores them and emails the club along with the
+     photo's filename, folder, and Drive link. Nothing a visitor types ever
+     renders on the site: verified info is pasted into the photo's
+     Description in Drive by hand, and that becomes the caption. */
+  var photoInfo=(function(){
+    var overlay=document.getElementById('photoInfoModal');
+    if(!overlay) return null;
+    var panel=overlay.querySelector('.pi-panel'),
+        form=document.getElementById('piForm'),
+        doneBox=document.getElementById('piDone'),
+        errEl=document.getElementById('piErr'),
+        sendBtn=document.getElementById('piSend'),
+        thumbEl=document.getElementById('piThumb'),
+        fileEl=document.getElementById('piFile'),
+        opener=null;
+
+    function open(f, thumbSrc, folderName, btn){
+      opener=btn||null;
+      form.reset(); // clear any half-typed previous submission…
+      // …then fill the hidden context fields (reset clears these too)
+      document.getElementById('piPhoto').value=f.name||'';
+      document.getElementById('piSubject').value='MERchives photo info: '+(f.name||'photo'); // email subject line
+      document.getElementById('piFolder').value=folderName||'';
+      document.getElementById('piLink').value='https://drive.google.com/file/d/'+f.id+'/view';
+      fileEl.textContent=(f.name||'photo')+(folderName?' · '+folderName:'');
+      thumbEl.hidden=!thumbSrc;
+      thumbEl.onerror=function(){ thumbEl.hidden=true; };
+      if(thumbSrc) thumbEl.src=thumbSrc;
+      form.hidden=false; doneBox.hidden=true; errEl.hidden=true;
+      sendBtn.disabled=false; sendBtn.textContent='Send it in';
+      overlay.hidden=false;
+      document.body.style.overflow='hidden';
+      document.getElementById('piInfo').focus();
+    }
+
+    function close(){
+      overlay.hidden=true;
+      document.body.style.overflow='';
+      if(opener && !opener.disabled) opener.focus();
+      opener=null;
+    }
+
+    overlay.addEventListener('click', function(e){ if(e.target===overlay) close(); });
+    document.getElementById('piClose').addEventListener('click', close);
+    document.getElementById('piDoneClose').addEventListener('click', close);
+    document.addEventListener('keydown', function(e){
+      if(overlay.hidden) return;
+      if(e.key==='Escape'){ close(); return; }
+      if(e.key==='Tab'){ // keep focus inside the dialog
+        var els=Array.prototype.filter.call(
+          panel.querySelectorAll('button:not(:disabled),textarea,input:not([type=hidden]),a[href]'),
+          function(el){ return el.offsetParent!==null && el.tabIndex>-1; });
+        if(!els.length) return;
+        var first=els[0], last=els[els.length-1];
+        if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+        else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+      }
+    });
+
+    form.addEventListener('submit', function(e){
+      e.preventDefault(); // AJAX submit — Netlify accepts the urlencoded POST
+      errEl.hidden=true; sendBtn.disabled=true; sendBtn.textContent='Sending…';
+      fetch('/', {
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:new URLSearchParams(new FormData(form)).toString()
+      }).then(function(r){
+        if(!r.ok) throw 0;
+        form.hidden=true; doneBox.hidden=false;
+        document.getElementById('piDoneClose').focus();
+        if(opener){ opener.textContent='Sent. MER!'; opener.disabled=true; }
+      }).catch(function(){
+        errEl.hidden=false;
+        sendBtn.disabled=false; sendBtn.textContent='Send it in';
+      });
+    });
+
+    return {open:open};
+  })();
 
   /* ---------- empty / fallback states ---------- */
   function emptyGrid(grid, metaEl, label, sub){

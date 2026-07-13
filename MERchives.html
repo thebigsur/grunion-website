@@ -154,6 +154,55 @@
 .mlib-sync .sync-tag{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;
   color:var(--gold-soft);border:1px solid rgba(216,177,95,.4);padding:6px 11px;border-radius:2px;flex:none}
 .mlib-sync p{color:rgba(255,255,255,.62);font-size:.95rem;max-width:64ch}
+
+/* ---- "Know this photo?" — visitor info submissions ---- */
+/* Photos with no Drive Description get a quiet link that opens the modal
+   below (markup before the footer). Submissions go to Netlify Forms. */
+.mp-know{margin-top:9px;align-self:flex-start;display:inline-flex;align-items:center;gap:.6em;
+  background:none;border:0;padding:0;cursor:pointer;text-align:left;
+  font-family:var(--font-mono);font-size:.64rem;letter-spacing:.13em;text-transform:uppercase;
+  color:rgba(255,255,255,.42);transition:color .15s ease}
+.mp-know::before{content:"?";width:15px;height:15px;flex:none;display:grid;place-items:center;
+  border:1px solid rgba(216,177,95,.45);border-radius:2px;font-size:.6rem;color:var(--gold-soft)}
+.mp-know:hover:not(:disabled),.mp-know:focus-visible{color:var(--gold-soft)}
+.mp-know:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.mp-know:disabled{cursor:default;color:rgba(255,255,255,.35)}
+
+.pi-overlay{position:fixed;inset:0;z-index:150;display:grid;place-items:center;padding:16px;
+  background:rgba(4,16,26,.8)}
+.pi-panel{position:relative;width:min(540px,100%);max-height:92vh;overflow:auto;
+  background:var(--ocean-950);border:1px solid rgba(216,177,95,.4);border-radius:6px;
+  box-shadow:0 30px 90px rgba(0,0,0,.6);padding:clamp(22px,4.5vw,34px);color:#fff}
+.pi-close{position:absolute;top:10px;right:10px;width:34px;height:34px;display:grid;place-items:center;
+  background:none;border:1px solid rgba(255,255,255,.25);border-radius:3px;color:rgba(255,255,255,.75);
+  font-size:1.15rem;line-height:1;cursor:pointer}
+.pi-close:hover{border-color:var(--gold-soft);color:var(--gold-soft)}
+.pi-head{display:flex;gap:16px;align-items:flex-start;padding-right:36px}
+.pi-head img{width:88px;height:88px;object-fit:cover;border-radius:3px;flex:none;
+  border:1px solid rgba(255,255,255,.2);background:var(--ocean-800)}
+.pi-head .kicker{color:var(--gold-soft)}
+.pi-head h4{font-family:var(--font-display);font-weight:800;text-transform:uppercase;letter-spacing:.01em;
+  font-size:clamp(1.5rem,4.5vw,1.9rem);line-height:.95;margin-top:8px;color:#fff}
+.pi-file{display:block;margin-top:8px;font-family:var(--font-mono);font-size:.64rem;
+  letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.5);word-break:break-word}
+#piForm{margin-top:22px}
+.pi-lab{display:block;font-family:var(--font-mono);font-size:.66rem;letter-spacing:.14em;
+  text-transform:uppercase;color:rgba(255,255,255,.65);margin-bottom:7px}
+.pi-lab i{font-style:normal;text-transform:none;letter-spacing:.04em;color:rgba(255,255,255,.4)}
+#piForm textarea,#piForm input[type=text],#piForm input[type=email]{width:100%;
+  background:var(--ocean-800);border:1px solid rgba(255,255,255,.22);border-radius:3px;
+  color:#fff;font-family:var(--font-body);font-size:.95rem;line-height:1.5;padding:10px 12px}
+#piForm textarea:focus,#piForm input:focus{outline:2px solid var(--gold);outline-offset:1px}
+#piForm textarea{resize:vertical;min-height:110px}
+.pi-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+@media(max-width:480px){.pi-row{grid-template-columns:1fr}}
+.pi-actions{margin-top:20px;display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px}
+.pi-err{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.08em;color:#e8a3a3}
+.pi-note{margin-top:14px;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.1em;
+  text-transform:uppercase;color:rgba(255,255,255,.38)}
+.pi-done{margin-top:22px}
+.pi-done p{font-size:1.05rem;line-height:1.7;color:rgba(255,255,255,.88)}
+.pi-done .btn{margin-top:20px}
 </style>
 </head>
 <body data-page="club78">
@@ -258,6 +307,57 @@
   </div>
 </section>
 </main>
+
+<!-- "KNOW THIS PHOTO?" — visitor info submissions for uncaptioned archive photos.
+     site.js adds a quiet link under each photo that has no Drive Description; the
+     link opens this modal. The form posts to Netlify Forms ("photo-info"): Netlify
+     stores each submission and emails the club. Nothing a visitor types renders on
+     the site — verified info gets pasted into the photo's Description in Drive by
+     hand, and that becomes the caption on the next load. The form markup must stay
+     in this static HTML so Netlify's deploy-time form detection registers it. -->
+<div class="pi-overlay" id="photoInfoModal" hidden>
+  <div class="pi-panel" role="dialog" aria-modal="true" aria-labelledby="piTitle">
+    <button type="button" class="pi-close" id="piClose" aria-label="Close">&times;</button>
+    <div class="pi-head">
+      <img id="piThumb" src="" alt="" width="88" height="88" />
+      <div>
+        <span class="kicker">From the archive</span>
+        <h4 id="piTitle">Know this photo?</h4>
+        <span class="pi-file" id="piFile"></span>
+      </div>
+    </div>
+    <form id="piForm" name="photo-info" method="POST" data-netlify="true" netlify-honeypot="bot-field">
+      <input type="hidden" name="form-name" value="photo-info" />
+      <input type="hidden" name="subject" id="piSubject" data-remove-prefix value="MERchives photo info" />
+      <input type="hidden" name="photo" id="piPhoto" />
+      <input type="hidden" name="folder" id="piFolder" />
+      <input type="hidden" name="drive-link" id="piLink" />
+      <p hidden aria-hidden="true"><label>Leave this field empty: <input name="bot-field" tabindex="-1" autocomplete="off" /></label></p>
+      <label class="pi-lab" for="piInfo">What do you know about it?</label>
+      <textarea id="piInfo" name="info" rows="4" required
+        placeholder="e.g. Practice at UCSB, spring 2001 — that's Smitty with the ball."></textarea>
+      <div class="pi-row">
+        <div>
+          <label class="pi-lab" for="piName">Your name <i>(optional)</i></label>
+          <input type="text" id="piName" name="name" autocomplete="name" />
+        </div>
+        <div>
+          <label class="pi-lab" for="piEmail">Email <i>(optional)</i></label>
+          <input type="email" id="piEmail" name="email" autocomplete="email" />
+        </div>
+      </div>
+      <div class="pi-actions">
+        <button type="submit" class="btn btn-gold" id="piSend">Send it in</button>
+        <span class="pi-err" id="piErr" hidden>Couldn&rsquo;t send just now &mdash; please try again in a minute.</span>
+      </div>
+      <p class="pi-note">Submissions are reviewed before anything appears in the archive.</p>
+    </form>
+    <div class="pi-done" id="piDone" hidden>
+      <p>This is off to the MERchives, where future Grunion can dig them out, argue over them, and swear the stories were even better than they remember.</p>
+      <button type="button" class="btn btn-gold" id="piDoneClose">Close</button>
+    </div>
+  </div>
+</div>
 
 <!-- Hash routing: #documents, or any folder slug built by site.js
      (#current-season, #last-season, #2015, #legacy-photos, …) opens that
