@@ -170,6 +170,7 @@
 
 .pi-overlay{position:fixed;inset:0;z-index:150;display:grid;place-items:center;padding:16px;
   background:rgba(4,16,26,.8)}
+.pi-overlay[hidden]{display:none} /* display:grid above would otherwise override the hidden attribute */
 .pi-panel{position:relative;width:min(540px,100%);max-height:92vh;overflow:auto;
   background:var(--ocean-950);border:1px solid rgba(216,177,95,.4);border-radius:6px;
   box-shadow:0 30px 90px rgba(0,0,0,.6);padding:clamp(22px,4.5vw,34px);color:#fff}
