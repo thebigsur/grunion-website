@@ -36,7 +36,9 @@ var CONFIG = {
   DONATE_URL:         "https://www.zeffy.com/en-US/donation-form/grunion-rfc",
 
   // Sponsorship inquiries (business deal — email, not checkout)
-  SPONSOR_EMAIL:      "sponsorship@grunionrugby.org",
+  // NOTE: all club mail goes to the gmail below until the @sbrfc.com inboxes are live;
+  // swap in the specific addresses here later.
+  SPONSOR_EMAIL:      "grunionrugby@gmail.com",
 
   // Giving conversations (The '78 Club "Start a Conversation")
   GIVING_NAME:        "Josh Timpe",
