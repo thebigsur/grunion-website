@@ -40,7 +40,7 @@ var CONFIG = {
 
   // Giving conversations (The '78 Club "Start a Conversation")
   GIVING_NAME:        "Josh Timpe",
-  GIVING_EMAIL:       "Treasurer@SBRFC.com",
+  GIVING_EMAIL:       "grunionrugby@gmail.com",
   GIVING_PHONE:       "",
 
   // Legal
