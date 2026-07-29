@@ -11,12 +11,13 @@ var CONFIG = {
 
   // The '78 Club patron roster: paste a PUBLISHED Google Doc OR Google Sheet URL.
   //  • Google Doc:  File ▸ Share ▸ Publish to web ▸ copy the link. In the doc, put each
-  //    tier name on its own line (Founders' XV / Reserves / Supporters' Union) and list
+  //    tier name on its own line (Founders' XV / Second XV) and list
   //    that tier's patrons on the lines beneath it — one name per line.
   //  • Google Sheet: File ▸ Share ▸ Publish to web ▸ .csv. Two columns — Tier, Name.
   //    (A published Sheet is the most reliable source.)
   // Leave "" to keep the "YOUR NAME HERE" placeholders on the wall.
-  PATRONS_DOC_URL: "",
+  // Connected to the Patrons tab of the "Website Sheet" spreadsheet (gid 299262421).
+  PATRONS_DOC_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRRlKXYhf97sQcT0SKa_91oXBuJv_dmYm3m_5k5Jp7Df49Fm3HuQbRML14GlEsETyNgoWeZNLKBMelv/pub?gid=299262421&single=true&output=csv",
 
   // Hall of Fame (history.html ▸ Greatest Grunions): paste a PUBLISHED Google Sheet CSV URL.
   // File ▸ Share ▸ Publish to web ▸ choose the "Hall of Fame" sheet ▸ Comma-separated values (.csv).
