@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow, noarchive" />
+<title>Club Dashboard · Grunion RFC</title>
+<!-- Internal club page: no GA snippet on purpose (it would pollute the traffic
+     numbers this page reports), not linked from the public site, noindex'd,
+     and every data endpoint requires the dashboard passcode. -->
+<link rel="icon" type="image/png" href="/assets/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800;900&family=Libre+Franklin:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+/* ============================ TOKENS ============================ */
+:root{
+  --page:#071c2c;            /* ocean-950 */
+  --card:#0d2c44;            /* ocean-800 — chart surface (palette validated against this) */
+  --card-2:#11324d;
+  --ink1:#ffffff;
+  --ink2:#c9d2da;
+  --ink3:#9aa1a8;            /* gray-101 — muted / axis */
+  --line:rgba(255,255,255,.09);
+  --grid:rgba(255,255,255,.08);
+  --baseline:rgba(255,255,255,.18);
+  --gold:#c2922e; --gold-soft:#d8b15f;
+  /* categorical series — Grunion ramp stepped for the dark surface.
+     Validated (dataviz six checks, dark, surface #0d2c44):
+     band PASS · chroma PASS · CVD ΔE 13.7 PASS · normal ΔE 15.6 PASS · contrast ≥3:1 PASS */
+  --s1:#b8892b;  /* gold  — slot 1 */
+  --s2:#5b9bd0;  /* blue  — slot 2 */
+  --s3:#3fa371;  /* green — slot 3 */
+  --up:#63c68b;  /* delta good  (4.5:1+ on card) */
+  --down:#e2906d;/* delta bad   (4.5:1+ on card) */
+  --font-display:"Saira Condensed","Arial Narrow",sans-serif;
+  --font-body:"Libre Franklin",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,monospace;
+  --wrap:1240px;
+  --gutter:clamp(18px,4vw,56px);
+}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0;background:var(--page);color:var(--ink1);font-family:var(--font-body);
+  font-size:15.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+img{max-width:100%;display:block}
+a{color:var(--gold-soft)}
+h1,h2,h3{margin:0;font-family:var(--font-display);font-weight:800;line-height:.95;
+  letter-spacing:.005em;text-transform:uppercase}
+p{margin:0}
+button{font-family:inherit;cursor:pointer;color:inherit}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.wrap{max-width:var(--wrap);margin:0 auto;padding-inline:var(--gutter)}
+.kicker{font-family:var(--font-mono);font-size:.68rem;font-weight:500;letter-spacing:.26em;
+  text-transform:uppercase;color:var(--gold-soft);display:inline-flex;align-items:center;gap:.7em}
+.kicker::before{content:"";width:24px;height:2px;background:var(--gold);display:inline-block}
+.mono{font-family:var(--font-mono)}
+
+/* jersey stripe, as on the main site */
+.rule101{height:5px;border:0;margin:0;
+  background:linear-gradient(90deg,var(--s2) 0 33.33%,var(--ink3) 33.33% 66.66%,var(--s3) 66.66% 100%)}
+
+/* ============================ HEADER ============================ */
+.dhead{border-bottom:1px solid var(--line);background:rgba(7,28,44,.85);backdrop-filter:blur(6px);
+  position:sticky;top:0;z-index:40}
+.dhead-in{display:flex;align-items:center;gap:16px;padding-block:14px}
+.dhead .crest{height:52px;width:auto;filter:drop-shadow(0 1px 5px rgba(0,0,0,.45))}
+.dhead .t b{font-family:var(--font-display);font-weight:800;font-size:1.7rem;
+  text-transform:uppercase;letter-spacing:.02em;line-height:1;display:block}
+.dhead .t i{font-family:var(--font-mono);font-style:normal;font-size:.6rem;letter-spacing:.18em;
+  color:var(--ink3);text-transform:uppercase;display:block;margin-top:3px}
+.dhead-right{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.updated{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+.hbtn{background:transparent;border:1px solid var(--line);border-radius:2px;padding:8px 14px;
+  font-family:var(--font-mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2)}
+.hbtn:hover{border-color:var(--gold-soft);color:#fff}
+
+/* ============================ SECTIONS ============================ */
+.section{padding-block:clamp(30px,4.5vw,54px)}
+.sec-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;
+  gap:12px 24px;margin-bottom:20px}
+.sec-head h2{font-size:clamp(1.9rem,4.4vw,3rem);margin-top:10px}
+.sec-note{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink3)}
+.section + .section{border-top:1px solid var(--line)}
+
+/* filter row — one row, scopes everything below it in the section */
+.filter-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;margin:2px 0 20px}
+.seg{display:inline-flex;border:1px solid var(--baseline);border-radius:2px;overflow:hidden}
+.seg button{background:transparent;border:0;border-left:1px solid var(--baseline);
+  padding:9px 16px;font-family:var(--font-mono);font-size:.7rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink3)}
+.seg button:first-child{border-left:0}
+.seg button[aria-pressed="true"]{background:var(--gold);color:var(--page);font-weight:600}
+.seg button:not([aria-pressed="true"]):hover{color:#fff;background:rgba(255,255,255,.05)}
+.filter-note{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink3)}
+
+/* ============================ TILES ============================ */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:12px;margin-bottom:14px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:16px 18px;min-width:0}
+.tile .t-lab{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink3)}
+.tile .t-val{font-weight:600;font-size:1.9rem;line-height:1.1;margin-top:8px;color:var(--ink1);
+  display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.tile .t-val small{font-weight:500;font-size:.95rem;color:var(--ink3)}
+.delta{font-family:var(--font-mono);font-size:.72rem;font-weight:600;letter-spacing:.02em;white-space:nowrap}
+.delta.up{color:var(--up)} .delta.down{color:var(--down)} .delta.flat{color:var(--ink3)}
+.tile .t-sub{font-size:.8rem;color:var(--ink2);margin-top:7px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.tile .t-sub .mono{font-size:.72rem;color:var(--ink3)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:baseline}
+
+/* ============================ CARDS & GRIDS ============================ */
+.card{background:var(--card);border:1px solid var(--line);border-radius:4px;
+  padding:18px 20px 16px;min-width:0;position:relative}
+.card + .card,.grid2 + .card,.card + .grid2{margin-top:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:880px){.grid2{grid-template-columns:1fr}}
+.card-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-bottom:6px}
+.card-head h3{font-size:1.22rem;letter-spacing:.02em;color:var(--ink1)}
+.card-head .spacer{flex:1}
+.card-sub{font-family:var(--font-mono);font-size:.63rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink3);width:100%;margin-top:-2px}
+.card.stale > :not(.card-head){opacity:.5;transition:opacity .2s}
+.tiles.stale{opacity:.55;transition:opacity .2s}
+.card-state{padding:26px 4px;font-family:var(--font-mono);font-size:.76rem;
+  letter-spacing:.06em;color:var(--ink3);line-height:1.7}
+.card-state b{color:var(--gold-soft);font-weight:500}
+
+/* legend — always present for ≥2 series; line keys mirror the mark */
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:2px 0 4px}
+.legend .lg{display:inline-flex;align-items:center;gap:8px;font-size:.78rem;color:var(--ink2)}
+.legend .lg i{width:16px;height:0;border-top:3px solid;border-radius:2px;display:inline-block}
+
+/* chart body */
+.chart-wrap{position:relative}
+.chart-wrap svg{display:block;width:100%;height:auto}
+.chart-wrap svg:focus-visible{outline:2px solid var(--gold);outline-offset:4px;border-radius:3px}
+/* tooltip: values lead, series names follow; line keys not boxes */
+.tip{position:absolute;pointer-events:none;background:#081f31;border:1px solid rgba(255,255,255,.16);
+  border-radius:3px;padding:9px 12px 8px;min-width:150px;box-shadow:0 10px 28px rgba(0,0,0,.45);
+  opacity:0;transition:opacity .08s;z-index:5}
+.tip.on{opacity:1}
+.tip .tp-x{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink3);margin-bottom:6px;white-space:nowrap}
+.tip .tp-row{display:flex;align-items:center;gap:8px;padding:2px 0;white-space:nowrap}
+.tip .tp-row i{width:12px;height:0;border-top:3px solid;border-radius:2px;flex:none}
+.tip .tp-row b{font-weight:600;font-size:.88rem;color:var(--ink1);font-variant-numeric:tabular-nums}
+.tip .tp-row span{font-size:.72rem;color:var(--ink3)}
+
+/* chart/table toggle + data tables */
+.tgl{display:inline-flex;border:1px solid var(--line);border-radius:2px;overflow:hidden}
+.tgl button{background:transparent;border:0;border-left:1px solid var(--line);padding:5px 10px;
+  font-family:var(--font-mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3)}
+.tgl button:first-child{border-left:0}
+.tgl button[aria-pressed="true"]{background:rgba(255,255,255,.09);color:#fff}
+.dtable{width:100%;border-collapse:collapse;margin-top:8px}
+.dtable caption{text-align:left;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink3);padding-bottom:8px}
+.dtable th{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink3);font-weight:500;text-align:right;padding:7px 10px;border-bottom:1px solid var(--baseline)}
+.dtable th:first-child{text-align:left;padding-left:2px}
+.dtable td{font-size:.84rem;color:var(--ink2);text-align:right;padding:7px 10px;
+  border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.dtable td:first-child{text-align:left;color:var(--ink1);padding-left:2px}
+.dtable td a{color:var(--gold-soft);text-decoration:none}
+.dtable td a:hover{text-decoration:underline}
+.dtable tr:last-child td{border-bottom:0}
+.tscroll{overflow-x:auto}
+.tscroll .dtable{min-width:560px}
+
+/* bar list — single-series bars (slot 1), value always visible beside the bar */
+.blist{display:grid;gap:9px;margin-top:10px}
+.brow{display:grid;grid-template-columns:minmax(90px,42%) 1fr auto;align-items:center;gap:12px;min-width:0}
+.brow .b-lab{font-size:.8rem;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brow .b-lab a{color:var(--ink2);text-decoration:none}
+.brow .b-lab a:hover{color:var(--gold-soft);text-decoration:underline}
+.brow .b-track{height:10px;background:rgba(255,255,255,.06);border-radius:0 4px 4px 0;overflow:hidden}
+.brow .b-bar{height:100%;background:var(--s1);border-radius:0 4px 4px 0;min-width:2px}
+.brow .b-val{font-family:var(--font-mono);font-size:.72rem;color:var(--ink2);font-variant-numeric:tabular-nums}
+.blist-empty{font-family:var(--font-mono);font-size:.72rem;color:var(--ink3);padding:10px 0}
+
+/* ============================ AUTH OVERLAY ============================ */
+.gatewall{position:fixed;inset:0;z-index:100;background:var(--page);display:grid;place-items:center;padding:20px}
+.gatewall[hidden]{display:none}
+.gate-card{width:min(400px,94vw);background:var(--card);border:1px solid var(--line);border-radius:6px;
+  padding:34px 32px;text-align:center}
+.gate-card .crest{height:84px;margin:0 auto 14px}
+.gate-card h1{font-size:2rem}
+.gate-card p{color:var(--ink2);font-size:.9rem;margin-top:10px}
+.gate-form{display:grid;gap:10px;margin-top:20px}
+.gate-form input{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.25);color:#fff;
+  padding:12px 15px;border-radius:2px;font-family:var(--font-mono);font-size:1rem;letter-spacing:.14em;text-align:center}
+.gate-form input:focus{border-color:var(--gold);outline:none}
+.gate-btn{background:var(--gold);color:var(--page);border:0;border-radius:2px;padding:12px 18px;
+  font-family:var(--font-display);font-weight:700;font-size:1.05rem;text-transform:uppercase;letter-spacing:.04em}
+.gate-btn:hover{background:var(--gold-soft)}
+.gate-err{color:var(--down);font-family:var(--font-mono);font-size:.72rem;letter-spacing:.06em;min-height:1.2em}
+.gate-note{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink3);margin-top:16px}
+
+/* footer */
+.dfoot{border-top:1px solid var(--line);margin-top:26px}
+.dfoot-in{padding-block:22px;display:flex;flex-wrap:wrap;gap:8px 28px;
+  font-family:var(--font-mono);font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.dfoot a{color:var(--ink3)}
+.dfoot a:hover{color:var(--gold-soft)}
+
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0 0 0 0);white-space:nowrap;border:0}
+@media(max-width:560px){
+  .tile .t-val{font-size:1.55rem}
+  .dhead .t b{font-size:1.35rem}
+}
+</style>
+</head>
+<body>
+<!-- ============================ PASSCODE GATE ============================ -->
+<div class="gatewall" id="gate">
+  <div class="gate-card">
+    <img class="crest" src="/assets/grunion-crest.png" alt="Grunion RFC crest" />
+    <h1>Club Dashboard</h1>
+    <p>Committee only. Enter the dashboard passcode.</p>
+    <form class="gate-form" id="gateForm">
+      <label class="sr-only" for="gateKey">Dashboard passcode</label>
+      <input id="gateKey" type="password" autocomplete="current-password" placeholder="••••••••" required />
+      <button class="gate-btn" type="submit">Open Dashboard</button>
+      <div class="gate-err" id="gateErr" role="alert"></div>
+    </form>
+    <div class="gate-note">grunionrugby.com · internal · not indexed</div>
+  </div>
+</div>
+
+<!-- ============================ HEADER ============================ -->
+<header class="dhead">
+  <div class="wrap dhead-in">
+    <img class="crest" src="/assets/grunion-crest.png" alt="" />
+    <div class="t">
+      <b>Club Dashboard</b>
+      <i>Grunion RFC · Email &amp; Web Analytics</i>
+    </div>
+    <div class="dhead-right">
+      <span class="updated" id="updatedAt">—</span>
+      <button class="hbtn" id="refreshBtn" type="button">Refresh</button>
+      <button class="hbtn" id="lockBtn" type="button" title="Forget the passcode on this device">Lock</button>
+    </div>
+  </div>
+</header>
+<hr class="rule101" />
+
+<main class="wrap" id="main">
+
+  <!-- ============================ EMAIL ============================ -->
+  <section class="section" id="sec-email" aria-labelledby="h-email">
+    <div class="sec-head">
+      <div>
+        <span class="kicker">Campaign Monitor · MerMers from the Deep</span>
+        <h2 id="h-email">Email Performance</h2>
+      </div>
+      <span class="sec-note" id="emailNote">Last 12 campaigns</span>
+    </div>
+
+    <div class="tiles" id="emailTiles"></div>
+
+    <div class="card" id="emailChartCard">
+      <div class="card-head">
+        <h3>Open &amp; Click Rate by Campaign</h3>
+        <div class="spacer"></div>
+        <div class="tgl" role="group" aria-label="Open and click rate — view as">
+          <button type="button" data-view="chart" aria-pressed="true">Chart</button>
+          <button type="button" data-view="table" aria-pressed="false">Table</button>
+        </div>
+        <span class="card-sub">% of recipients · unique opens &amp; unique clicks</span>
+      </div>
+      <div class="legend" id="emailLegend"></div>
+      <div class="chart-wrap" id="emailChart"></div>
+      <div class="tscroll" id="emailChartTable" hidden></div>
+    </div>
+
+    <div class="card" id="campaignsCard">
+      <div class="card-head">
+        <h3>Recent Campaigns</h3>
+        <div class="spacer"></div>
+        <span class="card-sub" id="campaignsSub"></span>
+      </div>
+      <div class="tscroll" id="campaignsTable"></div>
+    </div>
+  </section>
+
+  <!-- ============================ WEB ============================ -->
+  <section class="section" id="sec-web" aria-labelledby="h-web">
+    <div class="sec-head">
+      <div>
+        <span class="kicker">Google Analytics · Netlify Analytics</span>
+        <h2 id="h-web">Web Traffic</h2>
+      </div>
+      <span class="sec-note">grunionrugby.com</span>
+    </div>
+
+    <div class="filter-row" id="webFilter">
+      <div class="seg" role="group" aria-label="Date range">
+        <button type="button" data-days="7"  aria-pressed="false">7 days</button>
+        <button type="button" data-days="30" aria-pressed="true">30 days</button>
+        <button type="button" data-days="90" aria-pressed="false">90 days</button>
+      </div>
+      <span class="filter-note">applies to everything below · email section is per-campaign</span>
+    </div>
+
+    <div class="tiles" id="webTiles"></div>
+
+    <div class="card" id="trafficCard">
+      <div class="card-head">
+        <h3>Daily Traffic</h3>
+        <div class="spacer"></div>
+        <div class="tgl" role="group" aria-label="Daily traffic — view as">
+          <button type="button" data-view="chart" aria-pressed="true">Chart</button>
+          <button type="button" data-view="table" aria-pressed="false">Table</button>
+        </div>
+        <span class="card-sub">GA measures with a browser tag · Netlify counts server-side, so the two won't match exactly</span>
+      </div>
+      <div class="legend" id="trafficLegend"></div>
+      <div class="chart-wrap" id="trafficChart"></div>
+      <div class="tscroll" id="trafficChartTable" hidden></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card" id="pagesCard">
+        <div class="card-head">
+          <h3>Top Pages</h3>
+          <div class="spacer"></div>
+          <div class="tgl" role="group" aria-label="Top pages — data source" id="pagesSrc">
+            <button type="button" data-src="ga" aria-pressed="true">GA</button>
+            <button type="button" data-src="nl" aria-pressed="false">Netlify</button>
+          </div>
+          <span class="card-sub" id="pagesSub">pageviews</span>
+        </div>
+        <div id="pagesList"></div>
+      </div>
+      <div class="card" id="channelsCard">
+        <div class="card-head">
+          <h3>Traffic Channels</h3>
+          <div class="spacer"></div>
+          <span class="card-sub">GA · sessions by default channel group</span>
+        </div>
+        <div id="channelsList"></div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card" id="refCard">
+        <div class="card-head">
+          <h3>Top Referrers</h3>
+          <div class="spacer"></div>
+          <div class="tgl" role="group" aria-label="Referrers — data source" id="refSrc">
+            <button type="button" data-src="ga" aria-pressed="true">GA</button>
+            <button type="button" data-src="nl" aria-pressed="false">Netlify</button>
+          </div>
+          <span class="card-sub" id="refSub">sessions by source</span>
+        </div>
+        <div id="refList"></div>
+      </div>
+      <div class="card" id="nfCard">
+        <div class="card-head">
+          <h3>Broken Links Hit (404s)</h3>
+          <div class="spacer"></div>
+          <span class="card-sub">Netlify · requests for pages that don't exist</span>
+        </div>
+        <div id="nfList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ SITE HEALTH ============================ -->
+  <section class="section" id="sec-site" aria-labelledby="h-site">
+    <div class="sec-head">
+      <div>
+        <span class="kicker">Netlify</span>
+        <h2 id="h-site">Site Health</h2>
+      </div>
+      <span class="sec-note" id="siteNote"></span>
+    </div>
+    <div class="tiles" id="siteTiles"></div>
+  </section>
+
+</main>
+
+<footer class="dfoot">
+  <div class="wrap dfoot-in">
+    <span>Data: Campaign Monitor · Google Analytics · Netlify — fetched live on load</span>
+    <span><a href="https://grunionrugby.com" target="_blank" rel="noopener">grunionrugby.com ↗</a></span>
+    <span id="footNote"></span>
+  </div>
+</footer>
+
+<script>
+'use strict';
+/* ============================================================================
+   Grunion RFC Club Dashboard
+   All data comes from three same-site Netlify Functions (cm-stats, ga-stats,
+   netlify-stats). Every call carries the dashboard passcode; the functions
+   refuse to answer without it. All dynamic strings are inserted with
+   textContent — never innerHTML.
+============================================================================ */
+
+// ---------- tiny DOM + format helpers --------------------------------------
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, text) => {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  return n;
+};
+const clear = (n) => { while (n.firstChild) n.removeChild(n.firstChild); return n; };
+
+const NBSP = ' ';
+const fmtInt = (n) => (n == null || isNaN(n)) ? '—' : Number(n).toLocaleString('en-US');
+const compactFmt = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
+const fmtNum = (n) => {
+  if (n == null || isNaN(n)) return '—';
+  return Math.abs(n) >= 10000 ? compactFmt.format(n) : Number(n).toLocaleString('en-US');
+};
+const fmtPct = (v) => (v == null || isNaN(v)) ? '—' : `${(+v).toFixed(1)}%`;
+const fmtBytes = (b) => {
+  if (b == null || isNaN(b) || b <= 0) return '—';
+  if (b >= 1e9) return (b / 1e9).toFixed(2) + ' GB';
+  if (b >= 1e6) return (b / 1e6).toFixed(1) + ' MB';
+  return Math.round(b / 1e3) + ' KB';
+};
+const fmtDur = (sec) => {
+  if (sec == null || isNaN(sec)) return '—';
+  const m = Math.floor(sec / 60), s = Math.round(sec % 60);
+  return `${m}m${NBSP}${String(s).padStart(2, '0')}s`;
+};
+const deltaPct = (cur, prev) =>
+  (cur == null || prev == null || !(prev > 0)) ? null : ((cur - prev) / prev) * 100;
+
+const parseGaDate = (s) => {
+  const m = /^(\d{4})(\d{2})(\d{2})$/.exec(String(s || ''));
+  return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+};
+const parseCmDate = (s) => (s ? new Date(String(s).replace(' ', 'T')) : null);
+const dShort = (d) => d ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—';
+const dayKeyLocal = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const dayKeyLA = (ts) => {
+  try { return new Date(ts).toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' }); }
+  catch { return dayKeyLocal(new Date(ts)); }
+};
+const relTime = (iso) => {
+  if (!iso) return '—';
+  const t = Date.parse(iso);
+  if (!isFinite(t)) return '—';
+  const mins = Math.round((Date.now() - t) / 60000);
+  if (mins < 60) return `${Math.max(mins, 1)}m ago`;
+  if (mins < 36 * 60) return `${Math.round(mins / 60)}h ago`;
+  return dShort(new Date(t));
+};
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+// ---------- auth + API ------------------------------------------------------
+const KEY_LS = 'grunionDashKey';
+const state = { days: 30, cm: null, ga: null, nl: null, pagesSrc: 'ga', refSrc: 'ga' };
+
+function lock(message) {
+  localStorage.removeItem(KEY_LS);
+  $('gateErr').textContent = message || '';
+  $('gate').hidden = false;
+  $('gateKey').value = '';
+  setTimeout(() => $('gateKey').focus(), 50);
+}
+
+async function api(name, params) {
+  const url = new URL(`/.netlify/functions/${name}`, location.origin);
+  if (params) for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+  let r;
+  try {
+    r = await fetch(url, { headers: { 'x-dashboard-key': localStorage.getItem(KEY_LS) || '' } });
+  } catch {
+    return { error: 'Network error — are you offline?' };
+  }
+  if (r.status === 401) { lock('That passcode didn’t match — try again.'); return { error: 'unauthorized' }; }
+  if (r.status === 503) {
+    return { error: 'DASHBOARD_KEY isn’t set on the site yet — add it in Netlify env vars (see DASHBOARD-SETUP.md).' };
+  }
+  if (r.status === 404) {
+    return { error: 'Function not found — deploy the site with the netlify/functions folder first.' };
+  }
+  try { return await r.json(); }
+  catch { return { error: `Unexpected response (${r.status})` }; }
+}
+
+// ---------- shared render pieces -------------------------------------------
+function cardState(container, lines) {
+  const box = el('div', 'card-state');
+  (Array.isArray(lines) ? lines : [lines]).forEach((t, i) => {
+    if (i) box.appendChild(el('br'));
+    box.appendChild(el('span', null, t));
+  });
+  clear(container).appendChild(box);
+  return box;
+}
+
+function makeDelta(d, title, opts = {}) {
+  const span = el('span', 'delta');
+  if (d == null || isNaN(d)) { span.classList.add('flat'); span.textContent = ''; return span; }
+  const flat = Math.abs(d) < 0.05;
+  const up = d > 0;
+  span.classList.add(flat ? 'flat' : up ? 'up' : 'down');
+  span.textContent = flat ? `·${NBSP}0.0%` : `${up ? '▲' : '▼'}${NBSP}${Math.abs(d).toFixed(1)}%`;
+  if (title) span.title = title;
+  const sr = el('span', 'sr-only', flat ? ` unchanged ${title || ''}` : ` ${up ? 'up' : 'down'} ${Math.abs(d).toFixed(1)} percent ${title || ''}`);
+  span.appendChild(sr);
+  return span;
+}
+
+function tile({ label, value, small, delta, deltaTitle, sub, subMono, dotColor }) {
+  const t = el('div', 'tile');
+  t.appendChild(el('div', 't-lab', label));
+  const v = el('div', 't-val');
+  if (dotColor) { const dot = el('span', 'dot'); dot.style.background = dotColor; v.appendChild(dot); }
+  v.appendChild(document.createTextNode(value));
+  if (small) v.appendChild(el('small', null, small));
+  if (delta !== undefined) v.appendChild(makeDelta(delta, deltaTitle));
+  t.appendChild(v);
+  if (sub) {
+    const s = el('div', 't-sub');
+    s.appendChild(document.createTextNode(sub));
+    if (subMono) { s.appendChild(document.createTextNode(' ')); s.appendChild(el('span', 'mono', subMono)); }
+    s.title = sub + (subMono ? ` ${subMono}` : '');
+    t.appendChild(s);
+  }
+  return t;
+}
+
+function barList(container, rows, { fmt = fmtNum, empty = 'No data in this range' } = {}) {
+  clear(container);
+  if (!rows || !rows.length) { container.appendChild(el('div', 'blist-empty', empty)); return; }
+  const max = Math.max(...rows.map((r) => r.count || 0), 1);
+  const list = el('div', 'blist');
+  for (const r of rows) {
+    const row = el('div', 'brow');
+    const lab = el('div', 'b-lab');
+    if (r.href) {
+      const a = el('a', null, r.label);
+      a.href = r.href; a.target = '_blank'; a.rel = 'noopener';
+      lab.appendChild(a);
+    } else lab.textContent = r.label;
+    lab.title = r.title || r.label;
+    const track = el('div', 'b-track');
+    const bar = el('div', 'b-bar');
+    bar.style.width = `${Math.max(1.5, (100 * (r.count || 0)) / max)}%`;
+    track.appendChild(bar);
+    row.appendChild(lab); row.appendChild(track);
+    row.appendChild(el('div', 'b-val', fmt(r.count)));
+    list.appendChild(row);
+  }
+  container.appendChild(list);
+}
+
+function buildTable(container, caption, headers, rows) {
+  clear(container);
+  const table = el('table', 'dtable');
+  table.appendChild(el('caption', null, caption));
+  const thead = el('thead'); const trh = el('tr');
+  headers.forEach((h) => trh.appendChild(el('th', null, h)));
+  thead.appendChild(trh); table.appendChild(thead);
+  const tbody = el('tbody');
+  rows.forEach((r) => {
+    const tr = el('tr');
+    r.forEach((cell) => {
+      const td = el('td');
+      if (cell && typeof cell === 'object' && cell.href) {
+        const a = el('a', null, cell.text); a.href = cell.href; a.target = '_blank'; a.rel = 'noopener';
+        td.appendChild(a);
+      } else td.textContent = cell == null ? '—' : String(cell);
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  container.appendChild(table);
+}
+
+// ---------- SVG line chart --------------------------------------------------
+// Spec: 2px round-join lines, hairline solid grid, ≥8px end markers with a 2px
+// surface ring, selective end labels (dropped when they'd collide), crosshair +
+// one tooltip listing every series at the snapped X, keyboard navigable.
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const svgEl = (tag, attrs) => {
+  const n = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs || {})) n.setAttribute(k, v);
+  return n;
+};
+const niceCeil = (v) => {
+  if (!(v > 0)) return 1;
+  const p = Math.pow(10, Math.floor(Math.log10(v)));
+  for (const m of [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]) if (v <= m * p) return m * p;
+  return 10 * p;
+};
+
+function lineChart(wrapEl, cfg) {
+  // cfg: { xLabels[], xTip[], series:[{name,color,values[]}], yFmt, ariaLabel }
+  clear(wrapEl);
+  const n = cfg.xLabels.length;
+  const series = cfg.series.filter((s) => s.values.some((v) => v != null));
+  if (!n || !series.length) { cardState(wrapEl, 'No data to chart yet'); return; }
+  const yFmt = cfg.yFmt || fmtNum;
+
+  const W = 920, H = 290, padL = 52, padR = 60, padT = 14, padB = 34;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const maxV = Math.max(...series.flatMap((s) => s.values.filter((v) => v != null)), 0);
+  const yMax = niceCeil(maxV * 1.06 || 1);
+  const X = (i) => (n === 1 ? padL + plotW / 2 : padL + (i * plotW) / (n - 1));
+  const Y = (v) => padT + plotH - (v / yMax) * plotH;
+
+  const svg = svgEl('svg', {
+    viewBox: `0 0 ${W} ${H}`, role: 'img', tabindex: '0',
+    'aria-label': cfg.ariaLabel || 'Line chart — use left and right arrow keys to read values; a table view is available',
+  });
+
+  // grid + y ticks (solid hairlines, one step off surface)
+  const ticks = 4;
+  for (let t = 0; t <= ticks; t++) {
+    const v = (yMax / ticks) * t, y = Y(v);
+    svg.appendChild(svgEl('line', {
+      x1: padL, x2: W - padR, y1: y, y2: y,
+      stroke: t === 0 ? css('--baseline') : css('--grid'), 'stroke-width': 1,
+    }));
+    const lab = svgEl('text', {
+      x: padL - 9, y: y + 3.5, 'text-anchor': 'end', fill: css('--ink3'),
+      'font-size': '11', 'font-family': 'IBM Plex Mono, monospace',
+    });
+    lab.textContent = yFmt(v);
+    svg.appendChild(lab);
+  }
+  // x tick labels (~6)
+  const step = Math.max(1, Math.ceil(n / 6));
+  for (let i = 0; i < n; i += step) {
+    const lab = svgEl('text', {
+      x: X(i), y: H - 10, 'text-anchor': 'middle', fill: css('--ink3'),
+      'font-size': '11', 'font-family': 'IBM Plex Mono, monospace',
+    });
+    lab.textContent = cfg.xLabels[i];
+    svg.appendChild(lab);
+  }
+
+  // series paths (gaps at nulls), end markers with surface ring
+  const lastPoints = [];
+  for (const s of series) {
+    let d = '', pen = false;
+    s.values.forEach((v, i) => {
+      if (v == null) { pen = false; return; }
+      d += `${pen ? 'L' : 'M'}${X(i).toFixed(1)},${Y(v).toFixed(1)}`;
+      pen = true;
+    });
+    svg.appendChild(svgEl('path', {
+      d, fill: 'none', stroke: s.color, 'stroke-width': 2,
+      'stroke-linejoin': 'round', 'stroke-linecap': 'round',
+    }));
+    let li = s.values.length - 1;
+    while (li >= 0 && s.values[li] == null) li--;
+    if (li >= 0) {
+      svg.appendChild(svgEl('circle', {
+        cx: X(li), cy: Y(s.values[li]), r: 4.5, fill: s.color,
+        stroke: css('--card'), 'stroke-width': 2,
+      }));
+      lastPoints.push({ y: Y(s.values[li]), v: s.values[li], x: X(li) });
+    }
+  }
+  // selective end labels — only when they don't collide (else legend+tooltip carry it)
+  const sorted = lastPoints.slice().sort((a, b) => a.y - b.y);
+  const collide = sorted.some((p, i) => i && p.y - sorted[i - 1].y < 14);
+  if (!collide) {
+    for (const p of lastPoints) {
+      const lab = svgEl('text', {
+        x: p.x + 10, y: p.y + 4, fill: css('--ink2'),
+        'font-size': '12', 'font-weight': '600', 'font-family': 'Libre Franklin, sans-serif',
+      });
+      lab.textContent = yFmt(p.v);
+      svg.appendChild(lab);
+    }
+  }
+
+  // crosshair + tooltip
+  const cross = svgEl('line', {
+    x1: 0, x2: 0, y1: padT, y2: padT + plotH,
+    stroke: 'rgba(255,255,255,.28)', 'stroke-width': 1, visibility: 'hidden',
+  });
+  svg.appendChild(cross);
+  const hot = svgEl('rect', {
+    x: padL - 10, y: padT, width: plotW + 20, height: plotH + padB - 6,
+    fill: 'transparent',
+  });
+  svg.appendChild(hot);
+  wrapEl.appendChild(svg);
+
+  const tip = el('div', 'tip');
+  wrapEl.appendChild(tip);
+  let tipIdx = -1;
+
+  const showIdx = (i) => {
+    i = Math.max(0, Math.min(n - 1, i));
+    tipIdx = i;
+    const cx = X(i);
+    cross.setAttribute('x1', cx); cross.setAttribute('x2', cx);
+    cross.setAttribute('visibility', 'visible');
+    clear(tip);
+    tip.appendChild(el('div', 'tp-x', (cfg.xTip || cfg.xLabels)[i]));
+    for (const s of series) {
+      const row = el('div', 'tp-row');
+      const key = el('i'); key.style.borderTopColor = s.color;
+      row.appendChild(key);
+      row.appendChild(el('b', null, s.values[i] == null ? '—' : yFmt(s.values[i])));
+      row.appendChild(el('span', null, s.name));
+      tip.appendChild(row);
+    }
+    tip.classList.add('on');
+    const rect = svg.getBoundingClientRect();
+    const scale = rect.width / W;
+    const tw = tip.offsetWidth || 160;
+    let left = cx * scale + 14;
+    if (left + tw > rect.width - 4) left = cx * scale - tw - 14;
+    tip.style.left = `${Math.max(2, left)}px`;
+    tip.style.top = `${padT * scale + 2}px`;
+  };
+  const hide = () => { tip.classList.remove('on'); cross.setAttribute('visibility', 'hidden'); tipIdx = -1; };
+
+  hot.addEventListener('pointermove', (ev) => {
+    const rect = svg.getBoundingClientRect();
+    const px = ((ev.clientX - rect.left) / rect.width) * W;
+    showIdx(Math.round(((px - padL) / plotW) * (n - 1)));
+  });
+  hot.addEventListener('pointerleave', hide);
+  svg.addEventListener('keydown', (ev) => {
+    const start = tipIdx < 0 ? n - 1 : tipIdx;
+    if (ev.key === 'ArrowLeft') { showIdx(start - 1); ev.preventDefault(); }
+    else if (ev.key === 'ArrowRight') { showIdx(Math.min(n - 1, start + 1)); ev.preventDefault(); }
+    else if (ev.key === 'Home') { showIdx(0); ev.preventDefault(); }
+    else if (ev.key === 'End') { showIdx(n - 1); ev.preventDefault(); }
+    else if (ev.key === 'Escape') hide();
+  });
+  svg.addEventListener('focus', () => showIdx(tipIdx < 0 ? n - 1 : tipIdx));
+  svg.addEventListener('blur', hide);
+}
+
+function legend(container, series) {
+  clear(container);
+  for (const s of series) {
+    const item = el('span', 'lg');
+    const key = el('i'); key.style.borderTopColor = s.color;
+    item.appendChild(key);
+    item.appendChild(el('span', null, s.name));
+    container.appendChild(item);
+  }
+}
+
+function initViewToggle(cardId, chartId, tableId) {
+  const card = $(cardId);
+  card.querySelectorAll('.tgl [data-view]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const view = btn.dataset.view;
+      card.querySelectorAll('.tgl [data-view]').forEach((b) =>
+        b.setAttribute('aria-pressed', String(b === btn)));
+      $(chartId).hidden = view !== 'chart';
+      $(tableId).hidden = view !== 'table';
+    });
+  });
+}
+
+// ---------- EMAIL section ---------------------------------------------------
+const avg = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null);
+
+function renderEmail() {
+  const cm = state.cm;
+  const tiles = clear($('emailTiles'));
+  const chartWrap = $('emailChart');
+
+  if (!cm || cm.configured === false || (cm.error && !cm.campaigns)) {
+    const lines = cm?.configured === false
+      ? ['Campaign Monitor isn’t connected yet.', 'Add CM_API_KEY in Netlify env vars — see DASHBOARD-SETUP.md.']
+      : [`Campaign Monitor error: ${cm?.error || 'no response'}`];
+    cardState(tiles, lines).style.gridColumn = '1/-1';
+    cardState(chartWrap, lines[0]);
+    clear($('emailLegend'));
+    cardState($('campaignsTable'), lines[0]);
+    $('campaignsSub').textContent = '';
+    return;
+  }
+
+  const cs = cm.campaigns || [];
+  const last = cs[cs.length - 1];
+  const prior = cs.slice(Math.max(0, cs.length - 6), cs.length - 1);
+  const avgOpenPrior = avg(prior.map((c) => c.openRate).filter((v) => v != null));
+  const avgClickPrior = avg(prior.map((c) => c.clickRate).filter((v) => v != null));
+  const avgOpenAll = avg(cs.map((c) => c.openRate).filter((v) => v != null));
+  const avgClickAll = avg(cs.map((c) => c.clickRate).filter((v) => v != null));
+
+  if (last) {
+    tiles.appendChild(tile({
+      label: 'Last send · open rate', value: fmtPct(last.openRate),
+      delta: deltaPct(last.openRate, avgOpenPrior), deltaTitle: 'vs the average of the 5 sends before it',
+      sub: last.name, subMono: dShort(parseCmDate(last.sentDate)),
+    }));
+    tiles.appendChild(tile({
+      label: 'Last send · click rate', value: fmtPct(last.clickRate),
+      delta: deltaPct(last.clickRate, avgClickPrior), deltaTitle: 'vs the average of the 5 sends before it',
+      sub: `${fmtInt(last.recipients)} recipients`,
+    }));
+  }
+  tiles.appendChild(tile({ label: `Avg open rate · last ${cs.length}`, value: fmtPct(avgOpenAll) }));
+  tiles.appendChild(tile({ label: `Avg click rate · last ${cs.length}`, value: fmtPct(avgClickAll) }));
+  const biggest = (cm.lists || []).slice().sort((a, b) => (b.totalActive || 0) - (a.totalActive || 0))[0];
+  if (biggest) {
+    tiles.appendChild(tile({
+      label: `Subscribers · ${biggest.name}`, value: fmtInt(biggest.totalActive),
+      sub: `+${fmtInt(biggest.newThisMonth)} this month · ${fmtInt(biggest.unsubsThisMonth)} unsubscribed`,
+    }));
+  }
+
+  const charted = cs.filter((c) => c.openRate != null || c.clickRate != null);
+  const sers = [
+    { name: 'Open rate', color: css('--s1'), values: charted.map((c) => c.openRate) },
+    { name: 'Click rate', color: css('--s2'), values: charted.map((c) => c.clickRate) },
+  ];
+  legend($('emailLegend'), sers);
+  const pctFmt = (v) => `${(+v).toFixed(+v >= 10 || Number.isInteger(+v) ? 0 : 1)}%`;
+  lineChart(chartWrap, {
+    xLabels: charted.map((c) => dShort(parseCmDate(c.sentDate))),
+    xTip: charted.map((c) => `${c.name} · ${dShort(parseCmDate(c.sentDate))}`),
+    series: sers, yFmt: pctFmt,
+    ariaLabel: 'Open and click rate for recent campaigns. Use arrow keys to read values; the Table button shows the same data.',
+  });
+  buildTable($('emailChartTable'), 'Open & click rate by campaign',
+    ['Campaign', 'Sent', 'Open %', 'Click %'],
+    charted.map((c) => [c.name, dShort(parseCmDate(c.sentDate)), fmtPct(c.openRate), fmtPct(c.clickRate)]));
+
+  const newest = cs.slice().reverse();
+  buildTable($('campaignsTable'), 'Recent campaigns — full numbers',
+    ['Campaign', 'Sent', 'Recipients', 'Opens', 'Open %', 'Clicks', 'Click %', 'Bounced', 'Unsubs'],
+    newest.map((c) => [
+      c.webVersionURL ? { text: c.name, href: c.webVersionURL } : c.name,
+      dShort(parseCmDate(c.sentDate)), fmtInt(c.recipients), fmtInt(c.uniqueOpened), fmtPct(c.openRate),
+      fmtInt(c.clicks), fmtPct(c.clickRate), fmtInt(c.bounced), fmtInt(c.unsubscribed),
+    ]));
+  $('campaignsSub').textContent =
+    cm.totalSent != null ? `showing ${newest.length} of ${fmtInt(cm.totalSent)} total sends` : '';
+  $('emailNote').textContent = cm.error ? `Partial data — ${cm.error}` : 'Last 12 campaigns';
+}
+
+// ---------- WEB section -----------------------------------------------------
+const siteHref = (p) => (p && String(p).startsWith('/') ? `https://grunionrugby.com${p}` : null);
+
+function renderWeb() {
+  const ga = state.ga, nl = state.nl, days = state.days;
+  const gaOk = !!(ga && ga.configured !== false && !ga.error);
+  const an = nl?.analytics;
+  const nlOk = !!(nl && nl.configured !== false && !nl.error && an?.available);
+  const vs = `vs previous ${days} days`;
+  const tiles = clear($('webTiles'));
+
+  if (gaOk) {
+    const c = ga.totals?.current || {}, p = ga.totals?.previous || {};
+    tiles.appendChild(tile({ label: `Visitors · GA · ${days}d`, value: fmtNum(c.users), delta: deltaPct(c.users, p.users), deltaTitle: vs }));
+    tiles.appendChild(tile({ label: `Pageviews · GA · ${days}d`, value: fmtNum(c.views), delta: deltaPct(c.views, p.views), deltaTitle: vs }));
+    tiles.appendChild(tile({ label: `Sessions · GA · ${days}d`, value: fmtNum(c.sessions), delta: deltaPct(c.sessions, p.sessions), deltaTitle: vs, sub: `avg session ${fmtDur(c.avgSessionSec)}` }));
+  } else {
+    tiles.appendChild(tile({
+      label: 'Google Analytics', value: '—',
+      sub: ga?.configured === false ? 'Not connected yet — see DASHBOARD-SETUP.md' : `Error: ${ga?.error || 'no data'}`,
+    }));
+  }
+  if (nlOk) {
+    tiles.appendChild(tile({ label: `Pageviews · Netlify · ${days}d`, value: fmtNum(an.pageviews.total), delta: deltaPct(an.pageviews.total, an.pageviews.prevTotal), deltaTitle: vs, sub: 'server-side — sees visitors ad blockers hide from GA' }));
+    tiles.appendChild(tile({ label: `Visitors · Netlify · ${days}d`, value: fmtNum(an.visitors.total), delta: deltaPct(an.visitors.total, an.visitors.prevTotal), deltaTitle: vs }));
+  } else {
+    tiles.appendChild(tile({
+      label: 'Netlify Analytics', value: '—',
+      sub: nl?.configured === false ? 'Not connected yet — see DASHBOARD-SETUP.md' : (an?.note || nl?.error || 'no data'),
+    }));
+  }
+
+  // merged daily chart
+  let xDates = [];
+  if (gaOk && ga.daily?.length) xDates = ga.daily.map((d) => parseGaDate(d.date)).filter(Boolean);
+  const nlByDay = new Map();
+  let nlMinKey = null, nlMaxKey = null;
+  if (nlOk) {
+    for (const p of an.pageviews.series || []) {
+      const k = dayKeyLA(p.ts);
+      nlByDay.set(k, (nlByDay.get(k) || 0) + p.value);
+      if (!nlMinKey || k < nlMinKey) nlMinKey = k;
+      if (!nlMaxKey || k > nlMaxKey) nlMaxKey = k;
+    }
+    if (!xDates.length && nlByDay.size) {
+      xDates = [...nlByDay.keys()].sort().map((k) => {
+        const [y, m, d] = k.split('-').map(Number);
+        return new Date(y, m - 1, d);
+      });
+    }
+  }
+  const sers = [];
+  if (gaOk && xDates.length && ga.daily?.length) {
+    sers.push({ name: 'Visitors (GA)', color: css('--s1'), values: ga.daily.map((d) => d.users) });
+    sers.push({ name: 'Pageviews (GA)', color: css('--s2'), values: ga.daily.map((d) => d.views) });
+  }
+  if (nlOk && xDates.length) {
+    sers.push({
+      name: 'Pageviews (Netlify)', color: css('--s3'),
+      values: xDates.map((d) => {
+        const k = dayKeyLocal(d);
+        if (nlByDay.has(k)) return nlByDay.get(k);
+        return nlMinKey && k >= nlMinKey && k <= nlMaxKey ? 0 : null;
+      }),
+    });
+  }
+  legend($('trafficLegend'), sers);
+  if (sers.length && xDates.length) {
+    lineChart($('trafficChart'), {
+      xLabels: xDates.map(dShort),
+      xTip: xDates.map((d) => d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })),
+      series: sers, yFmt: fmtNum,
+      ariaLabel: 'Daily web traffic. Use arrow keys to read values; the Table button shows the same data.',
+    });
+    buildTable($('trafficChartTable'), 'Daily traffic', ['Date', ...sers.map((s) => s.name)],
+      xDates.map((d, i) => [dShort(d), ...sers.map((s) => (s.values[i] == null ? '—' : fmtInt(s.values[i])))]));
+  } else {
+    cardState($('trafficChart'), 'Connect Google Analytics or Netlify Analytics to see daily traffic here.');
+    clear($('trafficChartTable'));
+  }
+  renderPages(); renderChannels(); renderRefs(); renderNf();
+}
+
+function renderPages() {
+  const ga = state.ga, an = state.nl?.analytics;
+  const rows = state.pagesSrc === 'ga'
+    ? (ga?.topPages || []).map((p) => ({ label: p.path, count: p.views, href: siteHref(p.path), title: p.title ? `${p.title} — ${p.path}` : p.path }))
+    : (an?.topPages || []).map((p) => ({ label: p.label, count: p.count, href: siteHref(p.label) }));
+  $('pagesSub').textContent = state.pagesSrc === 'ga'
+    ? `GA · pageviews · last ${state.days}d` : `Netlify · server-side pageviews · last ${state.days}d`;
+  barList($('pagesList'), rows, { empty: state.pagesSrc === 'ga' ? 'No GA page data yet' : 'No Netlify page data yet' });
+}
+function renderChannels() {
+  const rows = (state.ga?.channels || []).map((c) => ({ label: c.name || '(unset)', count: c.sessions }));
+  barList($('channelsList'), rows, { empty: 'No GA channel data yet' });
+}
+function renderRefs() {
+  const ga = state.ga, an = state.nl?.analytics;
+  const rows = state.refSrc === 'ga'
+    ? (ga?.referrers || []).map((r) => ({ label: r.name, count: r.sessions }))
+    : (an?.sources || []).map((r) => ({ label: r.label, count: r.count }));
+  $('refSub').textContent = state.refSrc === 'ga'
+    ? `GA · sessions by source · last ${state.days}d` : `Netlify · pageviews by source · last ${state.days}d`;
+  barList($('refList'), rows, { empty: state.refSrc === 'ga' ? 'No GA referrer data yet' : 'No Netlify source data yet' });
+}
+function renderNf() {
+  const rows = (state.nl?.analytics?.notFound || []).map((r) => ({ label: r.label, count: r.count }));
+  barList($('nfList'), rows, { empty: 'No 404s in this range — tidy.' });
+}
+
+// ---------- SITE HEALTH -----------------------------------------------------
+function renderSite() {
+  const nl = state.nl;
+  const tiles = clear($('siteTiles'));
+  if (!nl || nl.configured === false || (nl.error && !nl.site)) {
+    const lines = nl?.configured === false
+      ? ['Netlify isn’t connected yet.', 'Add NETLIFY_API_TOKEN in Netlify env vars — see DASHBOARD-SETUP.md.']
+      : [`Netlify error: ${nl?.error || 'no response'}`];
+    cardState(tiles, lines).style.gridColumn = '1/-1';
+    $('siteNote').textContent = '';
+    return;
+  }
+  $('siteNote').textContent = [nl.site?.name, nl.site?.domain].filter(Boolean).join(' · ');
+
+  for (const f of nl.forms || []) {
+    tiles.appendChild(tile({
+      label: `Form · ${f.name}`,
+      value: f.inRange == null ? fmtInt(f.total) : fmtInt(f.inRange),
+      small: f.inRange == null ? 'all-time' : `in ${state.days}d`,
+      sub: `${fmtInt(f.total)} all-time · last ${relTime(f.lastAt)}`,
+    }));
+  }
+  if (!(nl.forms || []).length) {
+    tiles.appendChild(tile({ label: 'Forms', value: '0', sub: 'No Netlify forms found on this site' }));
+  }
+  const d = nl.deploy;
+  if (d) {
+    const ready = d.state === 'ready' || d.state === 'current';
+    tiles.appendChild(tile({
+      label: 'Last deploy',
+      value: ready ? 'Published' : (d.state || '—'),
+      dotColor: ready ? css('--up') : (d.state === 'error' ? css('--down') : css('--gold-soft')),
+      sub: [d.branch, relTime(d.publishedAt)].filter(Boolean).join(' · '),
+    }));
+  }
+  tiles.appendChild(tile({ label: `Bandwidth · ${state.days}d`, value: fmtBytes(nl.analytics?.bandwidthBytes) }));
+  $('footNote').textContent = nl.analytics?.available === false ? (nl.analytics?.note || '') : '';
+}
+
+// ---------- loading + wiring ------------------------------------------------
+function setStale(on) {
+  ['trafficCard', 'pagesCard', 'channelsCard', 'refCard', 'nfCard'].forEach((id) => $(id).classList.toggle('stale', on));
+  ['webTiles', 'siteTiles'].forEach((id) => $(id).classList.toggle('stale', on));
+}
+async function loadEmail() {
+  const cm = await api('cm-stats');
+  if (cm?.error === 'unauthorized') return;
+  state.cm = cm;
+  try { renderEmail(); } catch (e) { console.error('[dash] email render', e); }
+}
+async function loadWeb() {
+  setStale(true);
+  const [ga, nl] = await Promise.all([
+    api('ga-stats', { days: state.days }),
+    api('netlify-stats', { days: state.days }),
+  ]);
+  setStale(false);
+  if (ga?.error === 'unauthorized' || nl?.error === 'unauthorized') return;
+  state.ga = ga; state.nl = nl;
+  try { renderWeb(); } catch (e) { console.error('[dash] web render', e); }
+  try { renderSite(); } catch (e) { console.error('[dash] site render', e); }
+}
+async function loadAll() {
+  $('updatedAt').textContent = 'Loading…';
+  await Promise.all([loadEmail(), loadWeb()]);
+  $('updatedAt').textContent =
+    'Updated ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+$('webFilter').querySelectorAll('[data-days]').forEach((btn) =>
+  btn.addEventListener('click', () => {
+    const d = +btn.dataset.days;
+    if (d === state.days) return;
+    state.days = d;
+    $('webFilter').querySelectorAll('[data-days]').forEach((b) =>
+      b.setAttribute('aria-pressed', String(b === btn)));
+    loadWeb();
+  }));
+initViewToggle('emailChartCard', 'emailChart', 'emailChartTable');
+initViewToggle('trafficCard', 'trafficChart', 'trafficChartTable');
+for (const [groupId, key, fn] of [['pagesSrc', 'pagesSrc', renderPages], ['refSrc', 'refSrc', renderRefs]]) {
+  $(groupId).querySelectorAll('[data-src]').forEach((btn) =>
+    btn.addEventListener('click', () => {
+      state[key] = btn.dataset.src;
+      $(groupId).querySelectorAll('[data-src]').forEach((b) =>
+        b.setAttribute('aria-pressed', String(b === btn)));
+      fn();
+    }));
+}
+$('refreshBtn').addEventListener('click', loadAll);
+$('lockBtn').addEventListener('click', () => lock(''));
+$('gateForm').addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  const v = $('gateKey').value.trim();
+  if (!v) return;
+  localStorage.setItem(KEY_LS, v);
+  $('gate').hidden = true;
+  $('gateErr').textContent = '';
+  loadAll();
+});
+
+// boot
+if (localStorage.getItem(KEY_LS)) { $('gate').hidden = true; loadAll(); }
+else lock('');
+
+
+</script>
+
+</body>
+</html>

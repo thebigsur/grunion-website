@@ -59,3 +59,20 @@
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=86400"
+
+# ---- Club dashboard (internal, hidden) ---------------------------------------
+# /dashboard/ is passcode-gated: its data comes from the serverless functions
+# below, which refuse to answer without the DASHBOARD_KEY env var.
+# Setup + env vars: DASHBOARD-SETUP.md at the repo root.
+
+[functions]
+  directory = "netlify/functions"
+
+# Keep the dashboard out of search engines and browser caches. The site-wide
+# security headers above also apply to it; only NEW keys are added here so no
+# duplicate headers get sent.
+[[headers]]
+  for = "/dashboard/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+    Cache-Control = "no-store"

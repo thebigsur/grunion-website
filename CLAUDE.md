@@ -23,6 +23,12 @@ tradeoffs. Simplicity here is deliberate, not an accident.
 - netlify.toml — pretty URLs, caching & security headers
 - robots.txt / sitemap.xml — SEO files (update sitemap if a page is added/removed)
 - assets/ — images and other media
+- dashboard/index.html — private club analytics dashboard (passcode-gated, unlisted;
+  deliberately NOT in nav, sitemap, or robots.txt — noindex via meta + header)
+- netlify/functions/ — cm-stats.mjs, ga-stats.mjs, netlify-stats.mjs: serverless
+  data proxies for the dashboard (zero npm dependencies; API keys live only in
+  Netlify env vars — see DASHBOARD-SETUP.md)
+- DASHBOARD-SETUP.md — dashboard env-var setup + troubleshooting guide
 
 ## Editing rules
 - CONFIG at the top of site.js is the single source of truth for contacts,
@@ -52,6 +58,10 @@ tradeoffs. Simplicity here is deliberate, not an accident.
   without calling out the impact first. The Drive API key in site.js is public
   by design and restricted in Google Cloud Console (Drive API only +
   grunionrugby.com referrers — verified July 2026).
+- The dashboard page (dashboard/index.html) must keep NO GA snippet — it would
+  inflate the traffic numbers it reports. Keep it out of sitemap.xml, robots.txt,
+  and all nav/footers. The functions must stay dependency-free (node: built-ins
+  only, no package.json) — the "no build step" rule applies to them too.
 
 ## Workflow when I ask you to update the site
 1. Before editing, run `git pull` to make sure the local copy is current
