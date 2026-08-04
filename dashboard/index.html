@@ -292,7 +292,7 @@ button{font-family:inherit;cursor:pointer;color:inherit}
   <section class="section" id="sec-web" aria-labelledby="h-web">
     <div class="sec-head">
       <div>
-        <span class="kicker">Google Analytics · Netlify Analytics</span>
+        <span class="kicker">Google Analytics</span>
         <h2 id="h-web">Web Traffic</h2>
       </div>
       <span class="sec-note">grunionrugby.com</span>
@@ -317,56 +317,38 @@ button{font-family:inherit;cursor:pointer;color:inherit}
           <button type="button" data-view="chart" aria-pressed="true">Chart</button>
           <button type="button" data-view="table" aria-pressed="false">Table</button>
         </div>
-        <span class="card-sub">GA measures with a browser tag · Netlify counts server-side, so the two won't match exactly</span>
+        <span class="card-sub">daily visitors, pageviews &amp; sessions · Google Analytics</span>
       </div>
       <div class="legend" id="trafficLegend"></div>
       <div class="chart-wrap" id="trafficChart"></div>
       <div class="tscroll" id="trafficChartTable" hidden></div>
     </div>
 
-    <div class="grid2">
-      <div class="card" id="pagesCard">
-        <div class="card-head">
-          <h3>Top Pages</h3>
-          <div class="spacer"></div>
-          <div class="tgl" role="group" aria-label="Top pages — data source" id="pagesSrc">
-            <button type="button" data-src="ga" aria-pressed="true">GA</button>
-            <button type="button" data-src="nl" aria-pressed="false">Netlify</button>
-          </div>
-          <span class="card-sub" id="pagesSub">pageviews</span>
-        </div>
-        <div id="pagesList"></div>
+    <div class="card" id="pagesCard">
+      <div class="card-head">
+        <h3>Top Pages</h3>
+        <div class="spacer"></div>
+        <span class="card-sub" id="pagesSub">pageviews</span>
       </div>
+      <div id="pagesList"></div>
+    </div>
+
+    <div class="grid2">
       <div class="card" id="channelsCard">
         <div class="card-head">
           <h3>Traffic Channels</h3>
           <div class="spacer"></div>
-          <span class="card-sub">GA · sessions by default channel group</span>
+          <span class="card-sub">sessions by default channel group</span>
         </div>
         <div id="channelsList"></div>
       </div>
-    </div>
-
-    <div class="grid2">
       <div class="card" id="refCard">
         <div class="card-head">
           <h3>Top Referrers</h3>
           <div class="spacer"></div>
-          <div class="tgl" role="group" aria-label="Referrers — data source" id="refSrc">
-            <button type="button" data-src="ga" aria-pressed="true">GA</button>
-            <button type="button" data-src="nl" aria-pressed="false">Netlify</button>
-          </div>
           <span class="card-sub" id="refSub">sessions by source</span>
         </div>
         <div id="refList"></div>
-      </div>
-      <div class="card" id="nfCard">
-        <div class="card-head">
-          <h3>Broken Links Hit (404s)</h3>
-          <div class="spacer"></div>
-          <span class="card-sub">Netlify · requests for pages that don't exist</span>
-        </div>
-        <div id="nfList"></div>
       </div>
     </div>
   </section>
@@ -387,9 +369,8 @@ button{font-family:inherit;cursor:pointer;color:inherit}
 
 <footer class="dfoot">
   <div class="wrap dfoot-in">
-    <span>Data: Campaign Monitor · Google Analytics · Netlify — fetched live on load</span>
+    <span>Data: Campaign Monitor · Google Analytics · Netlify forms &amp; deploys — fetched live on load</span>
     <span><a href="https://grunionrugby.com" target="_blank" rel="noopener">grunionrugby.com ↗</a></span>
-    <span id="footNote"></span>
   </div>
 </footer>
 
@@ -421,12 +402,6 @@ const fmtNum = (n) => {
   return Math.abs(n) >= 10000 ? compactFmt.format(n) : Number(n).toLocaleString('en-US');
 };
 const fmtPct = (v) => (v == null || isNaN(v)) ? '—' : `${(+v).toFixed(1)}%`;
-const fmtBytes = (b) => {
-  if (b == null || isNaN(b) || b <= 0) return '—';
-  if (b >= 1e9) return (b / 1e9).toFixed(2) + ' GB';
-  if (b >= 1e6) return (b / 1e6).toFixed(1) + ' MB';
-  return Math.round(b / 1e3) + ' KB';
-};
 const fmtDur = (sec) => {
   if (sec == null || isNaN(sec)) return '—';
   const m = Math.floor(sec / 60), s = Math.round(sec % 60);
@@ -441,12 +416,6 @@ const parseGaDate = (s) => {
 };
 const parseCmDate = (s) => (s ? new Date(String(s).replace(' ', 'T')) : null);
 const dShort = (d) => d ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—';
-const dayKeyLocal = (d) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-const dayKeyLA = (ts) => {
-  try { return new Date(ts).toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' }); }
-  catch { return dayKeyLocal(new Date(ts)); }
-};
 const relTime = (iso) => {
   if (!iso) return '—';
   const t = Date.parse(iso);
@@ -460,7 +429,7 @@ const css = (name) => getComputedStyle(document.documentElement).getPropertyValu
 
 // ---------- auth + API ------------------------------------------------------
 const KEY_LS = 'grunionDashKey';
-const state = { days: 30, cm: null, ga: null, nl: null, pagesSrc: 'ga', refSrc: 'ga' };
+const state = { days: 30, cm: null, ga: null, nl: null };
 
 function lock(message) {
   localStorage.removeItem(KEY_LS);
@@ -852,67 +821,31 @@ function renderEmail() {
 const siteHref = (p) => (p && String(p).startsWith('/') ? `https://grunionrugby.com${p}` : null);
 
 function renderWeb() {
-  const ga = state.ga, nl = state.nl, days = state.days;
+  const ga = state.ga, days = state.days;
   const gaOk = !!(ga && ga.configured !== false && !ga.error);
-  const an = nl?.analytics;
-  const nlOk = !!(nl && nl.configured !== false && !nl.error && an?.available);
   const vs = `vs previous ${days} days`;
   const tiles = clear($('webTiles'));
 
   if (gaOk) {
     const c = ga.totals?.current || {}, p = ga.totals?.previous || {};
-    tiles.appendChild(tile({ label: `Visitors · GA · ${days}d`, value: fmtNum(c.users), delta: deltaPct(c.users, p.users), deltaTitle: vs }));
-    tiles.appendChild(tile({ label: `Pageviews · GA · ${days}d`, value: fmtNum(c.views), delta: deltaPct(c.views, p.views), deltaTitle: vs }));
-    tiles.appendChild(tile({ label: `Sessions · GA · ${days}d`, value: fmtNum(c.sessions), delta: deltaPct(c.sessions, p.sessions), deltaTitle: vs, sub: `avg session ${fmtDur(c.avgSessionSec)}` }));
+    tiles.appendChild(tile({ label: `Visitors · ${days}d`, value: fmtNum(c.users), delta: deltaPct(c.users, p.users), deltaTitle: vs }));
+    tiles.appendChild(tile({ label: `Pageviews · ${days}d`, value: fmtNum(c.views), delta: deltaPct(c.views, p.views), deltaTitle: vs }));
+    tiles.appendChild(tile({ label: `Sessions · ${days}d`, value: fmtNum(c.sessions), delta: deltaPct(c.sessions, p.sessions), deltaTitle: vs }));
+    tiles.appendChild(tile({ label: 'Avg session length', value: fmtDur(c.avgSessionSec), sub: `across ${fmtInt(c.sessions)} sessions` }));
   } else {
-    tiles.appendChild(tile({
+    const t = tiles.appendChild(tile({
       label: 'Google Analytics', value: '—',
       sub: ga?.configured === false ? 'Not connected yet — see DASHBOARD-SETUP.md' : `Error: ${ga?.error || 'no data'}`,
     }));
-  }
-  if (nlOk) {
-    tiles.appendChild(tile({ label: `Pageviews · Netlify · ${days}d`, value: fmtNum(an.pageviews.total), delta: deltaPct(an.pageviews.total, an.pageviews.prevTotal), deltaTitle: vs, sub: 'server-side — sees visitors ad blockers hide from GA' }));
-    tiles.appendChild(tile({ label: `Visitors · Netlify · ${days}d`, value: fmtNum(an.visitors.total), delta: deltaPct(an.visitors.total, an.visitors.prevTotal), deltaTitle: vs }));
-  } else {
-    tiles.appendChild(tile({
-      label: 'Netlify Analytics', value: '—',
-      sub: nl?.configured === false ? 'Not connected yet — see DASHBOARD-SETUP.md' : (an?.note || nl?.error || 'no data'),
-    }));
+    t.style.gridColumn = '1/-1';
   }
 
-  // merged daily chart
-  let xDates = [];
-  if (gaOk && ga.daily?.length) xDates = ga.daily.map((d) => parseGaDate(d.date)).filter(Boolean);
-  const nlByDay = new Map();
-  let nlMinKey = null, nlMaxKey = null;
-  if (nlOk) {
-    for (const p of an.pageviews.series || []) {
-      const k = dayKeyLA(p.ts);
-      nlByDay.set(k, (nlByDay.get(k) || 0) + p.value);
-      if (!nlMinKey || k < nlMinKey) nlMinKey = k;
-      if (!nlMaxKey || k > nlMaxKey) nlMaxKey = k;
-    }
-    if (!xDates.length && nlByDay.size) {
-      xDates = [...nlByDay.keys()].sort().map((k) => {
-        const [y, m, d] = k.split('-').map(Number);
-        return new Date(y, m - 1, d);
-      });
-    }
-  }
+  const xDates = gaOk && ga.daily?.length ? ga.daily.map((d) => parseGaDate(d.date)).filter(Boolean) : [];
   const sers = [];
-  if (gaOk && xDates.length && ga.daily?.length) {
-    sers.push({ name: 'Visitors (GA)', color: css('--s1'), values: ga.daily.map((d) => d.users) });
-    sers.push({ name: 'Pageviews (GA)', color: css('--s2'), values: ga.daily.map((d) => d.views) });
-  }
-  if (nlOk && xDates.length) {
-    sers.push({
-      name: 'Pageviews (Netlify)', color: css('--s3'),
-      values: xDates.map((d) => {
-        const k = dayKeyLocal(d);
-        if (nlByDay.has(k)) return nlByDay.get(k);
-        return nlMinKey && k >= nlMinKey && k <= nlMaxKey ? 0 : null;
-      }),
-    });
+  if (gaOk && xDates.length) {
+    sers.push({ name: 'Visitors', color: css('--s1'), values: ga.daily.map((d) => d.users) });
+    sers.push({ name: 'Pageviews', color: css('--s2'), values: ga.daily.map((d) => d.views) });
+    sers.push({ name: 'Sessions', color: css('--s3'), values: ga.daily.map((d) => d.sessions) });
   }
   legend($('trafficLegend'), sers);
   if (sers.length && xDates.length) {
@@ -925,37 +858,28 @@ function renderWeb() {
     buildTable($('trafficChartTable'), 'Daily traffic', ['Date', ...sers.map((s) => s.name)],
       xDates.map((d, i) => [dShort(d), ...sers.map((s) => (s.values[i] == null ? '—' : fmtInt(s.values[i])))]));
   } else {
-    cardState($('trafficChart'), 'Connect Google Analytics or Netlify Analytics to see daily traffic here.');
+    cardState($('trafficChart'), 'Connect Google Analytics to see daily traffic here.');
     clear($('trafficChartTable'));
   }
-  renderPages(); renderChannels(); renderRefs(); renderNf();
+  renderPages(); renderChannels(); renderRefs();
 }
 
 function renderPages() {
-  const ga = state.ga, an = state.nl?.analytics;
-  const rows = state.pagesSrc === 'ga'
-    ? (ga?.topPages || []).map((p) => ({ label: p.path, count: p.views, href: siteHref(p.path), title: p.title ? `${p.title} — ${p.path}` : p.path }))
-    : (an?.topPages || []).map((p) => ({ label: p.label, count: p.count, href: siteHref(p.label) }));
-  $('pagesSub').textContent = state.pagesSrc === 'ga'
-    ? `GA · pageviews · last ${state.days}d` : `Netlify · server-side pageviews · last ${state.days}d`;
-  barList($('pagesList'), rows, { empty: state.pagesSrc === 'ga' ? 'No GA page data yet' : 'No Netlify page data yet' });
+  const rows = (state.ga?.topPages || []).map((p) => ({
+    label: p.path, count: p.views, href: siteHref(p.path),
+    title: p.title ? `${p.title} — ${p.path}` : p.path,
+  }));
+  $('pagesSub').textContent = `pageviews · last ${state.days}d`;
+  barList($('pagesList'), rows, { empty: 'No GA page data yet' });
 }
 function renderChannels() {
   const rows = (state.ga?.channels || []).map((c) => ({ label: c.name || '(unset)', count: c.sessions }));
   barList($('channelsList'), rows, { empty: 'No GA channel data yet' });
 }
 function renderRefs() {
-  const ga = state.ga, an = state.nl?.analytics;
-  const rows = state.refSrc === 'ga'
-    ? (ga?.referrers || []).map((r) => ({ label: r.name, count: r.sessions }))
-    : (an?.sources || []).map((r) => ({ label: r.label, count: r.count }));
-  $('refSub').textContent = state.refSrc === 'ga'
-    ? `GA · sessions by source · last ${state.days}d` : `Netlify · pageviews by source · last ${state.days}d`;
-  barList($('refList'), rows, { empty: state.refSrc === 'ga' ? 'No GA referrer data yet' : 'No Netlify source data yet' });
-}
-function renderNf() {
-  const rows = (state.nl?.analytics?.notFound || []).map((r) => ({ label: r.label, count: r.count }));
-  barList($('nfList'), rows, { empty: 'No 404s in this range — tidy.' });
+  const rows = (state.ga?.referrers || []).map((r) => ({ label: r.name, count: r.sessions }));
+  $('refSub').textContent = `sessions by source · last ${state.days}d`;
+  barList($('refList'), rows, { empty: 'No GA referrer data yet' });
 }
 
 // ---------- SITE HEALTH -----------------------------------------------------
@@ -993,13 +917,11 @@ function renderSite() {
       sub: [d.branch, relTime(d.publishedAt)].filter(Boolean).join(' · '),
     }));
   }
-  tiles.appendChild(tile({ label: `Bandwidth · ${state.days}d`, value: fmtBytes(nl.analytics?.bandwidthBytes) }));
-  $('footNote').textContent = nl.analytics?.available === false ? (nl.analytics?.note || '') : '';
 }
 
 // ---------- loading + wiring ------------------------------------------------
 function setStale(on) {
-  ['trafficCard', 'pagesCard', 'channelsCard', 'refCard', 'nfCard'].forEach((id) => $(id).classList.toggle('stale', on));
+  ['trafficCard', 'pagesCard', 'channelsCard', 'refCard'].forEach((id) => $(id).classList.toggle('stale', on));
   ['webTiles', 'siteTiles'].forEach((id) => $(id).classList.toggle('stale', on));
 }
 async function loadEmail() {
@@ -1038,15 +960,6 @@ $('webFilter').querySelectorAll('[data-days]').forEach((btn) =>
   }));
 initViewToggle('emailChartCard', 'emailChart', 'emailChartTable');
 initViewToggle('trafficCard', 'trafficChart', 'trafficChartTable');
-for (const [groupId, key, fn] of [['pagesSrc', 'pagesSrc', renderPages], ['refSrc', 'refSrc', renderRefs]]) {
-  $(groupId).querySelectorAll('[data-src]').forEach((btn) =>
-    btn.addEventListener('click', () => {
-      state[key] = btn.dataset.src;
-      $(groupId).querySelectorAll('[data-src]').forEach((b) =>
-        b.setAttribute('aria-pressed', String(b === btn)));
-      fn();
-    }));
-}
 $('refreshBtn').addEventListener('click', loadAll);
 $('lockBtn').addEventListener('click', () => lock(''));
 $('gateForm').addEventListener('submit', (ev) => {

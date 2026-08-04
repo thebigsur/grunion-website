@@ -1,9 +1,9 @@
 # Grunion Club Dashboard — setup
 
 A private, live dashboard at **grunionrugby.com/dashboard/** showing Campaign
-Monitor email performance, Google Analytics + Netlify web traffic, traffic
-sources, and site health (forms, deploys, 404s, bandwidth). It fetches fresh
-data every time it's opened — no ongoing maintenance.
+Monitor email performance, Google Analytics web traffic and traffic sources,
+and site health (form submissions, deploy status). It fetches fresh data every
+time it's opened — no ongoing maintenance.
 
 **How it stays private:** the page isn't linked from anywhere on the site, is
 `noindex`ed (page meta + `X-Robots-Tag` header), and — the real lock — every
@@ -18,7 +18,7 @@ in the repo or the browser.
 | `dashboard/index.html` | the dashboard page (self-contained, no build step) |
 | `netlify/functions/cm-stats.mjs` | Campaign Monitor: last 12 campaigns, open/click rates, list size |
 | `netlify/functions/ga-stats.mjs` | GA4: daily traffic, totals vs previous period, top pages, channels, referrers |
-| `netlify/functions/netlify-stats.mjs` | Netlify: server-side pageviews/visitors/sources/404s, form submissions, deploy status, bandwidth |
+| `netlify/functions/netlify-stats.mjs` | Netlify: form submissions + deploy status (documented API only) |
 | `netlify.toml` | adds the functions directory + noindex headers for `/dashboard/*` |
 
 ## Environment variables (the whole setup)
@@ -34,8 +34,8 @@ changes only take effect on a fresh deploy.
 | `NETLIFY_API_TOKEN` | yes | Netlify (step 3) |
 | `GA_CLIENT_EMAIL` | yes | Google service account (step 4) |
 | `GA_PRIVATE_KEY` | yes | Google service account (step 4) |
-| `CM_CLIENT_ID` | no | auto-discovered from the CM account |
-| `GA_PROPERTY_ID` | no | auto-discovered; override from GA Admin → Property settings if needed |
+| `CM_CLIENT_ID` | recommended | the "API Client ID" on CM's API page — lets the dashboard work with a client-scoped key |
+| `GA_PROPERTY_ID` | recommended | the numeric id in GA Admin → Property settings. (Auto-discovery works only if the "Google Analytics Admin API" is also enabled in Google Cloud — setting the id directly skips that.) |
 | `NETLIFY_SITE_ID` | no | auto-discovered by matching grunionrugby.com |
 | `GA_SERVICE_ACCOUNT_JSON` | no | alternative to the two GA_ vars: paste the whole JSON key file |
 
@@ -100,13 +100,13 @@ This gives the dashboard read-only access to GA without your Google password.
   account isn't a Viewer on the property), or it was added to the wrong property.
 - **GA "token exchange failed"** — `GA_PRIVATE_KEY` got mangled in pasting;
   re-paste the whole block, or use `GA_SERVICE_ACCOUNT_JSON` with the entire file.
-- **Netlify traffic cards say unavailable but forms/deploys work** — the
-  Analytics endpoints aren't an officially documented Netlify API; if Netlify
-  changes them the dashboard degrades gracefully (GA still covers traffic).
-  Everything else (forms, deploys) uses the stable documented API.
-- **Numbers differ between GA and Netlify** — expected. GA measures with a
-  browser tag (ad blockers hide some visitors); Netlify counts server-side
-  requests (includes some bots). Trends matter more than the gap.
+- **GA numbers look low compared to what Netlify's own dashboard claims** —
+  GA counts real humans running the browser tag; server-side counts include
+  bots, crawlers, and link-preview fetchers. GA is the honest number.
+- **Build fails with "Secrets scanning found secrets"** — the passcode (or a
+  key) literally appears as text somewhere in the site files. Pick a passcode
+  that isn't a phrase written on the site (club words, the founding year, and
+  the domain all trip this).
 
 ## Notes
 
