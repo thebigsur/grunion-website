@@ -213,6 +213,32 @@
 .pi-done{margin-top:22px}
 .pi-done p{font-size:1.05rem;line-height:1.7;color:rgba(255,255,255,.88)}
 .pi-done .btn{margin-top:20px}
+
+/* ---- Grunion in the News — press clippings ---- */
+.press-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:clamp(24px,3.5vw,36px)}
+@media(max-width:920px){.press-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.press-grid{grid-template-columns:1fr}}
+.news-card{display:flex;flex-direction:column;text-decoration:none;color:#fff;
+  background:var(--ocean-800);border:1px solid rgba(255,255,255,.14);border-radius:4px;overflow:hidden;
+  transition:border-color .18s ease,transform .18s ease}
+.news-card:hover{border-color:var(--gold-soft);transform:translateY(-2px)}
+.news-card:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+/* cover = striped placeholder with the outlet masthead behind an optional photo;
+   if the photo file is missing the img removes itself (onerror) and the masthead shows */
+.nc-cover{position:relative;display:grid;place-items:center;aspect-ratio:16/10;overflow:hidden;
+  background-color:var(--ocean-800);
+  background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.045) 0 14px,transparent 14px 28px)}
+.nc-mast{font-family:var(--font-display);font-weight:800;text-transform:uppercase;letter-spacing:.05em;
+  font-size:1.05rem;line-height:1.1;color:rgba(255,255,255,.4);padding:0 16px;text-align:center}
+.nc-cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .4s ease}
+.news-card:hover .nc-cover img{transform:scale(1.05)}
+.nc-body{display:flex;flex-direction:column;gap:9px;flex:1;padding:15px 16px 18px;border-top:1px solid rgba(255,255,255,.12)}
+.nc-meta{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft)}
+.nc-title{font-family:var(--font-display);font-weight:700;text-transform:uppercase;letter-spacing:.01em;
+  font-size:1.16rem;line-height:1.05;color:#fff}
+.nc-title::after{content:"↗";margin-left:.45em;font-family:var(--font-body);font-weight:400;
+  font-size:.85em;color:var(--gold-soft)}
+.news-card:hover .nc-title::after{color:#fff}
 </style>
 </head>
 <body data-page="club78">
@@ -286,6 +312,91 @@
           <a class="mx-tile" href="#documents">
             <span class="mx-cover mx-cover--docs" aria-hidden="true"><img src="assets/grunion-crest.png" alt="" width="400" height="400" loading="lazy" decoding="async" /></span>
             <span class="mx-body"><span class="mx-name">Documents</span><span class="mx-meta" id="memberDocsCount">Papers &amp; briefings</span></span>
+          </a>
+        </nav>
+      </div>
+
+      <!-- GRUNION IN THE NEWS — press clippings. Static list, newest first; each card
+           links out to the outlet in a new tab. Cover photos live in assets/news/
+           (downloaded + compressed locally, per the no-hotlink rule); a card whose
+           photo file is missing falls back to the striped outlet-masthead state. -->
+      <div class="mlib-block" id="grunion-news">
+        <div class="mlib-head">
+          <div>
+            <span class="kicker">From The Papers</span>
+            <h3 id="news-h" style="margin-top:12px">Grunion in the News</h3>
+          </div>
+          <span class="mlib-count" aria-hidden="true">07 Clippings</span>
+        </div>
+        <nav class="press-grid" aria-labelledby="news-h">
+          <a class="news-card" href="https://citylifestyle.com/articles/grunions-for-life" target="_blank" rel="noopener">
+            <span class="nc-cover" aria-hidden="true">
+              <span class="nc-mast">City Lifestyle</span>
+              <img src="assets/news/grunions-for-life.jpg" alt="" width="900" height="563" loading="lazy" decoding="async" onerror="this.remove()" />
+            </span>
+            <span class="nc-body">
+              <span class="nc-meta">City Lifestyle · Club Feature</span>
+              <span class="nc-title">Grunions for Life</span>
+            </span>
+          </a>
+          <a class="news-card" href="https://www.independent.com/2023/08/23/local-rugby-teams-invite-public-to-the-santa-barbara-7s-tournament-on-august-26th/" target="_blank" rel="noopener">
+            <span class="nc-cover" aria-hidden="true">
+              <span class="nc-mast">The Independent</span>
+              <img src="assets/news/sb-7s-independent.jpg" alt="" width="900" height="563" loading="lazy" decoding="async" onerror="this.remove()" />
+            </span>
+            <span class="nc-body">
+              <span class="nc-meta">The Independent · Aug 2023</span>
+              <span class="nc-title">Local Rugby Teams Invite Public to the Santa Barbara 7s</span>
+            </span>
+          </a>
+          <a class="news-card" href="https://www.noozhawk.com/santa-barbara-7s-tournament-marks-return-of-local-grunion-rugby/" target="_blank" rel="noopener">
+            <span class="nc-cover" aria-hidden="true">
+              <span class="nc-mast">Noozhawk</span>
+              <img src="assets/news/sb-7s-noozhawk.jpg" alt="" width="900" height="563" loading="lazy" decoding="async" onerror="this.remove()" />
+            </span>
+            <span class="nc-body">
+              <span class="nc-meta">Noozhawk · Aug 2023</span>
+              <span class="nc-title">Santa Barbara 7s Marks Return of Local Grunion Rugby</span>
+            </span>
+          </a>
+          <a class="news-card" href="https://www.independent.com/2022/04/26/santa-barbara-grunion-rugby-club-wins-southern-california-division-3-title/" target="_blank" rel="noopener">
+            <span class="nc-cover" aria-hidden="true">
+              <span class="nc-mast">The Independent</span>
+              <img src="assets/news/d3-title-independent.jpg" alt="" width="900" height="563" loading="lazy" decoding="async" onerror="this.remove()" />
+            </span>
+            <span class="nc-body">
+              <span class="nc-meta">The Independent · Apr 2022</span>
+              <span class="nc-title">Grunion Win Southern California Division 3 Title</span>
+            </span>
+          </a>
+          <a class="news-card" href="https://www.noozhawk.com/santa_barbara_grunion_claim_rugby_title_after_drawing_with_san_luis_obispo/" target="_blank" rel="noopener">
+            <span class="nc-cover" aria-hidden="true">
+              <span class="nc-mast">Noozhawk</span>
+            </span>
+            <span class="nc-body">
+              <span class="nc-meta">Noozhawk · Apr 2022</span>
+              <span class="nc-title">Grunion Claim Title After Drawing with San Luis Obispo</span>
+            </span>
+          </a>
+          <a class="news-card" href="https://www.independent.com/2018/03/29/santa-barbara-grunion-rugby-turns-40/" target="_blank" rel="noopener">
+            <span class="nc-cover" aria-hidden="true">
+              <span class="nc-mast">The Independent</span>
+              <img src="assets/news/turns-40.jpg" alt="" width="900" height="563" loading="lazy" decoding="async" onerror="this.remove()" />
+            </span>
+            <span class="nc-body">
+              <span class="nc-meta">The Independent · Mar 2018</span>
+              <span class="nc-title">Santa Barbara Grunion Rugby Turns 40</span>
+            </span>
+          </a>
+          <a class="news-card" href="https://www.independent.com/2013/02/06/ready-rugby/" target="_blank" rel="noopener">
+            <span class="nc-cover" aria-hidden="true">
+              <span class="nc-mast">The Independent</span>
+              <img src="assets/news/ready-for-rugby.jpg" alt="" width="900" height="563" loading="lazy" decoding="async" onerror="this.remove()" />
+            </span>
+            <span class="nc-body">
+              <span class="nc-meta">The Independent · Feb 2013</span>
+              <span class="nc-title">Ready for Rugby</span>
+            </span>
           </a>
         </nav>
       </div>
