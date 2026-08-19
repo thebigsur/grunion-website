@@ -352,7 +352,7 @@ body[data-hero="duotone"] .hero-media{background:var(--ocean-700)}
   font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-soft);
   border:1px solid rgba(216,177,95,.45);padding:9px 14px;border-radius:2px}
 
-.tiers{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:52px;align-items:stretch}
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:52px;align-items:stretch}
 .tier{display:flex;flex-direction:column;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.14);
   border-radius:4px;padding:26px 22px;position:relative}
 .tier.flagship{background:linear-gradient(180deg, rgba(194,146,46,.16), rgba(194,146,46,.04));border-color:var(--gold)}
