@@ -7,7 +7,7 @@ var CONFIG = {
   // Columns (header row, any order): Season, Division, Date, Time, Opponent, Competition, Location, Status, GrunionScore, OpponentScore
   // Time is optional (e.g. "1:00 PM") — shown as the kickoff time on upcoming matches.
   // Leave "" to show the built-in sample fixtures below (setup preview only).
-  SHEET_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRRlKXYhf97sQcT0SKa_91oXBuJv_dmYm3m_5k5Jp7Df49Fm3HuQbRML14GlEsETyNgoWeZNLKBMelv/pub?gid=0&single=true&output=csv",
+  SHEET_CSV_URL: "https://docs.google.com/spreadsheets/d/1BN4ctNLbtoy1-bPNNRM3WFc2SbpmM_YYNHLmVHCU0tA/gviz/tq?tqx=out:csv&gid=0",
 
   // The '78 Club patron roster: paste a PUBLISHED Google Doc OR Google Sheet URL.
   //  • Google Doc:  File ▸ Share ▸ Publish to web ▸ copy the link. In the doc, put each
@@ -17,14 +17,14 @@ var CONFIG = {
   //    (A published Sheet is the most reliable source.)
   // Leave "" to keep the "YOUR NAME HERE" placeholders on the wall.
   // Connected to the Patrons tab of the "Website Sheet" spreadsheet (gid 299262421).
-  PATRONS_DOC_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRRlKXYhf97sQcT0SKa_91oXBuJv_dmYm3m_5k5Jp7Df49Fm3HuQbRML14GlEsETyNgoWeZNLKBMelv/pub?gid=299262421&single=true&output=csv",
+  PATRONS_DOC_URL: "https://docs.google.com/spreadsheets/d/1BN4ctNLbtoy1-bPNNRM3WFc2SbpmM_YYNHLmVHCU0tA/gviz/tq?tqx=out:csv&gid=299262421",
 
   // Hall of Fame (history.html ▸ Greatest Grunions): paste a PUBLISHED Google Sheet CSV URL.
   // File ▸ Share ▸ Publish to web ▸ choose the "Hall of Fame" sheet ▸ Comma-separated values (.csv).
   // Two columns (header row): Name, Year  — Year is the first year with the Grunions (e.g. 78),
   // and may be left blank. Rows render in sheet order, top to bottom.
   // Leave "" to keep the built-in list already printed on the page.
-  HOF_CSV_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRRlKXYhf97sQcT0SKa_91oXBuJv_dmYm3m_5k5Jp7Df49Fm3HuQbRML14GlEsETyNgoWeZNLKBMelv/pub?gid=1804498175&single=true&output=csv",
+  HOF_CSV_URL: "https://docs.google.com/spreadsheets/d/1BN4ctNLbtoy1-bPNNRM3WFc2SbpmM_YYNHLmVHCU0tA/gviz/tq?tqx=out:csv&gid=1804498175",
 
   // Newsletter: handled by Campaign Monitor's embedded form (markup + script
   // live in index.html). Subscribers go straight to the MER List.
@@ -42,7 +42,7 @@ var CONFIG = {
 
   // Giving conversations (The '78 Club "Start a Conversation")
   GIVING_NAME:        "Josh Timpe",
-  GIVING_EMAIL:       "grunionrugby@gmail.com",
+  GIVING_EMAIL:       "treasurer@sbrfc.com",
   GIVING_PHONE:       "",
 
   // Legal
@@ -69,9 +69,9 @@ var CONFIG = {
   //     here → the "Documents" list. (Excluded from the photo tiles.)
   //   • CURRENT is only used by the home-page "match gallery" strip, which
   //     pulls a few random shots from the Current Season folder.
-  MEMBERS_DRIVE_ROOT_FOLDER_ID:    "18u1BehBRJyhk9b9tOKaUhZQpQhuiIZHj",  // top-level "MERchives" folder
-  MEMBERS_DRIVE_DOCS_FOLDER_ID:    "19oPNqh96-WQINhEHmshhGiljlqcjLBsj",  // "Documents" sub-folder
-  MEMBERS_DRIVE_CURRENT_FOLDER_ID: "17QEKqr1FbUFtinEVDKmHhyhj0APBUsBK",  // "Current Season" sub-folder (home page only)
+  MEMBERS_DRIVE_ROOT_FOLDER_ID:    "1s2U73wvfC4eJQTXX55xeMDJO4cI4LGcK",  // top-level "MERchives" folder (Grunion Website shared drive)
+  MEMBERS_DRIVE_DOCS_FOLDER_ID:    "1EWzDYyqOUrA1UUTjvTtsw144Dpu1fOSW",  // "Documents" sub-folder
+  MEMBERS_DRIVE_CURRENT_FOLDER_ID: "1XmNplA1lpLYUzgK70QLeulzEUSosaW71",  // "Current Season" sub-folder (home page only)
 
   // Where any MERchives link points — the in-site archive page.
   MEMBERS_AREA_URL:   "MERchives.html"
@@ -570,6 +570,7 @@ metaEl.hidden=false;
     var q="'"+FID+"' in parents and mimeType contains 'image/' and trashed=false";
     var url='https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)
       +'&pageSize=200&fields='+encodeURIComponent('files(id,name,thumbnailLink)')
+      +'&supportsAllDrives=true&includeItemsFromAllDrives=true'  // folders live in a shared drive
       +'&key='+encodeURIComponent(KEY);
     fetch(url).then(function(r){ if(!r.ok) throw 0; return r.json(); })
       .then(function(j){
@@ -881,6 +882,7 @@ metaEl.hidden=false;
       + '&orderBy=' + encodeURIComponent('name')
       + '&pageSize=100'
       + '&fields=' + encodeURIComponent('files(id,name)')
+      + '&supportsAllDrives=true&includeItemsFromAllDrives=true'  // folders live in a shared drive
       + '&key=' + encodeURIComponent(KEY);
     fetch(url).then(function(r){ if(!r.ok) throw 0; return r.json(); })
       .then(function(j){ cb(null, (j && j.files) || []); })
@@ -907,6 +909,7 @@ metaEl.hidden=false;
       + '&orderBy=' + encodeURIComponent('modifiedTime desc')
       + '&pageSize=200'
       + '&fields=' + encodeURIComponent(fields)
+      + '&supportsAllDrives=true&includeItemsFromAllDrives=true'  // folders live in a shared drive
       + '&key=' + encodeURIComponent(KEY);
     fetch(url).then(function(r){ if(!r.ok) throw 0; return r.json(); })
       .then(function(j){ cb(null, (j && j.files) || []); })
