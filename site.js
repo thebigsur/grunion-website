@@ -56,7 +56,7 @@ var CONFIG = {
   // "not connected yet" state — nothing looks broken.
   //
   // One read-only Google Drive API key (restricted to the Drive API):
-  MEMBERS_DRIVE_API_KEY:           "AIzaSyAV74KmGRq3dJANP7uSq2_VKGMlZ1sMlOI",
+  MEMBERS_DRIVE_API_KEY:           "AIzaSyDf5tLVz5ciYtGLpp67xB1tFEudFB2I0cI",
   //
   // Folder IDs. A folder's ID is the long code in its URL when you open
   // it in Drive: drive.google.com/drive/folders/THIS_PART_HERE
