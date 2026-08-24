@@ -5,6 +5,12 @@
   publish = "."
   command = ""
 
+# The Drive API key in site.js is a public, browser-side, read-only key
+# (restricted in Google Cloud to the Drive API + this site's domain), so it
+# is safe to ship. Tell Netlify's secrets scanner not to fail the deploy on it.
+[build.environment]
+  SECRETS_SCAN_OMIT_PATHS = "site.js"
+
 # Let visitors reach the '78 Club page at /the-78-club (without the .html)
 [[redirects]]
   from = "/the-78-club"
