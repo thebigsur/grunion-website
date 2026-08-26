@@ -55,13 +55,24 @@ jersey-tile sponsor email campaign from Instantly across both sending inboxes
 ## What's on the page
 
 Scoreboard (businesses contacted, emails sent, real replies + reply rate of
-contacted, bounces, opt-outs, sequences completed, days left until Fri Oct 9),
+contacted, bounces, opt-outs, sequences completed, days left until Fri Oct 16),
 inbox health per sending inbox (sends today in Pacific time vs the Instantly
 daily cap, warmup score, account status), PROD funnel (not yet contacted /
 contacted / finished / bounced / unsubscribed + sends per email step), a 14-day
 daily-sends chart (UTC days, to match Instantly) with a table view, and a
 per-campaign table (PROD + every "(priority)" one-off + anything else that is
 not a test): sent, replies, bounces, status.
+
+How the sections relate (worked example from launch night):
+- Scoreboard = every non-test campaign added together: PROD + the one-off
+  "(priority)" campaigns. 50 businesses contacted = 38 PROD + 12 one-offs;
+  52 emails sent = 40 PROD (38 got Email 1, 2 of them already got Email 2) +
+  12 one-offs (one email each). Emails will always run ahead of businesses once
+  follow-ups start — the sub-lines show the split.
+- Inbox health = the same emails split by sending inbox (32 treasurer@ +
+  20 merman@ = 52), counted on today's Pacific date.
+- PROD funnel = the 1,246-lead PROD campaign on its own: 38 contacted, 40
+  emails (Email 1/2/3 = 38/2/0). The caption under the steps reconciles the two.
 
 Definitions:
 - Test campaigns = names containing the whole word TEST, FORMAT, or TIMING

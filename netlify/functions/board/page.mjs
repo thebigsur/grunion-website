@@ -173,6 +173,7 @@ main.loading .live { opacity: 0.55; transition: opacity 0.2s; }
 .steps .b { height: 10px; border-radius: 0 4px 4px 0; background: var(--series); transition: width 0.4s; }
 .steps .b.zero { width: 2px !important; background: var(--axis); }
 .pill { font-size: 12px; color: var(--muted); }
+.cap { font-size: 12px; color: var(--muted); margin: 0 0 8px; }
 
 /* ---- chart ----------------------------------------------------------- */
 .chart-wrap { position: relative; }
@@ -263,6 +264,7 @@ export const BODY = String.raw`
   <div class="card">
     <div class="bars" id="funnel"></div>
     <hr class="subrule">
+    <p class="cap" id="steps-cap"></p>
     <div class="steps" id="steps"></div>
   </div>
 </section>
@@ -370,10 +372,18 @@ export const JS = String.raw`
     var replies = t.replies;
     var replyRate = pctText(replies, t.contacted);
 
+    var bd = p.breakdown || {};
+    var split = function (field) {
+      var parts = [];
+      if (bd.prod && bd.prod.count) parts.push(fmt(bd.prod[field]) + ' PROD');
+      if (bd.oneoffs && bd.oneoffs.count) parts.push(fmt(bd.oneoffs[field]) + ' one-offs');
+      if (bd.other && bd.other.count) parts.push(fmt(bd.other[field]) + ' other');
+      return parts.length > 1 ? parts.join(' · ') : '';
+    };
     $('t-contacted').textContent = fmt(t.contacted);
-    $('t-contacted-s').textContent = t.leads ? 'of ' + fmt(t.leads) + ' leads' : '';
+    $('t-contacted-s').textContent = split('contacted') || (t.leads ? 'of ' + fmt(t.leads) + ' leads' : '');
     $('t-sent').textContent = fmt(t.sent);
-    $('t-sent-s').textContent = t.sent_today != null ? fmt(t.sent_today) + ' today' : '';
+    $('t-sent-s').textContent = [split('sent'), t.sent_today != null ? fmt(t.sent_today) + ' today' : ''].filter(Boolean).join(' · ');
     $('t-replies').textContent = fmt(replies);
     var rs = [];
     if (replyRate) rs.push(replyRate + ' of contacted');
@@ -393,7 +403,11 @@ export const JS = String.raw`
     else if (dl === 0) { $('t-days').textContent = 'Last'; $('t-days-l').textContent = 'day of sending'; }
     else { $('t-days').textContent = 'Done'; $('t-days-l').textContent = 'sending has ended'; }
     $('t-days-s').textContent = p.end_label ? 'sending ends ' + p.end_label : '';
-    $('score-aside').textContent = (p.campaign_count != null) ? fmt(p.campaign_count) + ' ' + plural(p.campaign_count, 'campaign') : '';
+    var scopeParts = [];
+    if (bd.prod && bd.prod.count) scopeParts.push('PROD');
+    if (bd.oneoffs && bd.oneoffs.count) scopeParts.push(fmt(bd.oneoffs.count) + ' one-offs');
+    if (bd.other && bd.other.count) scopeParts.push(fmt(bd.other.count) + ' other');
+    $('score-aside').textContent = scopeParts.length ? scopeParts.join(' + ') : ((p.campaign_count != null) ? fmt(p.campaign_count) + ' ' + plural(p.campaign_count, 'campaign') : '');
 
     /* inboxes */
     var ib = $('inboxes'); clear(ib);
@@ -440,7 +454,7 @@ export const JS = String.raw`
       f.appendChild(el('div', 'empty', 'PROD campaign not found in Instantly.'));
       $('prod-aside').textContent = '';
     } else {
-      $('prod-aside').textContent = pr.status_label ? pr.status_label + ' · ' + fmt(pr.leads) + ' leads' : fmt(pr.leads) + ' leads';
+      $('prod-aside').textContent = ['this campaign only', pr.status_label, fmt(pr.leads) + ' leads'].filter(Boolean).join(' · ');
       var rows = [
         ['Not yet contacted', pr.not_contacted, false],
         ['Contacted', pr.contacted, false],
@@ -461,6 +475,8 @@ export const JS = String.raw`
     }
     var st = $('steps'); clear(st);
     var steps = (pr && pr.steps) || [];
+    var follow = pr ? Math.max(0, (pr.sent || 0) - (pr.contacted || 0)) : 0;
+    $('steps-cap').textContent = pr ? ('Sends per email step · ' + fmt(pr.sent) + ' ' + plural(pr.sent, 'email') + ' to ' + fmt(pr.contacted) + ' ' + plural(pr.contacted, 'business', 'businesses') + (follow ? ' (' + fmt(follow) + ' ' + plural(follow, 'follow-up') + ')' : '')) : '';
     if (!steps.length) {
       st.appendChild(el('div', 'empty', 'No per-step data yet.'));
     } else {

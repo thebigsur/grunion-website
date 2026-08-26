@@ -23,8 +23,8 @@ export const config = { path: '/board/*' };
 // ---- campaign facts ---------------------------------------------------------
 const PROD_ID = '5a76e2ad-15a1-40af-81af-2475a69bd4dc'; // "Grunion Jersey Tiles — Fall 2026 (PROD)"
 const INBOXES = ['treasurer@grunionrugbyclub.com', 'merman@grunionrugbyclub.com'];
-const END_DATE = '2026-10-09'; // sending ends Fri Oct 9, 2026 (Pacific)
-const END_LABEL = 'Fri Oct 9';
+const END_DATE = '2026-10-16'; // sending ends Fri Oct 16, 2026 (Pacific)
+const END_LABEL = 'Fri Oct 16';
 const TZ = 'America/Los_Angeles';
 const DAYS = 14; // daily chart window (UTC days, matching Instantly)
 
@@ -305,6 +305,12 @@ async function build(key) {
 
   // Totals across every non-test campaign
   const sum = (k) => live.reduce((n, r) => n + num(r[k]), 0);
+  const part = (kind) => {
+    const rows = live.filter((r) => r.kind === kind);
+    const s = (k) => rows.reduce((n, r) => n + num(r[k]), 0);
+    return { count: rows.length, contacted: s('contacted'), sent: s('sent'), replies: s('replies'), bounced: s('bounced') };
+  };
+  const breakdown = { prod: part('prod'), oneoffs: part('oneoff'), other: part('other') };
   const totals = {
     leads: sum('leads'),
     contacted: sum('contacted'),
@@ -393,6 +399,7 @@ async function build(key) {
     end_label: END_LABEL,
     days_left: daysLeft,
     totals,
+    breakdown,
     inboxes,
     prod,
     daily: days.map((d) => byDate.get(d)),
