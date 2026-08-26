@@ -15,7 +15,7 @@
 // Dependency-free (node built-ins only) like the dashboard functions.
 // ============================================================================
 
-import { timingSafeEqual, createHash } from 'node:crypto';
+import { timingSafeEqual, createHash, createSign } from 'node:crypto';
 import { TITLE, CSS, BODY, JS } from './page.mjs';
 
 export const config = { path: '/board/*' };
@@ -278,6 +278,101 @@ async function unsubscribedLeads(api, campaignIds) {
   return found;
 }
 
+// ---- Gmail: both sending inboxes ----------------------------------------------
+// Optional second source for unsubscribes. Reads each inbox with a Google
+// service account that has domain-wide delegation (scope gmail.readonly) —
+// the same mechanism the club dashboard uses for GA. Env vars, scope Functions:
+//   GMAIL_CLIENT_EMAIL + GMAIL_PRIVATE_KEY   (or GMAIL_SERVICE_ACCOUNT_JSON)
+// If those are absent it falls back to GA_CLIENT_EMAIL / GA_PRIVATE_KEY, so
+// delegating the dashboard's service account is enough. Setup steps are in
+// SPONSOR-BOARD-SETUP.md. Read-only: gmail.readonly can't send or delete.
+const GMAIL_SCOPE = 'https://www.googleapis.com/auth/gmail.readonly';
+const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const GMAIL_API = 'https://gmail.googleapis.com/gmail/v1/users/me';
+const GMAIL_DAYS = 120;
+const GMAIL_OPTOUT_QUERY = '(subject:unsubscribe OR unsubscribe OR "opt out" OR "opt-out" OR "remove me" OR "remove us" OR "take me off" OR "take us off" OR "stop emailing" OR "stop sending" OR "not interested" OR "do not contact" OR "please remove" OR "no thanks")';
+
+const b64url = (buf) => Buffer.from(buf).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+function gmailCreds() {
+  for (const raw of [process.env.GMAIL_SERVICE_ACCOUNT_JSON, process.env.GA_SERVICE_ACCOUNT_JSON]) {
+    if (!raw) continue;
+    try { const j = JSON.parse(raw); if (j.client_email && j.private_key) return { email: j.client_email, key: j.private_key }; } catch {}
+  }
+  const email = process.env.GMAIL_CLIENT_EMAIL || process.env.GA_CLIENT_EMAIL;
+  const key = String(process.env.GMAIL_PRIVATE_KEY || process.env.GA_PRIVATE_KEY || '').replace(/\\n/g, '\n');
+  return email && key ? { email, key } : null;
+}
+
+async function googleToken(creds, sub, ms) {
+  const now = Math.floor(Date.now() / 1000);
+  const header = b64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+  const claims = b64url(JSON.stringify({ iss: creds.email, sub, scope: GMAIL_SCOPE, aud: GOOGLE_TOKEN_URL, iat: now, exp: now + 3600 }));
+  const signer = createSign('RSA-SHA256');
+  signer.update(`${header}.${claims}`);
+  const sig = b64url(signer.sign(creds.key));
+  const r = await fetch(GOOGLE_TOKEN_URL, {
+    method: 'POST',
+    body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: `${header}.${claims}.${sig}` }),
+    signal: AbortSignal.timeout(ms),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok || !data.access_token) {
+    if (data.error === 'unauthorized_client') throw new Error(`Google has not granted this service account access to ${sub} yet (domain-wide delegation, scope gmail.readonly)`);
+    throw new Error(`Google would not issue a token for ${sub}: ${data.error_description || data.error || r.status}`);
+  }
+  return data.access_token;
+}
+
+const hdr = (msg, name) => {
+  const h = (msg?.payload?.headers || []).find((x) => String(x.name).toLowerCase() === name.toLowerCase());
+  return h ? String(h.value) : '';
+};
+const addrOf = (s) => { const m = String(s).match(/<([^>]+)>/); return (m ? m[1] : String(s)).trim().toLowerCase(); };
+const domainOf = (s) => { const a = addrOf(s); const i = a.indexOf('@'); return i > 0 ? a.slice(i + 1) : a; };
+
+async function gmailScan(creds, inbox, deadline) {
+  const ms = () => Math.min(REQ_MS, Math.max(1500, deadline - Date.now()));
+  const token = await googleToken(creds, inbox, ms());
+  const gget = async (path) => {
+    const r = await fetch(GMAIL_API + path, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(ms()) });
+    if (!r.ok) { const t = await r.text().catch(() => ''); throw new Error(`Gmail ${r.status} for ${inbox}${t ? ': ' + t.replace(/\s+/g, ' ').slice(0, 100) : ''}`); }
+    return r.json();
+  };
+  const meta = (id) => gget(`/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date&metadataHeaders=In-Reply-To`);
+  const short = inbox.split('@')[0] + '@';
+
+  // Anything in the inbox that looks like an opt-out
+  const q = encodeURIComponent(`newer_than:${GMAIL_DAYS}d -in:sent -in:trash -in:spam -in:chats ${GMAIL_OPTOUT_QUERY}`);
+  const list = await gget(`/messages?q=${q}&maxResults=50`);
+  const msgs = await pool((list.messages || []).map((m) => m.id), 6, (id) => meta(id).catch(() => null));
+  const hits = msgs.filter(Boolean).map((m) => {
+    const subject = hdr(m, 'Subject');
+    return {
+      inbox: short,
+      from: addrOf(hdr(m, 'From')),
+      subject: subject.replace(/\s+/g, ' ').trim().slice(0, 120),
+      when: m.internalDate ? new Date(Number(m.internalDate)).toISOString() : null,
+      is_reply: !!hdr(m, 'In-Reply-To'),
+      unsubscribe_mail: /^\s*(re:\s*)?unsubscribe\s*$/i.test(subject),
+      snippet: String(m.snippet || '').replace(/\s+/g, ' ').trim().slice(0, 160),
+    };
+  });
+
+  // "unsubscribe" messages this inbox SENT = Gmail's one-click unsubscribe,
+  // i.e. the inbox unsubscribing from a sender (not a business opting out).
+  const q2 = encodeURIComponent(`in:sent subject:unsubscribe newer_than:${GMAIL_DAYS}d`);
+  const sentList = await gget(`/messages?q=${q2}&maxResults=10`).catch(() => ({}));
+  const sentMsgs = await pool((sentList.messages || []).map((m) => m.id), 4, (id) => meta(id).catch(() => null));
+  const sent_unsubscribes = sentMsgs.filter(Boolean).map((m) => ({
+    inbox: short,
+    to_domain: domainOf(hdr(m, 'To')),
+    when: m.internalDate ? new Date(Number(m.internalDate)).toISOString() : null,
+    in_reply_to: hdr(m, 'In-Reply-To').slice(0, 120),
+  }));
+  return { inbox: short, hits, sent_unsubscribes };
+}
+
 // ---- the roll-up --------------------------------------------------------------
 async function build(key) {
   const started = Date.now();
@@ -292,11 +387,16 @@ async function build(key) {
   for (let i = DAYS - 1; i >= 0; i--) days.push(utcDate(new Date(now.getTime() - i * 86400000)));
 
   // Phase 1 — everything that doesn't depend on the campaign list
-  const [campaignsRaw, analyticsRaw, accountsRaw, blockRaw, ...todayByInbox] = await Promise.all([
+  const creds = gmailCreds();
+  const gmailErrors = [];
+  const [campaignsRaw, analyticsRaw, accountsRaw, blockRaw, gmailRaw, ...todayByInbox] = await Promise.all([
     api.list('/campaigns'),
     api.get('/campaigns/analytics'),
     api.list('/accounts'),
     api.list('/block-lists-entries').catch(() => null),
+    creds
+      ? Promise.all(INBOXES.map((inbox) => gmailScan(creds, inbox, deadline).catch((e) => { gmailErrors.push(String(e?.message || e)); return null; })))
+      : Promise.resolve(null),
     ...INBOXES.map((inbox) => sentToday(api, inbox, todayPT).catch(() => { warnings.push(`Today's sends unavailable for ${inbox.split('@')[0]}@`); return null; })),
   ]);
 
@@ -345,24 +445,69 @@ async function build(key) {
   });
   if (dailyMissing) warnings.push(`Daily chart is missing ${dailyMissing} ${dailyMissing === 1 ? 'campaign' : 'campaigns'}`);
 
-  // Opt-outs: Instantly's own unsubscribes + businesses that asked by reply
-  const optouts = [];
-  const seen = new Set();
-  for (const u of Array.isArray(buttonUnsubs) ? buttonUnsubs : []) {
-    const k = u.email.toLowerCase(); if (!k || seen.has(k)) continue; seen.add(k); optouts.push(u);
+  // ---- Gmail hits, cross-referenced against Instantly's lead records ----------
+  const ourInboxes = new Set(INBOXES.map((x) => x.toLowerCase()));
+  const gmailScans = (Array.isArray(gmailRaw) ? gmailRaw : []).filter(Boolean);
+  const gmailHits = gmailScans.flatMap((g) => g.hits).filter((h) => h.from && !ourInboxes.has(h.from));
+  const senders = [...new Set(gmailHits.map((h) => h.from))];
+  let leadByEmail = new Map();
+  if (senders.length) {
+    try {
+      const r = await api.post('/leads/list', { contacts: senders.slice(0, 100), limit: 100 });
+      for (const l of Array.isArray(r?.items) ? r.items : []) leadByEmail.set(String(l.email || '').toLowerCase(), l);
+    } catch (e) { warnings.push('Could not match Gmail senders to Instantly leads'); }
   }
-  for (const b of Array.isArray(blockRaw) ? blockRaw : []) {
-    const k = String(b.bl_value || '').toLowerCase(); if (!k || seen.has(k)) continue; seen.add(k);
-    optouts.push({ email: String(b.bl_value || ''), when: b.timestamp_created || null, source: 'list' });
+  const gmailOptouts = new Map(); // email -> { when, how, company, inbox, instantly_status }
+  let gmailIgnored = 0;
+  for (const h of gmailHits) {
+    const lead = leadByEmail.get(h.from);
+    const isLead = lead && liveIds.has(String(lead.campaign || ''));
+    const looksLikeOptout = h.unsubscribe_mail || OPTOUT_RE.test(h.subject) || OPTOUT_RE.test(h.snippet);
+    if (!isLead || !looksLikeOptout) { gmailIgnored++; continue; }
+    const prev = gmailOptouts.get(h.from);
+    if (!prev || Date.parse(h.when || 0) > Date.parse(prev.when || 0)) {
+      gmailOptouts.set(h.from, { when: h.when, how: h.unsubscribe_mail ? 'unsubscribe email' : 'reply', company: lead.company_name || null, inbox: h.inbox, instantly_status: lead.status });
+    }
   }
-  let unsubReply = 0;
-  for (const r of Array.isArray(replies) ? replies : []) {
-    if (r.kind !== 'optout') continue;
-    const k = r.email.toLowerCase(); if (!k || seen.has(k)) continue; seen.add(k);
-    optouts.push({ email: r.email, when: r.when, source: 'reply' });
-    unsubReply++;
+
+  // ---- Opt-outs: union of every source, one row per address, with flags -------
+  //   instantly: Instantly marked the lead unsubscribed (button / block list)
+  //   reply:     Instantly-synced reply whose own words ask to be removed
+  //   gmail:     found in the inbox itself (Gmail API)
+  const byAddr = new Map();
+  const touch = (email, when, src, extra = {}) => {
+    const k = String(email || '').toLowerCase(); if (!k) return;
+    const row = byAddr.get(k) || { email: k, when: null, sources: [], company: null };
+    if (!row.sources.includes(src)) row.sources.push(src);
+    if (when && (!row.when || Date.parse(when) < Date.parse(row.when))) row.when = when;
+    Object.assign(row, Object.fromEntries(Object.entries(extra).filter(([, v]) => v != null)));
+    byAddr.set(k, row);
+  };
+  for (const u of Array.isArray(buttonUnsubs) ? buttonUnsubs : []) touch(u.email, u.when, 'instantly');
+  for (const b of Array.isArray(blockRaw) ? blockRaw : []) touch(b.bl_value, b.timestamp_created, 'instantly');
+  for (const r of Array.isArray(replies) ? replies : []) if (r.kind === 'optout') touch(r.email, r.when, 'reply');
+  for (const [email, g] of gmailOptouts) {
+    touch(email, g.when, 'gmail', { company: g.company, gmail_how: g.how });
+    if (g.instantly_status === -2) touch(email, g.when, 'instantly');
   }
-  optouts.sort((a, b) => Date.parse(b.when || 0) - Date.parse(a.when || 0));
+  const optouts = [...byAddr.values()].sort((a, b) => Date.parse(b.when || 0) - Date.parse(a.when || 0));
+  const unsubReply = optouts.filter((o) => o.sources.includes('reply') && !o.sources.includes('instantly')).length;
+  const crossref = {
+    both: optouts.filter((o) => o.sources.includes('gmail') && o.sources.includes('instantly')).length,
+    gmail_only: optouts.filter((o) => o.sources.includes('gmail') && !o.sources.includes('instantly')).length,
+    instantly_only: optouts.filter((o) => o.sources.includes('instantly') && !o.sources.includes('gmail')).length,
+    reply_only: optouts.filter((o) => o.sources.includes('reply') && o.sources.length === 1).length,
+  };
+  const gmail = {
+    configured: !!creds,
+    ok: !!creds && gmailScans.length === INBOXES.length,
+    inboxes_read: gmailScans.map((g) => g.inbox),
+    pending: !!creds && gmailErrors.length > 0 && gmailErrors.every((e) => /has not granted/.test(e)),
+    errors: gmailErrors,
+    hits: gmailHits.length,
+    ignored: gmailIgnored,
+    sent_unsubscribes: gmailScans.flatMap((g) => g.sent_unsubscribes),
+  };
 
   // Totals across every non-test campaign, combined
   const sum = (k) => live.reduce((n, r) => n + num(r[k]), 0);
@@ -375,9 +520,10 @@ async function build(key) {
     replies: sum('replies'),
     replies_auto: sum('replies_auto'),
     bounced: sum('bounced'),
-    unsub_button: unsubButton,
+    unsub_instantly: unsubButton,
     unsub_reply: unsubReply,
-    unsubscribed: unsubButton + unsubReply,
+    unsub_gmail: gmailOptouts.size,
+    unsubscribed: Math.max(optouts.length, unsubButton),
   };
 
   // Inboxes
@@ -420,6 +566,8 @@ async function build(key) {
     replies: (Array.isArray(replies) ? replies : []).slice(0, 25),
     replies_available: Array.isArray(replies),
     optouts,
+    crossref,
+    gmail,
     campaign_count: live.length,
     excluded_tests: tests.length,
     warnings,

@@ -71,15 +71,25 @@ Definitions:
 - "Replies" = Instantly `reply_count_unique` (businesses that replied);
   auto-replies (`reply_count_automatic`) are shown separately. Reply rate =
   replies ÷ businesses contacted.
-- "Unsubscribes" = Instantly's own unsubscribes (recipients who used the
-  Unsubscribe button that the List-Unsubscribe header puts in Gmail/Outlook —
-  PROD has `insert_unsubscribe_header` on; there is no unsubscribe link in the
-  email body) PLUS businesses that asked to be removed *by replying* (the reply's
-  own text matches unsubscribe / opt out / remove me / take us off / stop
-  emailing / not interested / no thanks, auto-replies excluded). Instantly alone
-  only counts the first kind, which is why the board reads the replies too. The
-  "Unsubscribed" list shows each address and how it opted out; entries on the
-  Instantly block list are included as well.
+- "Unsubscribes" is counted from THREE sources and cross-referenced, one row per
+  business in the "Unsubscribed" list with Instantly ✓/✗ and Gmail ✓/✗ flags:
+  (1) Instantly — leads it marked unsubscribed (the Unsubscribe button that the
+  List-Unsubscribe header puts in Gmail/Outlook; PROD has
+  `insert_unsubscribe_header` on, there is no unsubscribe link in the body) plus
+  its block list; (2) replies Instantly synced whose own words ask to be removed
+  (unsubscribe / opt out / remove me / take us off / stop emailing / not
+  interested / no thanks; auto-replies excluded); (3) the two Gmail inboxes
+  themselves, read directly (see "Connecting Gmail" below): any message in the
+  last 120 days that looks like an opt-out, kept only if the sender is a lead in
+  a live campaign (newsletters and other noise are dropped — the feed reports
+  them as `gmail.ignored`). The tile's sub-line shows the per-source counts and
+  the section header shows the cross-reference ("1 in both · 1 Gmail only …").
+  A "Gmail only" row means the business asked out but Instantly does not know —
+  mark the lead unsubscribed in Instantly so it stops the sequence.
+- The board also reports any "unsubscribe" message an inbox itself SENT (the
+  feed's `gmail.sent_unsubscribes`, shown as a note): that is Gmail's one-click
+  unsubscribe fired from inside the inbox — the inbox unsubscribing from some
+  sender — not a business opting out.
 - "Sent today" per inbox counts emails from live campaigns only, on today's
   Pacific date. Instantly's own daily cap resets on its clock (not Pacific), so
   this number can exceed the cap on days when sending runs past 5 PM PT.
@@ -88,6 +98,36 @@ Definitions:
   on the current UTC date, so on evenings PT it can lag the board by that day's
   late sends (seen Aug 25: page showed 20/22 while the all-time figures were
   38/40). The board always uses all-time totals.
+
+## Connecting Gmail (one-time, about 5 minutes, Josh only)
+
+The board reads both inboxes with the club's existing Google service account
+`grunion-dashboard@grunion-site-club.iam.gserviceaccount.com` (the one the
+dashboard uses for GA — its key is already on the Netlify site as
+`GA_CLIENT_EMAIL` / `GA_PRIVATE_KEY`, and the board falls back to those). Until
+the steps below are done the board says "Gmail not connected" and counts from
+Instantly only.
+
+1. Google Cloud console → project **grunion-site-club** → APIs & Services →
+   Library → **Gmail API** → Enable.
+2. Same project → IAM & Admin → Service Accounts → `grunion-dashboard@…` → copy
+   the **Unique ID** (a long number; also called the OAuth 2 client ID).
+3. Google Admin console (admin.google.com) for the **grunionrugbyclub.com**
+   Workspace, signed in as its super-admin → Security → Access and data control
+   → API controls → **Manage Domain Wide Delegation** → Add new → Client ID =
+   the number from step 2, OAuth scopes = `https://www.googleapis.com/auth/gmail.readonly`
+   → Authorize.
+4. Trigger a deploy on Netlify (Deploys → Trigger deploy → Deploy site) or just
+   push the next commit. Refresh the board: the Unsubscribes tile now reads
+   "Instantly N · Gmail N".
+
+Prefer a separate service account? Create one in the same project, download its
+JSON key, delegate *its* client ID in step 3, and set `GMAIL_CLIENT_EMAIL` +
+`GMAIL_PRIVATE_KEY` (or `GMAIL_SERVICE_ACCOUNT_JSON`) on the Netlify site — those
+take precedence over the GA variables. The scope is read-only: the account can
+never send, delete, or change mail. Both inboxes are read on every refresh
+(cached ~2 minutes like everything else); the feed's `gmail` block shows
+`configured`, `ok`, `inboxes_read`, and any error text.
 
 ## Operating notes
 

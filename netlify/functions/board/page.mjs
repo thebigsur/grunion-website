@@ -145,6 +145,7 @@ main.loading .live { opacity: 0.55; transition: opacity 0.2s; }
 
 /* ---- lists (opt-outs, replies) ------------------------------------------- */
 .list { margin: 0; padding: 0; list-style: none; }
+.list[hidden] { display: none; }
 .list li { display: flex; gap: 10px; align-items: flex-start; padding: 9px 0; border-top: 1px solid var(--grid); min-width: 0; }
 .list li:first-child { border-top: 0; padding-top: 2px; }
 .list li:last-child { padding-bottom: 2px; }
@@ -235,9 +236,9 @@ export const BODY = String.raw`
   </div>
 </section>
 
-<section class="sec live" id="sec-optouts" aria-labelledby="h-optouts" hidden>
+<section class="sec live" id="sec-optouts" aria-labelledby="h-optouts">
   <div class="sec-h"><h2 id="h-optouts">Unsubscribed</h2><span class="aside" id="optouts-aside"></span></div>
-  <div class="card"><ul class="list" id="optouts"></ul></div>
+  <div class="card"><ul class="list" id="optouts"></ul><p class="empty" id="optouts-empty" hidden></p><p class="pill" id="optouts-note" hidden></p></div>
 </section>
 
 <section class="sec live" id="sec-replies" aria-labelledby="h-replies">
@@ -358,10 +359,14 @@ export const JS = String.raw`
     $('t-replies-s').textContent = rs.join(' · ');
 
     $('t-unsub').textContent = fmt(t.unsubscribed);
+    var gm = p.gmail || {};
     var us = [];
-    if (t.unsub_button) us.push(fmt(t.unsub_button) + ' via unsubscribe button');
-    if (t.unsub_reply) us.push(fmt(t.unsub_reply) + ' asked by reply');
-    $('t-unsub-s').textContent = us.length ? us.join(' · ') : (t.contacted ? 'none so far' : '');
+    us.push('Instantly ' + fmt(t.unsub_instantly || 0));
+    if (gm.configured && gm.ok) us.push('Gmail ' + fmt(t.unsub_gmail || 0));
+    else if (gm.configured && !gm.pending) us.push('Gmail error');
+    else us.push('Gmail not connected');
+    if (t.unsub_reply) us.push(fmt(t.unsub_reply) + ' by reply');
+    $('t-unsub-s').textContent = us.join(' · ');
 
     $('t-bounced').textContent = fmt(t.bounced);
     $('t-bounced-s').textContent = t.contacted ? pctText(t.bounced, t.contacted) + ' of contacted' : '';
@@ -376,23 +381,50 @@ export const JS = String.raw`
     else { $('t-days').textContent = 'Done'; }
     $('t-days-s').textContent = p.end_label ? 'sending ends ' + p.end_label : '';
 
-    /* unsubscribed list */
+    /* unsubscribed list, cross-referenced */
     var oo = p.optouts || [];
-    var so = $('sec-optouts');
-    so.hidden = !oo.length;
+    var xr = p.crossref || {};
+    var ol = $('optouts'); clear(ol);
+    ol.hidden = !oo.length;
+    var asideParts = [];
     if (oo.length) {
-      $('optouts-aside').textContent = fmt(oo.length) + ' ' + plural(oo.length, 'business', 'businesses');
-      var ol = $('optouts'); clear(ol);
-      oo.forEach(function (o) {
-        var li = el('li');
-        var who = el('div', 'who');
-        who.appendChild(el('div', 'e', o.email || '—'));
-        who.appendChild(el('div', 'p', o.source === 'reply' ? 'asked by reply' : o.source === 'list' ? 'on the Instantly block list' : 'used the unsubscribe button'));
-        li.appendChild(who);
-        li.appendChild(el('div', 'when', o.when ? ptShort(o.when) : ''));
-        ol.appendChild(li);
-      });
+      if (xr.both) asideParts.push(fmt(xr.both) + ' in both');
+      if (xr.gmail_only) asideParts.push(fmt(xr.gmail_only) + ' Gmail only');
+      if (xr.instantly_only) asideParts.push(fmt(xr.instantly_only) + ' Instantly only');
+      if (xr.reply_only) asideParts.push(fmt(xr.reply_only) + ' by reply');
     }
+    $('optouts-aside').textContent = asideParts.join(' · ');
+    oo.forEach(function (o) {
+      var li = el('li');
+      var who = el('div', 'who');
+      var e = el('div', 'e', o.email || '—');
+      var src = o.sources || [];
+      e.appendChild(el('span', 'tag ' + (src.indexOf('instantly') >= 0 ? 'reply' : ''), src.indexOf('instantly') >= 0 ? 'Instantly ✓' : 'Instantly ✗'));
+      if (gm.configured) e.appendChild(el('span', 'tag ' + (src.indexOf('gmail') >= 0 ? 'reply' : ''), src.indexOf('gmail') >= 0 ? 'Gmail ✓' : 'Gmail ✗'));
+      if (src.indexOf('reply') >= 0) e.appendChild(el('span', 'tag optout', 'asked by reply'));
+      who.appendChild(e);
+      var detail = [];
+      if (o.company) detail.push(o.company);
+      if (o.gmail_how) detail.push('Gmail: ' + o.gmail_how);
+      if (detail.length) who.appendChild(el('div', 'p', detail.join(' · ')));
+      li.appendChild(who);
+      li.appendChild(el('div', 'when', o.when ? ptShort(o.when) : ''));
+      ol.appendChild(li);
+    });
+    var oe = $('optouts-empty');
+    oe.hidden = !!oo.length;
+    if (!oo.length) {
+      oe.textContent = gm.configured && gm.ok ? 'None. Checked Instantly (campaigns, leads, block list) and both Gmail inboxes.' : 'None in Instantly (campaigns, leads, block list).';
+    }
+    var on = $('optouts-note');
+    var noteParts = [];
+    if (!gm.configured || gm.pending) noteParts.push('Gmail is not connected yet, so only Instantly is being checked — see SPONSOR-BOARD-SETUP.md for the 5-minute setup.');
+    else if (!gm.ok) noteParts.push('Gmail check failed: ' + ((gm.errors && gm.errors[0]) || 'unknown error'));
+    (gm.sent_unsubscribes || []).forEach(function (su) {
+      noteParts.push(su.inbox + ' itself sent an "unsubscribe" request' + (su.when ? ' on ' + ptShort(su.when) : '') + (su.to_domain ? ' to ' + su.to_domain : '') + ' — that is this inbox unsubscribing from a sender, not a business opting out.');
+    });
+    on.hidden = !noteParts.length;
+    on.textContent = noteParts.join(' ');
 
     /* replies list */
     var rl = $('replies'); clear(rl);
@@ -615,7 +647,7 @@ export const JS = String.raw`
   setInterval(function () { if (document.visibilityState === 'visible' && Date.now() - lastLoadedAt > 5 * 60 * 1000) load(false); }, 60 * 1000);
 
   var cached = readLocal();
-  if (cached && cached.totals && cached.totals.unsub_button != null) { render(cached, { source: 'local' }); }
+  if (cached && cached.totals && cached.totals.unsub_instantly != null) { render(cached, { source: 'local' }); }
   load(false);
 })();
 `;
