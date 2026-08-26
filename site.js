@@ -895,12 +895,13 @@ metaEl.hidden=false;
     var q = "'"+folderId+"' in parents and mimeType contains 'image/' and trashed=false";
     driveList(q, 'files(id,name,description,thumbnailLink,imageMediaMetadata)', cb);
   }
-  // PDFs + Word docs in a folder, newest first
+  // PDFs + Word docs + videos in a folder, newest first
   function listDocs(folderId, cb){
     var q = "'"+folderId+"' in parents and trashed=false and ("+
             "mimeType='application/pdf' or "+
             "mimeType='application/vnd.openxmlformats-officedocument.wordprocessingml.document' or "+
-            "mimeType='application/msword')";
+            "mimeType='application/msword' or "+
+            "mimeType contains 'video/')";
     driveList(q, 'files(id,name,mimeType,modifiedTime)', cb);
   }
   function driveList(q, fields, cb){
@@ -1006,14 +1007,18 @@ var PER_PAGE = 16;   // 4 rows × 4 columns
       return cleanName(a.name).localeCompare(cleanName(b.name), undefined, {numeric:true, sensitivity:'base'});
     });
     files.forEach(function(f){
-      var type = (f.mimeType==='application/pdf') ? 'PDF' : 'DOC';
+      var isVideo = ((f.mimeType||'').indexOf('video/')===0);
+      var type = (f.mimeType==='application/pdf') ? 'PDF' : (isVideo ? 'VIDEO' : 'DOC');
       var a=document.createElement('a');
       a.className='member-doc';
       a.setAttribute('data-type', type);
       a.setAttribute('role','listitem');
-      a.href='https://drive.google.com/uc?export=download&id=' + f.id;
+      // videos open in the Drive player; papers download directly
+      a.href = isVideo
+        ? 'https://drive.google.com/file/d/' + f.id + '/view'
+        : 'https://drive.google.com/uc?export=download&id=' + f.id;
       a.target='_blank'; a.rel='noopener';
-      a.setAttribute('aria-label','Download '+(f.name||'document'));
+      a.setAttribute('aria-label', (isVideo?'Watch ':'Download ')+(f.name||'document'));
 
       var icon=document.createElement('span'); icon.className='md-icon'; icon.setAttribute('aria-hidden','true');
       var crest=document.createElement('img'); crest.className='md-crest'; crest.src='assets/grunion-crest.png'; crest.alt='';
@@ -1148,7 +1153,7 @@ var PER_PAGE = 16;   // 4 rows × 4 columns
   }
   function cleanName(n){
     if(!n) return '';
-    return n.replace(/\.(jpe?g|png|gif|webp|heic|pdf|docx?|)$/i,'').replace(/[_-]+/g,' ').trim();
+    return n.replace(/\.(jpe?g|png|gif|webp|heic|pdf|docx?|mp4|mov|m4v|)$/i,'').replace(/[_-]+/g,' ').trim();
   }
   function fmtModified(iso){
     var d=new Date(iso); if(isNaN(d)) return '';
