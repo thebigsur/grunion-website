@@ -52,41 +52,42 @@ jersey-tile sponsor email campaign from Instantly across both sending inboxes
   Aug 26, 2026 02:51 UTC that the board does not use; delete it in Instantly if
   it was an experiment.
 
-## What's on the page
+## What's on the page (simplified Aug 26, 2026 — every number is ALL non-test campaigns combined)
 
-Scoreboard (businesses contacted, emails sent, real replies + reply rate of
-contacted, bounces, opt-outs, sequences completed, days left until Fri Oct 16),
-inbox health per sending inbox (sends today in Pacific time vs the Instantly
-daily cap, warmup score, account status), PROD funnel (not yet contacted /
-contacted / finished / bounced / unsubscribed + sends per email step), a 14-day
-daily-sends chart (UTC days, to match Instantly) with a table view, and a
-per-campaign table (PROD + every "(priority)" one-off + anything else that is
-not a test): sent, replies, bounces, status.
-
-How the sections relate (worked example from launch night):
-- Scoreboard = every non-test campaign added together: PROD + the one-off
-  "(priority)" campaigns. 50 businesses contacted = 38 PROD + 12 one-offs;
-  52 emails sent = 40 PROD (38 got Email 1, 2 of them already got Email 2) +
-  12 one-offs (one email each). Emails will always run ahead of businesses once
-  follow-ups start — the sub-lines show the split.
-- Inbox health = the same emails split by sending inbox (32 treasurer@ +
-  20 merman@ = 52), counted on today's Pacific date.
-- PROD funnel = the 1,246-lead PROD campaign on its own: 38 contacted, 40
-  emails (Email 1/2/3 = 38/2/0). The caption under the steps reconciles the two.
+Scoreboard: businesses contacted (with progress against the whole list), replies
+(+ auto-replies shown separately), unsubscribes, bounces, emails sent (+ today),
+days left until Fri Oct 16. Then a list of who unsubscribed (only when there are
+any), the latest replies (address, when, which inbox, first line of the reply;
+auto-replies tagged), the two sending inboxes (sent today vs Instantly's daily
+cap, warmup score, status), and emails per day for the last 14 days (UTC days,
+to match Instantly) with a table view. There is deliberately no per-campaign
+view and no PROD-only section — the one-off "(priority)" campaigns and PROD are
+always added together.
 
 Definitions:
 - Test campaigns = names containing the whole word TEST, FORMAT, or TIMING
-  (case-insensitive) — excluded from every number; the PROD campaign is matched
-  by id (`5a76e2ad-15a1-40af-81af-2475a69bd4dc`), one-offs by a trailing
-  "(priority)". Anything else counts as a live campaign ("other").
-- "Real replies" = Instantly `reply_count_unique` (businesses that replied);
-  auto-replies (`reply_count_automatic`) are shown separately as "+N auto".
-  Reply rate = real replies ÷ businesses contacted.
+  (case-insensitive) — excluded from every number; PROD is matched by id
+  (`5a76e2ad-15a1-40af-81af-2475a69bd4dc`) so it can never be mistaken for a test.
+- "Replies" = Instantly `reply_count_unique` (businesses that replied);
+  auto-replies (`reply_count_automatic`) are shown separately. Reply rate =
+  replies ÷ businesses contacted.
+- "Unsubscribes" = Instantly's own unsubscribes (recipients who used the
+  Unsubscribe button that the List-Unsubscribe header puts in Gmail/Outlook —
+  PROD has `insert_unsubscribe_header` on; there is no unsubscribe link in the
+  email body) PLUS businesses that asked to be removed *by replying* (the reply's
+  own text matches unsubscribe / opt out / remove me / take us off / stop
+  emailing / not interested / no thanks, auto-replies excluded). Instantly alone
+  only counts the first kind, which is why the board reads the replies too. The
+  "Unsubscribed" list shows each address and how it opted out; entries on the
+  Instantly block list are included as well.
 - "Sent today" per inbox counts emails from live campaigns only, on today's
-  Pacific date; test sends that day are shown as "+N test sends, not counted".
-  Instantly's own daily cap resets on its clock (not Pacific), so this number can
-  exceed the cap on days when sending runs past 5 PM PT.
+  Pacific date. Instantly's own daily cap resets on its clock (not Pacific), so
+  this number can exceed the cap on days when sending runs past 5 PM PT.
 - Open tracking is off in Instantly, so opens are never shown.
+- Reading Instantly's own analytics page: its default "Last 4 weeks" window ends
+  on the current UTC date, so on evenings PT it can lag the board by that day's
+  late sends (seen Aug 25: page showed 20/22 while the all-time figures were
+  38/40). The board always uses all-time totals.
 
 ## Operating notes
 

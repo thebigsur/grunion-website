@@ -28,10 +28,10 @@ const END_LABEL = 'Fri Oct 16';
 const TZ = 'America/Los_Angeles';
 const DAYS = 14; // daily chart window (UTC days, matching Instantly)
 
-// Test campaigns are excluded from every number. Matched on whole words so a
+// Everything that is not a test campaign is combined into one set of numbers.
+// Test campaigns are excluded from every number; matched on whole words so a
 // business called e.g. "Contest Cafe" can never be mistaken for a test.
 const TEST_RE = /\b(TEST|FORMAT|TIMING)\b/i;
-const ONEOFF_RE = /\(priority\)\s*$/i;
 
 // ---- Instantly ------------------------------------------------------------
 const API = 'https://api.instantly.ai/api/v2';
@@ -39,10 +39,6 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
 const BUDGET_MS = 9000; // stay under the 10 s function limit
 const REQ_MS = 7000;
 
-const CAMPAIGN_STATUS = {
-  0: 'Draft', 1: 'Active', 2: 'Paused', 3: 'Completed', 4: 'Running subsequences',
-  '-99': 'Account suspended', '-1': 'Accounts unhealthy', '-2': 'Bounce protect',
-};
 const ACCOUNT_STATUS = { 1: 'Active', 2: 'Paused', '-1': 'Connection error', '-2': 'Soft bounce error', '-3': 'Sending error' };
 const WARMUP_STATUS = { 0: 'Warmup paused', 1: 'Warmup active', '-1': 'Warmup banned', '-2': 'Warmup: spam folder', '-3': 'Warmup suspended' };
 
@@ -148,7 +144,22 @@ function client(key, deadline) {
     }
     return items;
   };
-  return { get, list };
+  // Read-only search endpoints that Instantly exposes as POST (e.g. /leads/list).
+  const post = async (path, body = {}) => {
+    const ms = Math.min(REQ_MS, Math.max(1500, deadline - Date.now()));
+    const r = await fetch(API + path, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'User-Agent': UA, Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(ms),
+    });
+    if (!r.ok) {
+      const text = await r.text().catch(() => '');
+      throw new Error(`Instantly ${r.status} on ${path}${text ? ': ' + text.slice(0, 120) : ''}`);
+    }
+    return r.json();
+  };
+  return { get, list, post };
 }
 
 async function pool(items, size, fn) {
@@ -183,33 +194,12 @@ async function sentToday(api, inbox, todayPT) {
   return hits;
 }
 
-function classify(c) {
-  if (c.id === PROD_ID) return 'prod';
-  const name = String(c.name || '');
-  if (TEST_RE.test(name)) return 'test';
-  if (ONEOFF_RE.test(name)) return 'oneoff';
-  return 'other';
+function isTest(c) {
+  if (c.id === PROD_ID) return false;
+  return TEST_RE.test(String(c.name || ''));
 }
 
-function campaignLevel(status) {
-  if (status === 1 || status === 4) return 'good';
-  if (status === 3 || status === 0) return 'neutral';
-  if (status === 2) return 'warn';
-  return 'crit';
-}
-
-function splitName(name) {
-  // "Tru Health & Wellness — Matt (priority)" → label "Tru Health & Wellness", sub "Matt · priority"
-  const base = String(name || '').replace(ONEOFF_RE, '').trim();
-  const parts = base.split(/\s+[—–-]\s+/);
-  const label = parts[0] || base || '—';
-  const who = parts.slice(1).join(' — ').trim();
-  const isPriority = ONEOFF_RE.test(String(name || ''));
-  const sub = [who, isPriority ? 'priority' : ''].filter(Boolean).join(' · ');
-  return { label, sub };
-}
-
-function inboxLevel(a, sendsToday) {
+function inboxLevel(a) {
   const notes = [];
   let level = 'good';
   if (a.status !== 1) { level = 'crit'; notes.push(ACCOUNT_STATUS[a.status] || `Status ${a.status}`); }
@@ -219,9 +209,73 @@ function inboxLevel(a, sendsToday) {
     if (score < 75) { level = 'crit'; notes.push(`Warmup score ${score}`); }
     else if (score < 90 && level === 'good') { level = 'warn'; notes.push(`Warmup score ${score}`); }
   }
-  const cap = num(a.daily_limit);
-  if (cap && sendsToday >= cap) notes.push('Daily cap reached');
   return { level, note: notes.join(' · ') || null };
+}
+
+// ---- replies & opt-outs -------------------------------------------------------
+// Instantly only counts an unsubscribe when the recipient uses the unsubscribe
+// button (List-Unsubscribe header) — a business that *replies* "please remove us"
+// is just a reply to Instantly. The board counts both, and lists who.
+const AUTO_SUBJECT_RE = /auto[- ]?(response|reply|matic reply)|automatic reply|out of (the )?office|\booo\b|away from (the )?office|on leave|vacation|autoreply/i;
+const AUTO_BODY_RE = /^\W*(this is an )?auto(mat(ic|ed))? ?(reply|response)|^\W*(i am|i'm) (currently )?(out of (the )?office|away|on leave|travell?ing)/i;
+const OPTOUT_RE = /\b(unsubscribe|opt[- ]?out|remove (me|us|my|our)|take (me|us) off|stop (emailing|sending|contacting)|do not (email|contact)|don'?t (email|contact)|no longer (wish|want)|not interested|please remove|no thank(s| you))\b/i;
+
+function clip(str, max) {
+  if (str.length <= max) return str;
+  const cut = str.slice(0, max);
+  const sp = cut.lastIndexOf(' ');
+  return (sp > max * 0.6 ? cut.slice(0, sp) : cut) + '…';
+}
+
+function ownText(body) {
+  // the reply's own words: drop quoted original text and signatures
+  const text = (body && typeof body === 'object' ? body.text : body) || '';
+  let t = String(text).replace(/\r/g, '');
+  const cut = t.search(/^\s*(On .{0,200}wrote:|From: .*|-{2,}\s*Original Message|_{5,}|Sent from my )/m);
+  if (cut > 0) t = t.slice(0, cut);
+  return t.split('\n').filter((l) => !l.trim().startsWith('>')).join('\n').trim();
+}
+
+async function recentReplies(api, liveIds) {
+  const out = [];
+  let after = null;
+  for (let page = 0; page < 3; page++) {
+    const r = await api.get('/emails', { limit: 100, email_type: 'received', ...(after ? { starting_after: after } : {}) });
+    const items = Array.isArray(r?.items) ? r.items : [];
+    for (const e of items) {
+      if (!e.campaign_id || !liveIds.has(e.campaign_id)) continue;
+      const subject = String(e.subject || '');
+      const text = ownText(e.body);
+      const auto = AUTO_SUBJECT_RE.test(subject) || AUTO_BODY_RE.test(text.slice(0, 240));
+      const optout = !auto && (OPTOUT_RE.test(subject) || OPTOUT_RE.test(text.slice(0, 600)));
+      out.push({
+        email: String(e.from_address_email || e.lead || '').trim(),
+        inbox: String(e.eaccount || '').split('@')[0] + '@',
+        when: e.timestamp_email || e.timestamp_created || null,
+        kind: optout ? 'optout' : auto ? 'auto' : 'reply',
+        subject: subject.replace(/\s+/g, ' ').trim().slice(0, 120),
+        preview: clip((text || String(e.content_preview || '')).replace(/\s+/g, ' ').trim(), 140),
+      });
+    }
+    if (items.length < 100 || !r.next_starting_after) break;
+    after = r.next_starting_after;
+  }
+  out.sort((a, b) => Date.parse(b.when || 0) - Date.parse(a.when || 0));
+  return out;
+}
+
+// Leads Instantly itself marked unsubscribed (unsubscribe button). This is a
+// search, not a change — but it is a POST, so it may be refused for a read-only
+// key; the count still comes from the analytics endpoint either way.
+async function unsubscribedLeads(api, campaignIds) {
+  const found = [];
+  for (const id of campaignIds) {
+    const r = await api.post('/leads/list', { campaign: id, filter: 'FILTER_VAL_UNSUBSCRIBED', limit: 100 });
+    for (const l of Array.isArray(r?.items) ? r.items : []) {
+      found.push({ email: String(l.email || '').trim(), when: l.timestamp_updated || null, source: 'button' });
+    }
+  }
+  return found;
 }
 
 // ---- the roll-up --------------------------------------------------------------
@@ -238,12 +292,12 @@ async function build(key) {
   for (let i = DAYS - 1; i >= 0; i--) days.push(utcDate(new Date(now.getTime() - i * 86400000)));
 
   // Phase 1 — everything that doesn't depend on the campaign list
-  const [campaignsRaw, analyticsRaw, accountsRaw, stepsRaw, ...todayByInbox] = await Promise.all([
+  const [campaignsRaw, analyticsRaw, accountsRaw, blockRaw, ...todayByInbox] = await Promise.all([
     api.list('/campaigns'),
     api.get('/campaigns/analytics'),
     api.list('/accounts'),
-    api.get('/campaigns/analytics/steps', { campaign_id: PROD_ID }).catch((e) => { warnings.push('Per-step data unavailable'); return null; }),
-    ...INBOXES.map((inbox) => sentToday(api, inbox, todayPT).catch((e) => { warnings.push(`Today's sends unavailable for ${inbox.split('@')[0]}@`); return null; })),
+    api.list('/block-lists-entries').catch(() => null),
+    ...INBOXES.map((inbox) => sentToday(api, inbox, todayPT).catch(() => { warnings.push(`Today's sends unavailable for ${inbox.split('@')[0]}@`); return null; })),
   ]);
 
   const analytics = new Map();
@@ -251,51 +305,39 @@ async function build(key) {
 
   const rows = (Array.isArray(campaignsRaw) ? campaignsRaw : []).map((c) => {
     const a = analytics.get(c.id) || {};
-    const status = num(c.status ?? a.campaign_status);
-    const kind = classify(c);
-    const { label, sub } = splitName(c.name);
     return {
       id: c.id,
-      name: String(c.name || ''),
-      label: kind === 'prod' ? 'PROD · Fall 2026' : label,
-      sub: kind === 'prod' ? '' : sub,
-      kind,
-      status,
-      status_label: CAMPAIGN_STATUS[status] || `Status ${status}`,
-      level: campaignLevel(status),
-      created: c.timestamp_created || null,
-      inboxes: Array.isArray(c.email_list) ? c.email_list : [],
+      test: isTest(c),
       leads: num(a.leads_count),
       contacted: num(a.contacted_count),
       sent: num(a.emails_sent_count),
       replies: num(a.reply_count_unique ?? a.reply_count),
-      reply_emails: num(a.reply_count),
       replies_auto: num(a.reply_count_automatic_unique ?? a.reply_count_automatic),
       bounced: num(a.bounced_count),
       unsubscribed: num(a.unsubscribed_count),
-      completed: num(a.completed_count),
     };
   });
-
-  const live = rows.filter((r) => r.kind !== 'test');
-  const tests = rows.filter((r) => r.kind === 'test');
+  const live = rows.filter((r) => !r.test);
+  const tests = rows.filter((r) => r.test);
   const liveIds = new Set(live.map((r) => r.id));
-  const kindRank = { prod: 0, oneoff: 1, other: 2 };
-  live.sort((a, b) => (kindRank[a.kind] - kindRank[b.kind]) || (Date.parse(b.created || 0) - Date.parse(a.created || 0)));
 
-  // Phase 2 — daily sends per live campaign (Instantly only accepts one id per call)
+  // Phase 2 — daily sends per live campaign (Instantly only accepts one id per
+  // call), recent replies, and the names behind any button-unsubscribes.
   const withSends = live.filter((r) => r.sent > 0);
-  const dailyResults = await pool(withSends, 8, (r) =>
-    api.get('/campaigns/analytics/daily', { campaign_id: r.id, start_date: days[0], end_date: days[days.length - 1] })
-      .catch(() => null),
-  );
+  const withUnsubs = live.filter((r) => r.unsubscribed > 0).map((r) => r.id);
+  const [dailyResults, replies, buttonUnsubs] = await Promise.all([
+    pool(withSends, 8, (r) =>
+      api.get('/campaigns/analytics/daily', { campaign_id: r.id, start_date: days[0], end_date: days[days.length - 1] }).catch(() => null)),
+    recentReplies(api, liveIds).catch(() => { warnings.push('Reply list unavailable'); return null; }),
+    withUnsubs.length ? unsubscribedLeads(api, withUnsubs).catch(() => null) : Promise.resolve([]),
+  ]);
+
   const byDate = new Map(days.map((d) => [d, { date: d, sent: 0, replies: 0 }]));
   let dailyMissing = 0;
-  dailyResults.forEach((res, i) => {
+  dailyResults.forEach((res) => {
     if (!Array.isArray(res)) { dailyMissing++; return; }
     for (const d of res) {
-      const key = String(d.date || '').slice(0, 10);
-      const slot = byDate.get(key);
+      const slot = byDate.get(String(d.date || '').slice(0, 10));
       if (!slot) continue;
       slot.sent += num(d.sent);
       slot.replies += num(d.unique_replies ?? d.replies);
@@ -303,61 +345,40 @@ async function build(key) {
   });
   if (dailyMissing) warnings.push(`Daily chart is missing ${dailyMissing} ${dailyMissing === 1 ? 'campaign' : 'campaigns'}`);
 
-  // Totals across every non-test campaign
+  // Opt-outs: Instantly's own unsubscribes + businesses that asked by reply
+  const optouts = [];
+  const seen = new Set();
+  for (const u of Array.isArray(buttonUnsubs) ? buttonUnsubs : []) {
+    const k = u.email.toLowerCase(); if (!k || seen.has(k)) continue; seen.add(k); optouts.push(u);
+  }
+  for (const b of Array.isArray(blockRaw) ? blockRaw : []) {
+    const k = String(b.bl_value || '').toLowerCase(); if (!k || seen.has(k)) continue; seen.add(k);
+    optouts.push({ email: String(b.bl_value || ''), when: b.timestamp_created || null, source: 'list' });
+  }
+  let unsubReply = 0;
+  for (const r of Array.isArray(replies) ? replies : []) {
+    if (r.kind !== 'optout') continue;
+    const k = r.email.toLowerCase(); if (!k || seen.has(k)) continue; seen.add(k);
+    optouts.push({ email: r.email, when: r.when, source: 'reply' });
+    unsubReply++;
+  }
+  optouts.sort((a, b) => Date.parse(b.when || 0) - Date.parse(a.when || 0));
+
+  // Totals across every non-test campaign, combined
   const sum = (k) => live.reduce((n, r) => n + num(r[k]), 0);
-  const part = (kind) => {
-    const rows = live.filter((r) => r.kind === kind);
-    const s = (k) => rows.reduce((n, r) => n + num(r[k]), 0);
-    return { count: rows.length, contacted: s('contacted'), sent: s('sent'), replies: s('replies'), bounced: s('bounced') };
-  };
-  const breakdown = { prod: part('prod'), oneoffs: part('oneoff'), other: part('other') };
+  const unsubButton = sum('unsubscribed');
   const totals = {
     leads: sum('leads'),
     contacted: sum('contacted'),
     sent: sum('sent'),
+    sent_today: null, // filled below from the inbox counts
     replies: sum('replies'),
-    reply_emails: sum('reply_emails'),
     replies_auto: sum('replies_auto'),
     bounced: sum('bounced'),
-    unsubscribed: sum('unsubscribed'),
-    completed: sum('completed'),
-    sent_today: null, // filled below from the inbox counts
+    unsub_button: unsubButton,
+    unsub_reply: unsubReply,
+    unsubscribed: unsubButton + unsubReply,
   };
-
-  // PROD funnel + steps
-  const prodRow = rows.find((r) => r.id === PROD_ID) || null;
-  let prod = null;
-  if (prodRow) {
-    const steps = new Map();
-    for (const s of Array.isArray(stepsRaw) ? stepsRaw : []) {
-      const n = num(s.step) + 1; // Instantly steps are 0-based
-      const cur = steps.get(n) || { step: n, sent: 0, replies: 0 };
-      cur.sent += num(s.sent);
-      cur.replies += num(s.unique_replies ?? s.replies);
-      steps.set(n, cur);
-    }
-    const stepList = [...steps.values()].sort((a, b) => a.step - b.step);
-    // Always show the three emails of the sequence, even before they've started sending
-    for (let n = 1; n <= 3; n++) if (!steps.has(n)) stepList.push({ step: n, sent: 0, replies: 0 });
-    stepList.sort((a, b) => a.step - b.step);
-    prod = {
-      id: prodRow.id,
-      name: prodRow.name,
-      status: prodRow.status,
-      status_label: prodRow.status_label,
-      leads: prodRow.leads,
-      not_contacted: Math.max(0, prodRow.leads - prodRow.contacted),
-      contacted: prodRow.contacted,
-      completed: prodRow.completed,
-      bounced: prodRow.bounced,
-      unsubscribed: prodRow.unsubscribed,
-      sent: prodRow.sent,
-      replies: prodRow.replies,
-      steps: stepList,
-    };
-  } else {
-    warnings.push('PROD campaign not found');
-  }
 
   // Inboxes
   const accounts = new Map((Array.isArray(accountsRaw) ? accountsRaw : []).map((a) => [String(a.email || '').toLowerCase(), a]));
@@ -367,28 +388,23 @@ async function build(key) {
     const short = email.split('@')[0] + '@';
     if (!a) return { email, short, found: false, level: 'crit', status_label: 'Not found' };
     const hits = todayByInbox[i];
-    let mine = 0, other = 0;
-    if (Array.isArray(hits)) for (const h of hits) (h.campaign_id && liveIds.has(h.campaign_id) ? mine++ : other++);
+    let mine = 0;
+    if (Array.isArray(hits)) for (const h of hits) if (h.campaign_id && liveIds.has(h.campaign_id)) mine++;
     sentTodayTotal += mine;
-    const { level, note } = inboxLevel(a, mine);
+    const { level, note } = inboxLevel(a);
     return {
       email,
       short,
       found: true,
-      status: a.status,
       status_label: ACCOUNT_STATUS[a.status] || `Status ${a.status}`,
-      warmup_status: a.warmup_status,
       warmup_score: a.stat_warmup_score ?? null,
       daily_limit: num(a.daily_limit) || null,
       sends_today: Array.isArray(hits) ? mine : null,
-      other_sends_today: Array.isArray(hits) ? other : null,
       level,
       note,
     };
   });
   totals.sent_today = todayByInbox.every((h) => Array.isArray(h)) ? sentTodayTotal : null;
-
-  const daysLeft = daysBetween(todayPT, END_DATE);
 
   return {
     ok: true,
@@ -397,13 +413,13 @@ async function build(key) {
     today_pt: todayPT,
     end_date: END_DATE,
     end_label: END_LABEL,
-    days_left: daysLeft,
+    days_left: daysBetween(todayPT, END_DATE),
     totals,
-    breakdown,
     inboxes,
-    prod,
     daily: days.map((d) => byDate.get(d)),
-    campaigns: live.map(({ inboxes: _i, name: _n, ...r }) => r),
+    replies: (Array.isArray(replies) ? replies : []).slice(0, 25),
+    replies_available: Array.isArray(replies),
+    optouts,
     campaign_count: live.length,
     excluded_tests: tests.length,
     warnings,

@@ -7,10 +7,12 @@
 // rather than as a static file (a static file would put the hidden URL in the
 // public repo). Keep it self-contained: no external scripts, fonts, or images.
 //
-// The script talks only to "./data" (same secret path) and renders everything
-// with DOM APIs — campaign names from Instantly are inserted via textContent.
-// Note: the script is written without template literals on purpose (it lives
-// inside one) — plain string concatenation only.
+// Every number on the page is ALL non-test campaigns combined — there is no
+// per-campaign view on purpose. The script talks only to "./data" (same secret
+// path) and renders everything with DOM APIs — text from Instantly (addresses,
+// subjects, previews) is inserted via textContent. Note: the script is written
+// without template literals on purpose (it lives inside one) — plain string
+// concatenation only.
 // ============================================================================
 
 export const TITLE = 'Grunion Sponsor Board';
@@ -120,6 +122,7 @@ h1 { margin: 2px 0 0; font-size: 24px; line-height: 1.15; font-weight: 700; lett
 
 /* ---- sections -------------------------------------------------------- */
 .sec { margin-top: 18px; }
+.sec[hidden] { display: none; }
 .sec-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
 .sec-h h2 { margin: 0; font-size: 12px; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .sec-h .aside { font-size: 12px; color: var(--muted); }
@@ -132,23 +135,37 @@ main.loading .live { opacity: 0.55; transition: opacity 0.2s; }
 @media (min-width: 560px) { .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px 11px; min-width: 0; }
 .tile .l { font-size: 13px; color: var(--ink-2); margin: 0 0 2px; line-height: 1.25; }
-.tile .v { font-size: 28px; font-weight: 650; line-height: 1.1; letter-spacing: -0.015em; margin: 0; word-break: break-word; }
+.tile .v { font-size: 30px; font-weight: 650; line-height: 1.1; letter-spacing: -0.015em; margin: 0; word-break: break-word; }
 .tile .s { font-size: 12px; color: var(--muted); margin: 3px 0 0; line-height: 1.3; }
-.tile .s .em { color: var(--ink-2); font-weight: 600; }
 .tile.wide { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.tile.wide .v { font-size: 28px; }
 .tile.wide .l { margin: 0; }
 .tile.wide .s { margin: 0; margin-left: auto; }
+.meter { height: 6px; border-radius: 3px; background: var(--series-track); margin: 8px 0 0; overflow: hidden; }
+.meter > i { display: block; height: 100%; width: 0; background: var(--series); border-radius: 3px; transition: width 0.4s; }
+
+/* ---- lists (opt-outs, replies) ------------------------------------------- */
+.list { margin: 0; padding: 0; list-style: none; }
+.list li { display: flex; gap: 10px; align-items: flex-start; padding: 9px 0; border-top: 1px solid var(--grid); min-width: 0; }
+.list li:first-child { border-top: 0; padding-top: 2px; }
+.list li:last-child { padding-bottom: 2px; }
+.list .who { flex: 1 1 auto; min-width: 0; }
+.list .who .e { font-weight: 600; font-size: 14px; overflow-wrap: anywhere; line-height: 1.3; }
+.list .who .p { font-size: 12.5px; color: var(--ink-2); line-height: 1.35; margin-top: 2px; overflow-wrap: anywhere; }
+.list .when { flex: 0 0 auto; font-size: 12px; color: var(--muted); text-align: right; white-space: nowrap; padding-top: 2px; }
+.tag { display: inline-block; font-size: 11px; font-weight: 650; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--border-strong); border-radius: 999px; padding: 1px 7px; margin-left: 6px; vertical-align: 1px; }
+.tag.optout { color: var(--crit-text); border-color: var(--crit); }
+.tag.reply { color: var(--good-text); border-color: var(--good); }
+.empty { color: var(--muted); font-size: 13.5px; padding: 4px 0; }
 
 /* ---- inboxes --------------------------------------------------------- */
 .inboxes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .inbox { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; min-width: 0; }
-.inbox .name { display: flex; align-items: center; gap: 7px; font-weight: 650; font-size: 14px; margin: 0 0 8px; min-width: 0; }
+.inbox .name { display: flex; align-items: center; gap: 7px; font-weight: 650; font-size: 14px; margin: 0 0 6px; min-width: 0; }
 .inbox .name span.addr { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.inbox .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 13px; color: var(--ink-2); margin: 6px 0 0; }
-.inbox .row .val { color: var(--ink); font-weight: 600; }
-.meter { height: 6px; border-radius: 3px; background: var(--series-track); margin: 6px 0 2px; overflow: hidden; }
-.meter > i { display: block; height: 100%; width: 0; background: var(--series); border-radius: 3px; transition: width 0.4s; }
+.inbox .big { font-size: 22px; font-weight: 650; line-height: 1.1; margin: 0; }
+.inbox .big small { font-size: 13px; font-weight: 500; color: var(--muted); }
+.inbox .row { font-size: 12.5px; color: var(--ink-2); margin: 8px 0 0; display: flex; justify-content: space-between; gap: 8px; }
+.inbox .meter { margin: 6px 0 0; }
 .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; background: var(--muted); }
 .dot.good { background: var(--good); }
 .dot.warn { background: var(--warn); }
@@ -157,23 +174,7 @@ main.loading .live { opacity: 0.55; transition: opacity 0.2s; }
 .status.good { color: var(--good-text); }
 .status.warn { color: var(--warn-text); }
 .status.crit { color: var(--crit-text); }
-
-/* ---- funnel ---------------------------------------------------------- */
-.bars { display: grid; grid-template-columns: max-content max-content minmax(0, 1fr); column-gap: 10px; row-gap: 7px; align-items: center; }
-.bars .k { font-size: 13.5px; color: var(--ink-2); white-space: nowrap; }
-.bars .n { font-size: 14px; font-weight: 600; text-align: right; }
-.bars .b { height: 10px; border-radius: 0 4px 4px 0; background: var(--series); min-width: 0; transition: width 0.4s; }
-.bars .b.zero { width: 2px !important; background: var(--axis); }
-.bars .b.muted { background: var(--axis); }
-.subrule { border: 0; border-top: 1px solid var(--grid); margin: 12px 0 10px; }
-.steps { display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content; column-gap: 10px; row-gap: 7px; align-items: center; }
-.steps .k { font-size: 13.5px; color: var(--ink-2); white-space: nowrap; }
-.steps .n { font-size: 13px; color: var(--ink-2); white-space: nowrap; text-align: right; }
-.steps .n b { color: var(--ink); font-weight: 600; }
-.steps .b { height: 10px; border-radius: 0 4px 4px 0; background: var(--series); transition: width 0.4s; }
-.steps .b.zero { width: 2px !important; background: var(--axis); }
-.pill { font-size: 12px; color: var(--muted); }
-.cap { font-size: 12px; color: var(--muted); margin: 0 0 8px; }
+.pill { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
 
 /* ---- chart ----------------------------------------------------------- */
 .chart-wrap { position: relative; }
@@ -194,25 +195,6 @@ main.loading .live { opacity: 0.55; transition: opacity 0.2s; }
 .mini th { color: var(--muted); font-weight: 600; font-size: 12px; border-top: 0; }
 .mini th:first-child, .mini td:first-child { text-align: left; }
 .mini[hidden] { display: none; }
-
-/* ---- campaign table -------------------------------------------------- */
-.tblwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -16px; padding: 0 16px; }
-table.camps { width: 100%; border-collapse: collapse; font-size: 13px; }
-.camps th { text-align: right; font-size: 11px; font-weight: 650; letter-spacing: 0.02em; text-transform: uppercase; color: var(--muted); padding: 0 4px 8px; white-space: nowrap; }
-.camps th:first-child { text-align: left; padding-left: 0; }
-.camps th:last-child { padding-right: 0; }
-.camps td { padding: 8px 4px; border-top: 1px solid var(--grid); text-align: right; vertical-align: top; white-space: nowrap; }
-.camps td:first-child { text-align: left; padding-left: 0; padding-right: 8px; white-space: normal; min-width: 150px; }
-.camps th:not(:first-child), .camps td:not(:first-child) { width: 1%; }
-.camps td:last-child { padding-right: 0; }
-.camps .nm { font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; display: flex; align-items: baseline; gap: 7px; }
-.camps .nm .dot { position: relative; top: -1px; }
-.camps .who { font-size: 12px; color: var(--muted); line-height: 1.25; padding-left: 16px; }
-.camps tr.prod td { border-top: 0; }
-.camps tr.prod .nm { font-weight: 700; }
-.camps .status { font-size: 12.5px; }
-.camps .zero { color: var(--muted); }
-.empty { color: var(--muted); font-size: 13.5px; padding: 6px 0; }
 
 /* ---- footer ---------------------------------------------------------- */
 footer { margin-top: 22px; font-size: 12px; color: var(--muted); line-height: 1.5; text-align: center; }
@@ -242,59 +224,46 @@ export const BODY = String.raw`
 <main id="main" class="loading">
 
 <section class="sec live" aria-labelledby="h-score">
-  <div class="sec-h"><h2 id="h-score">Scoreboard</h2><span class="aside" id="score-aside"></span></div>
+  <div class="sec-h"><h2 id="h-score">Scoreboard</h2><span class="aside">all campaigns combined</span></div>
   <div class="tiles">
-    <div class="tile"><p class="l">Businesses contacted</p><p class="v" id="t-contacted">—</p><p class="s" id="t-contacted-s"></p></div>
-    <div class="tile"><p class="l">Emails sent</p><p class="v" id="t-sent">—</p><p class="s" id="t-sent-s"></p></div>
-    <div class="tile"><p class="l">Real replies</p><p class="v" id="t-replies">—</p><p class="s" id="t-replies-s"></p></div>
+    <div class="tile"><p class="l">Businesses contacted</p><p class="v" id="t-contacted">—</p><p class="s" id="t-contacted-s"></p><div class="meter" aria-hidden="true"><i id="t-contacted-m"></i></div></div>
+    <div class="tile"><p class="l">Replies</p><p class="v" id="t-replies">—</p><p class="s" id="t-replies-s"></p></div>
+    <div class="tile"><p class="l">Unsubscribes</p><p class="v" id="t-unsub">—</p><p class="s" id="t-unsub-s"></p></div>
     <div class="tile"><p class="l">Bounces</p><p class="v" id="t-bounced">—</p><p class="s" id="t-bounced-s"></p></div>
-    <div class="tile"><p class="l">Opt-outs</p><p class="v" id="t-unsub">—</p><p class="s" id="t-unsub-s"></p></div>
-    <div class="tile"><p class="l">Sequences completed</p><p class="v" id="t-completed">—</p><p class="s" id="t-completed-s"></p></div>
-    <div class="tile wide"><p class="v" id="t-days">—</p><p class="l" id="t-days-l">days left</p><p class="s" id="t-days-s"></p></div>
+    <div class="tile"><p class="l">Emails sent</p><p class="v" id="t-sent">—</p><p class="s" id="t-sent-s"></p></div>
+    <div class="tile"><p class="l">Days left</p><p class="v" id="t-days">—</p><p class="s" id="t-days-s"></p></div>
   </div>
+</section>
+
+<section class="sec live" id="sec-optouts" aria-labelledby="h-optouts" hidden>
+  <div class="sec-h"><h2 id="h-optouts">Unsubscribed</h2><span class="aside" id="optouts-aside"></span></div>
+  <div class="card"><ul class="list" id="optouts"></ul></div>
+</section>
+
+<section class="sec live" id="sec-replies" aria-labelledby="h-replies">
+  <div class="sec-h"><h2 id="h-replies">Replies</h2><span class="aside" id="replies-aside"></span></div>
+  <div class="card"><ul class="list" id="replies"></ul><p class="empty" id="replies-empty" hidden>No replies yet.</p></div>
 </section>
 
 <section class="sec live" aria-labelledby="h-inbox">
-  <div class="sec-h"><h2 id="h-inbox">Inbox health</h2><span class="aside">sends today · Pacific</span></div>
+  <div class="sec-h"><h2 id="h-inbox">Sending inboxes</h2><span class="aside">today · Pacific</span></div>
   <div class="inboxes" id="inboxes"></div>
 </section>
 
-<section class="sec live" aria-labelledby="h-prod">
-  <div class="sec-h"><h2 id="h-prod">PROD funnel</h2><span class="aside" id="prod-aside"></span></div>
-  <div class="card">
-    <div class="bars" id="funnel"></div>
-    <hr class="subrule">
-    <p class="cap" id="steps-cap"></p>
-    <div class="steps" id="steps"></div>
-  </div>
-</section>
-
 <section class="sec live" aria-labelledby="h-daily">
-  <div class="sec-h"><h2 id="h-daily">Daily sends · last 14 days</h2><button class="tbl-toggle" id="daily-toggle" type="button" aria-expanded="false">Show table</button></div>
+  <div class="sec-h"><h2 id="h-daily">Emails per day · last 14 days</h2><button class="tbl-toggle" id="daily-toggle" type="button" aria-expanded="false">Show table</button></div>
   <div class="card">
     <div class="chart-wrap" id="chart-wrap">
-      <svg class="chart" id="chart" viewBox="0 0 320 150" role="img" aria-label="Daily emails sent, last 14 days"></svg>
+      <svg class="chart" id="chart" viewBox="0 0 320 150" role="img" aria-label="Emails sent per day, last 14 days"></svg>
       <div class="tip" id="tip" role="status" aria-live="polite"></div>
     </div>
     <table class="mini" id="daily-table" hidden><thead><tr><th>Day (UTC)</th><th>Sent</th><th>Replies</th></tr></thead><tbody></tbody></table>
   </div>
 </section>
 
-<section class="sec live" aria-labelledby="h-camps">
-  <div class="sec-h"><h2 id="h-camps">Campaigns</h2><span class="aside" id="camps-aside"></span></div>
-  <div class="card">
-    <div class="tblwrap">
-      <table class="camps" id="camps">
-        <thead><tr><th>Campaign</th><th>Sent</th><th>Replies</th><th>Bounces</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </div>
-</section>
-
 </main>
 
-<footer id="foot">Test campaigns excluded · <span>Source: Instantly (read-only)</span> · <span>Open tracking is off, so no opens are shown</span></footer>
+<footer id="foot">All campaigns combined · <span>test campaigns excluded</span> · <span>Source: Instantly (read-only)</span></footer>
 </div>
 `;
 
@@ -346,6 +315,14 @@ export const JS = String.raw`
     if (sameDay) return t + ' PT';
     return d.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles', month: 'short', day: 'numeric' }) + ', ' + t + ' PT';
   }
+  function ptShort(iso) {
+    var d = new Date(iso);
+    if (isNaN(d)) return '';
+    var now = new Date();
+    var sameDay = d.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' }) === now.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' });
+    if (sameDay) return d.toLocaleTimeString('en-US', { timeZone: 'America/Los_Angeles', hour: 'numeric', minute: '2-digit' });
+    return d.toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles', month: 'short', day: 'numeric' });
+  }
   function statusClass(level) { return level === 'good' ? 'good' : level === 'warn' ? 'warn' : level === 'crit' ? 'crit' : ''; }
   function statusNode(level, label) {
     var s = el('span', 'status ' + statusClass(level));
@@ -353,13 +330,13 @@ export const JS = String.raw`
     s.appendChild(el('span', null, label));
     return s;
   }
-  function setNotice(level, html) {
+  function setNotice(level, parts) {
     var n = $('notice');
-    if (!html) { n.hidden = true; return; }
+    if (!parts) { n.hidden = true; return; }
     n.className = 'notice ' + (level || '');
     $('notice-dot').className = 'dot ' + statusClass(level);
     clear($('notice-text'));
-    html.forEach(function (part) {
+    parts.forEach(function (part) {
       if (typeof part === 'string') $('notice-text').appendChild(document.createTextNode(part));
       else $('notice-text').appendChild(part);
     });
@@ -369,45 +346,76 @@ export const JS = String.raw`
   /* ---------- render ---------- */
   function render(p, meta) {
     var t = p.totals || {};
-    var replies = t.replies;
-    var replyRate = pctText(replies, t.contacted);
 
-    var bd = p.breakdown || {};
-    var split = function (field) {
-      var parts = [];
-      if (bd.prod && bd.prod.count) parts.push(fmt(bd.prod[field]) + ' PROD');
-      if (bd.oneoffs && bd.oneoffs.count) parts.push(fmt(bd.oneoffs[field]) + ' one-offs');
-      if (bd.other && bd.other.count) parts.push(fmt(bd.other[field]) + ' other');
-      return parts.length > 1 ? parts.join(' · ') : '';
-    };
     $('t-contacted').textContent = fmt(t.contacted);
-    $('t-contacted-s').textContent = split('contacted') || (t.leads ? 'of ' + fmt(t.leads) + ' leads' : '');
-    $('t-sent').textContent = fmt(t.sent);
-    $('t-sent-s').textContent = [split('sent'), t.sent_today != null ? fmt(t.sent_today) + ' today' : ''].filter(Boolean).join(' · ');
-    $('t-replies').textContent = fmt(replies);
+    $('t-contacted-s').textContent = t.leads ? 'of ' + fmt(t.leads) + ' on the list · ' + pctText(t.contacted, t.leads) : '';
+    $('t-contacted-m').style.width = (t.leads ? Math.min(100, 100 * (t.contacted || 0) / t.leads) : 0).toFixed(1) + '%';
+
+    $('t-replies').textContent = fmt(t.replies);
     var rs = [];
-    if (replyRate) rs.push(replyRate + ' of contacted');
-    if (t.reply_emails != null && t.reply_emails !== replies) rs.push(fmt(t.reply_emails) + ' ' + plural(t.reply_emails, 'email'));
-    if (t.replies_auto) rs.push('+' + fmt(t.replies_auto) + ' auto');
+    if (t.contacted) rs.push(pctText(t.replies, t.contacted) + ' of contacted');
+    if (t.replies_auto) rs.push('+' + fmt(t.replies_auto) + ' auto-' + plural(t.replies_auto, 'reply', 'replies'));
     $('t-replies-s').textContent = rs.join(' · ');
+
+    $('t-unsub').textContent = fmt(t.unsubscribed);
+    var us = [];
+    if (t.unsub_button) us.push(fmt(t.unsub_button) + ' via unsubscribe button');
+    if (t.unsub_reply) us.push(fmt(t.unsub_reply) + ' asked by reply');
+    $('t-unsub-s').textContent = us.length ? us.join(' · ') : (t.contacted ? 'none so far' : '');
+
     $('t-bounced').textContent = fmt(t.bounced);
     $('t-bounced-s').textContent = t.contacted ? pctText(t.bounced, t.contacted) + ' of contacted' : '';
-    $('t-unsub').textContent = fmt(t.unsubscribed);
-    $('t-unsub-s').textContent = t.contacted ? pctText(t.unsubscribed, t.contacted) + ' of contacted' : '';
-    $('t-completed').textContent = fmt(t.completed);
-    $('t-completed-s').textContent = t.contacted ? pctText(t.completed, t.contacted) + ' of contacted' : '';
+
+    $('t-sent').textContent = fmt(t.sent);
+    $('t-sent-s').textContent = t.sent_today != null ? fmt(t.sent_today) + ' today' : '';
 
     var dl = p.days_left;
-    if (dl == null) { $('t-days').textContent = '—'; $('t-days-l').textContent = 'days left'; }
-    else if (dl > 0) { $('t-days').textContent = fmt(dl); $('t-days-l').textContent = plural(dl, 'day', 'days') + ' left'; }
-    else if (dl === 0) { $('t-days').textContent = 'Last'; $('t-days-l').textContent = 'day of sending'; }
-    else { $('t-days').textContent = 'Done'; $('t-days-l').textContent = 'sending has ended'; }
+    if (dl == null) { $('t-days').textContent = '—'; }
+    else if (dl > 0) { $('t-days').textContent = fmt(dl); }
+    else if (dl === 0) { $('t-days').textContent = 'Last day'; }
+    else { $('t-days').textContent = 'Done'; }
     $('t-days-s').textContent = p.end_label ? 'sending ends ' + p.end_label : '';
-    var scopeParts = [];
-    if (bd.prod && bd.prod.count) scopeParts.push('PROD');
-    if (bd.oneoffs && bd.oneoffs.count) scopeParts.push(fmt(bd.oneoffs.count) + ' one-offs');
-    if (bd.other && bd.other.count) scopeParts.push(fmt(bd.other.count) + ' other');
-    $('score-aside').textContent = scopeParts.length ? scopeParts.join(' + ') : ((p.campaign_count != null) ? fmt(p.campaign_count) + ' ' + plural(p.campaign_count, 'campaign') : '');
+
+    /* unsubscribed list */
+    var oo = p.optouts || [];
+    var so = $('sec-optouts');
+    so.hidden = !oo.length;
+    if (oo.length) {
+      $('optouts-aside').textContent = fmt(oo.length) + ' ' + plural(oo.length, 'business', 'businesses');
+      var ol = $('optouts'); clear(ol);
+      oo.forEach(function (o) {
+        var li = el('li');
+        var who = el('div', 'who');
+        who.appendChild(el('div', 'e', o.email || '—'));
+        who.appendChild(el('div', 'p', o.source === 'reply' ? 'asked by reply' : o.source === 'list' ? 'on the Instantly block list' : 'used the unsubscribe button'));
+        li.appendChild(who);
+        li.appendChild(el('div', 'when', o.when ? ptShort(o.when) : ''));
+        ol.appendChild(li);
+      });
+    }
+
+    /* replies list */
+    var rl = $('replies'); clear(rl);
+    var reps = p.replies || [];
+    var real = reps.filter(function (r) { return r.kind !== 'auto'; }).length;
+    $('replies-aside').textContent = p.replies_available === false ? 'list unavailable' : (reps.length ? (fmt(real) + ' ' + plural(real, 'reply', 'replies') + (reps.length - real ? ' · ' + fmt(reps.length - real) + ' auto' : '')) : '');
+    $('replies-empty').hidden = !!reps.length;
+    reps.forEach(function (r) {
+      var li = el('li');
+      var who = el('div', 'who');
+      var e = el('div', 'e', r.email || '—');
+      if (r.kind === 'optout') e.appendChild(el('span', 'tag optout', 'opt-out'));
+      else if (r.kind === 'auto') e.appendChild(el('span', 'tag', 'auto-reply'));
+      else e.appendChild(el('span', 'tag reply', 'reply'));
+      who.appendChild(e);
+      var text = r.preview || r.subject || '';
+      if (text) who.appendChild(el('div', 'p', text));
+      li.appendChild(who);
+      var w = el('div', 'when', r.when ? ptShort(r.when) : '');
+      if (r.inbox) { w.appendChild(el('br')); w.appendChild(document.createTextNode('to ' + r.inbox)); }
+      li.appendChild(w);
+      rl.appendChild(li);
+    });
 
     /* inboxes */
     var ib = $('inboxes'); clear(ib);
@@ -419,103 +427,24 @@ export const JS = String.raw`
       addr.title = x.email || '';
       nm.appendChild(addr);
       c.appendChild(nm);
-      if (x.found === false) {
-        c.appendChild(el('p', 'row', 'Not found in Instantly'));
-        ib.appendChild(c); return;
-      }
-      var r1 = el('div', 'row');
-      r1.appendChild(el('span', null, 'Sent today'));
-      var v1 = el('span', 'val num', fmt(x.sends_today) + (x.daily_limit ? ' / ' + fmt(x.daily_limit) : ''));
-      r1.appendChild(v1);
-      c.appendChild(r1);
+      if (x.found === false) { c.appendChild(el('p', 'pill', 'Not found in Instantly')); ib.appendChild(c); return; }
+      var big = el('p', 'big num');
+      big.appendChild(document.createTextNode(fmt(x.sends_today)));
+      big.appendChild(el('small', null, ' sent today' + (x.daily_limit ? ' · cap ' + fmt(x.daily_limit) : '')));
+      c.appendChild(big);
       var m = el('div', 'meter'); var fill = el('i');
-      var frac = x.daily_limit ? Math.min(1, (x.sends_today || 0) / x.daily_limit) : 0;
-      fill.style.width = (frac * 100).toFixed(1) + '%';
+      fill.style.width = (x.daily_limit ? Math.min(100, 100 * (x.sends_today || 0) / x.daily_limit) : 0).toFixed(1) + '%';
       m.appendChild(fill); c.appendChild(m);
-      if (x.other_sends_today) {
-        c.appendChild(el('p', 'pill', '+' + fmt(x.other_sends_today) + ' test ' + plural(x.other_sends_today, 'send') + ' today, not counted'));
-      }
       var r2 = el('div', 'row');
-      r2.appendChild(el('span', null, 'Warmup score'));
-      r2.appendChild(el('span', 'val num', x.warmup_score == null ? '—' : fmt(x.warmup_score)));
+      r2.appendChild(el('span', null, 'Warmup ' + (x.warmup_score == null ? '—' : fmt(x.warmup_score))));
+      r2.appendChild(statusNode(x.level, x.status_label || '—'));
       c.appendChild(r2);
-      var r3 = el('div', 'row');
-      r3.appendChild(el('span', null, 'Status'));
-      r3.appendChild(statusNode(x.level, x.status_label || '—'));
-      c.appendChild(r3);
       if (x.note) c.appendChild(el('p', 'pill', x.note));
       ib.appendChild(c);
     });
 
-    /* funnel */
-    var f = $('funnel'); clear(f);
-    var pr = p.prod;
-    if (!pr) {
-      f.appendChild(el('div', 'empty', 'PROD campaign not found in Instantly.'));
-      $('prod-aside').textContent = '';
-    } else {
-      $('prod-aside').textContent = ['this campaign only', pr.status_label, fmt(pr.leads) + ' leads'].filter(Boolean).join(' · ');
-      var rows = [
-        ['Not yet contacted', pr.not_contacted, false],
-        ['Contacted', pr.contacted, false],
-        ['Finished sequence', pr.completed, false],
-        ['Bounced', pr.bounced, true],
-        ['Unsubscribed', pr.unsubscribed, true]
-      ];
-      var base = pr.leads || Math.max(pr.contacted || 0, 1);
-      rows.forEach(function (r) {
-        f.appendChild(el('div', 'k', r[0]));
-        f.appendChild(el('div', 'n num', fmt(r[1])));
-        var b = el('div', 'b' + (r[1] ? '' : ' zero') + (r[2] ? ' muted' : ''));
-        var w = base ? Math.max(0, Math.min(100, 100 * (r[1] || 0) / base)) : 0;
-        b.style.width = (r[1] ? Math.max(w, 1) : 0) + '%';
-        b.title = pctText(r[1], base) ? pctText(r[1], base) + ' of leads' : '';
-        f.appendChild(b);
-      });
-    }
-    var st = $('steps'); clear(st);
-    var steps = (pr && pr.steps) || [];
-    var follow = pr ? Math.max(0, (pr.sent || 0) - (pr.contacted || 0)) : 0;
-    $('steps-cap').textContent = pr ? ('Sends per email step · ' + fmt(pr.sent) + ' ' + plural(pr.sent, 'email') + ' to ' + fmt(pr.contacted) + ' ' + plural(pr.contacted, 'business', 'businesses') + (follow ? ' (' + fmt(follow) + ' ' + plural(follow, 'follow-up') + ')' : '')) : '';
-    if (!steps.length) {
-      st.appendChild(el('div', 'empty', 'No per-step data yet.'));
-    } else {
-      var mx = 0; steps.forEach(function (s) { mx = Math.max(mx, s.sent || 0); });
-      steps.forEach(function (s) {
-        st.appendChild(el('div', 'k', 'Email ' + s.step));
-        var b = el('div', 'b' + (s.sent ? '' : ' zero'));
-        b.style.width = (mx ? Math.max(1, 100 * (s.sent || 0) / mx) : 0) + '%';
-        st.appendChild(b);
-        var n = el('div', 'n num');
-        var bb = el('b', null, fmt(s.sent)); n.appendChild(bb);
-        n.appendChild(document.createTextNode(' sent' + (s.replies ? ' · ' + fmt(s.replies) + ' ' + plural(s.replies, 'reply', 'replies') : '')));
-        st.appendChild(n);
-      });
-    }
-
     /* chart */
     drawChart(p.daily || []);
-
-    /* campaigns */
-    var tb = $('camps').getElementsByTagName('tbody')[0]; clear(tb);
-    var camps = p.campaigns || [];
-    $('camps-aside').textContent = p.excluded_tests ? fmt(p.excluded_tests) + ' test ' + plural(p.excluded_tests, 'campaign') + ' excluded' : '';
-    if (!camps.length) {
-      var tr0 = el('tr'); var td0 = el('td', 'empty', 'No campaigns yet.'); td0.colSpan = 4; tr0.appendChild(td0); tb.appendChild(tr0);
-    }
-    camps.forEach(function (c) {
-      var tr = el('tr', c.kind === 'prod' ? 'prod' : '');
-      var td = el('td');
-      var nm = el('div', 'nm');
-      nm.appendChild(el('span', 'dot ' + statusClass(c.level)));
-      nm.appendChild(document.createTextNode(c.kind === 'prod' ? 'PROD · Fall 2026' : (c.label || c.name || '—')));
-      td.appendChild(nm);
-      var who = c.kind === 'prod' ? (fmt(c.leads) + ' leads · ' + fmt(c.contacted) + ' contacted') : (c.sub || '');
-      td.appendChild(el('div', 'who', (who ? who + ' · ' : '') + (c.status_label || '—')));
-      tr.appendChild(td);
-      [c.sent, c.replies, c.bounced].forEach(function (v) { tr.appendChild(el('td', 'num' + (v ? '' : ' zero'), fmt(v))); });
-      tb.appendChild(tr);
-    });
 
     /* header */
     var asof = $('asof'); clear(asof);
@@ -526,9 +455,8 @@ export const JS = String.raw`
   /* ---------- chart ---------- */
   var chartData = [];
   function niceMax(v) {
-    /* tops that split into 4 whole-number ticks */
-    var tops = [4, 8, 12, 16, 20, 40, 60, 80, 100, 120, 160, 200, 400, 600, 800, 1000, 2000, 4000];
-    for (var i = 0; i < tops.length; i++) if (v <= tops[i]) return tops[i];
+    var steps = [4, 8, 12, 16, 20, 40, 60, 80, 100, 120, 160, 200, 400, 600, 800, 1000, 2000, 4000];
+    for (var i = 0; i < steps.length; i++) if (v <= steps[i]) return steps[i];
     return Math.ceil(v / 4000) * 4000;
   }
   function svgEl(tag, attrs) {
@@ -553,7 +481,7 @@ export const JS = String.raw`
     for (var i = 0; i <= ticks; i++) {
       var v = top * i / ticks;
       var y = padT + plotH - plotH * i / ticks;
-      svg.appendChild(svgEl(i === 0 ? 'line' : 'line', { x1: padL, x2: W - padR, y1: y, y2: y, 'class': i === 0 ? 'axis' : 'grid' }));
+      svg.appendChild(svgEl('line', { x1: padL, x2: W - padR, y1: y, y2: y, 'class': i === 0 ? 'axis' : 'grid' }));
       var t = svgEl('text', { x: padL - 6, y: y + 3.5, 'class': 'tick', 'text-anchor': 'end' });
       t.textContent = fmt(v); svg.appendChild(t);
     }
@@ -572,12 +500,10 @@ export const JS = String.raw`
         var l = svgEl('text', { x: x + bw / 2, y: y - 4, 'class': 'lbl' });
         l.textContent = fmt(d.sent); svg.appendChild(l);
       }
-      var every = n <= 7 ? 1 : 4;
-      var showX = ((n - 1 - i) % every) === 0;
+      var showX = (n <= 7) || ((n - 1 - i) % 4 === 0);
       if (showX) {
-        var firstShown = (n - 1) % every;
         var tx = svgEl('text', { x: x + bw / 2, y: H - 6, 'class': 'tick', 'text-anchor': 'middle' });
-        tx.textContent = dayLabel(d.date, i === firstShown || i === n - 1); svg.appendChild(tx);
+        tx.textContent = dayLabel(d.date, i === n - 1 || (n - 1 - i) === 12); svg.appendChild(tx);
       }
       var hit = svgEl('rect', { x: padL + slot * i, y: padT, width: slot, height: plotH + padB, 'class': 'hit', 'data-i': i, tabindex: 0, role: 'img', 'aria-label': dayLabel(d.date, true) + ': ' + fmt(d.sent) + ' sent, ' + fmt(d.replies) + ' replies' });
       svg.appendChild(hit);
@@ -591,7 +517,7 @@ export const JS = String.raw`
       tbody.appendChild(tr);
     });
   }
-  function showTip(i, evt) {
+  function showTip(i) {
     var d = chartData[i]; if (!d) return;
     var tip = $('tip'); clear(tip);
     tip.appendChild(el('b', null, fmt(d.sent) + ' sent'));
@@ -617,12 +543,12 @@ export const JS = String.raw`
     var svg = $('chart');
     var onMove = function (e) {
       var t = e.target;
-      if (t && t.classList && t.classList.contains('hit')) showTip(Number(t.getAttribute('data-i')), e);
+      if (t && t.classList && t.classList.contains('hit')) showTip(Number(t.getAttribute('data-i')));
     };
     svg.addEventListener('pointermove', onMove);
     svg.addEventListener('pointerdown', onMove);
     svg.addEventListener('pointerleave', hideTip);
-    svg.addEventListener('focusin', function (e) { if (e.target.classList.contains('hit')) showTip(Number(e.target.getAttribute('data-i')), e); });
+    svg.addEventListener('focusin', function (e) { if (e.target.classList.contains('hit')) showTip(Number(e.target.getAttribute('data-i'))); });
     svg.addEventListener('focusout', hideTip);
     document.addEventListener('pointerdown', function (e) { if (!svg.contains(e.target)) hideTip(); });
     $('daily-toggle').addEventListener('click', function () {
@@ -667,7 +593,7 @@ export const JS = String.raw`
         } else {
           var msg = (p && p.error) ? String(p.error) : ('HTTP ' + res.status);
           var local = lastPayload || readLocal();
-          if (local) { render(local, { source: lastPayload ? 'server' : 'local' }); local.stale_since = local.stale_since || local.as_of; local.error = msg; noticeFor(local, null); }
+          if (local) { render(local, { source: lastPayload ? 'server' : 'local' }); local.stale_since = local.as_of; local.error = msg; noticeFor(local, null); }
           else { $('asof').textContent = 'No data yet'; noticeFor(null, msg); }
         }
       })
@@ -689,7 +615,7 @@ export const JS = String.raw`
   setInterval(function () { if (document.visibilityState === 'visible' && Date.now() - lastLoadedAt > 5 * 60 * 1000) load(false); }, 60 * 1000);
 
   var cached = readLocal();
-  if (cached) { render(cached, { source: 'local' }); }
+  if (cached && cached.totals && cached.totals.unsub_button != null) { render(cached, { source: 'local' }); }
   load(false);
 })();
 `;
