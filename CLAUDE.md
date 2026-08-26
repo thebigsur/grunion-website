@@ -28,7 +28,15 @@ tradeoffs. Simplicity here is deliberate, not an accident.
 - netlify/functions/ — cm-stats.mjs, ga-stats.mjs, netlify-stats.mjs: serverless
   data proxies for the dashboard (zero npm dependencies; API keys live only in
   Netlify env vars — see DASHBOARD-SETUP.md)
+- netlify/functions/board/ — the Sponsor Board (jersey-tile email campaign
+  metrics from Instantly, read-only). board.mjs serves BOTH the page and its
+  JSON feed at /board/<BOARD_SLUG>/ ; page.mjs is the page markup/CSS/JS as a
+  template. The random slug and the read-only Instantly key exist only as
+  Netlify env vars (BOARD_SLUG, INSTANTLY_KEY) — never in files. Unlisted on
+  purpose: no nav, sitemap, or robots entry; noindex via meta + header.
 - DASHBOARD-SETUP.md — dashboard env-var setup + troubleshooting guide
+- SPONSOR-BOARD-SETUP.md — Sponsor Board handbook (where the key lives, rotation,
+  definitions, verification)
 
 ## Editing rules
 - CONFIG at the top of site.js is the single source of truth for contacts,
@@ -62,6 +70,11 @@ tradeoffs. Simplicity here is deliberate, not an accident.
   inflate the traffic numbers it reports. Keep it out of sitemap.xml, robots.txt,
   and all nav/footers. The functions must stay dependency-free (node: built-ins
   only, no package.json) — the "no build step" rule applies to them too.
+- Same rules for the Sponsor Board: no GA snippet, never linked, and the board
+  function must stay GET-only against Instantly (never send, create, edit, or
+  delete anything there). Its page has no static file by design — putting one
+  in the repo would publish the hidden URL. Test campaigns (names containing
+  TEST / FORMAT / TIMING) are excluded from every number.
 
 ## Workflow when I ask you to update the site
 1. Before editing, run `git pull` to make sure the local copy is current
