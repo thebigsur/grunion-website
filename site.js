@@ -451,14 +451,24 @@ metaEl.hidden=false;
     .catch(function(){ /* unreachable source — leave placeholders */ });
 
   function norm(s){ return String(s||'').toLowerCase().replace(/[^a-z]/g,''); }
+  function splitLine(line){
+    var res=[],cur='',q=false;
+    for(var i=0;i<line.length;i++){var c=line[i];
+      if(c==='"'){ if(q&&line[i+1]==='"'){cur+='"';i++;} else q=!q; }
+      else if(c===','&&!q){res.push(cur);cur='';}
+      else cur+=c;
+    }
+    res.push(cur); return res;
+  }
 
   function parsePatrons(text){
     text = text.replace(/\r/g,'');
-    // Published Google Sheet (CSV): header row with a "Tier" column, then Tier,Name rows
-    if(/(^|\n)\s*tier\s*,/i.test(text)){
+    // Published Google Sheet (CSV): header row with a "Tier" column, then Tier,Name rows.
+    // The gviz CSV export wraps every field in quotes, so match a quoted header too.
+    if(/(^|\n)\s*"?tier"?\s*,/i.test(text)){
       var out={}, lines=text.split('\n').filter(function(l){return l.trim();});
       for(var i=1;i<lines.length;i++){
-        var c=lines[i].split(','), t=norm(c[0]), n=(c[1]||'').trim();
+        var c=splitLine(lines[i]), t=norm(c[0]), n=(c[1]||'').trim();
         if(t&&n){ (out[t]=out[t]||[]).push(n); }
       }
       return out;
