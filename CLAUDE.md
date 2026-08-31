@@ -34,6 +34,12 @@ tradeoffs. Simplicity here is deliberate, not an accident.
   template. The random slug and the read-only Instantly key exist only as
   Netlify env vars (BOARD_SLUG, INSTANTLY_KEY) — never in files. Unlisted on
   purpose: no nav, sitemap, or robots entry; noindex via meta + header.
+- netlify/functions/club78-webhook.mjs — The '78 Club signup pipeline: Zeffy
+  webhook receiver (payment.completed) that totals a donor's membership year,
+  works out the tier, logs to the private "'78 Club Signups" sheet, puts the
+  name on the Patron Wall tab, and emails the donor from treasurer@sbrfc.com.
+  Secrets (ZEFFY_WEBHOOK_SECRET, ZEFFY_API_KEY) live only in Netlify env vars.
+- CLUB78-SETUP.md — '78 Club pipeline handbook (env vars, rules, testing, templates)
 - DASHBOARD-SETUP.md — dashboard env-var setup + troubleshooting guide
 - SPONSOR-BOARD-SETUP.md — Sponsor Board handbook (where the key lives, rotation,
   definitions, verification)
@@ -61,7 +67,10 @@ tradeoffs. Simplicity here is deliberate, not an accident.
 - Header/footer markup is duplicated across the modern pages by design. A shared
   change must be applied to index, history, MERchives, the-78-club, and 404.
 - Don't change donation/tax wording (EIN, 501(c)(3), deductibility) without
-  flagging it for Josh to review.
+  flagging it for Josh to review. That includes the acknowledgment paragraph the
+  '78 Club emails carry (built in club78-webhook.mjs / the Emails tab).
+- The '78 Club email copy is edited in the "Emails" tab of the '78 Club Signups
+  sheet, not in code; the function's built-in templates are only the seed.
 - Don't rotate or swap API keys, Drive folder IDs, or external service URLs
   without calling out the impact first. The Drive API key in site.js is public
   by design and restricted in Google Cloud Console (Drive API only +

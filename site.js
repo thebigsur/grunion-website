@@ -30,7 +30,7 @@ var CONFIG = {
   // live in index.html). Subscribers go straight to the MER List.
 
   // The '78 Club — Legacy Donor program
-  JOIN_78_URL:        "#",   // payment / registration link
+  JOIN_78_URL:        "https://www.zeffy.com/en-US/ticketing/the-78-club-grunion-rfc-legacy-donors",   // Zeffy membership form (pay-what-you-can tiers; webhook → netlify/functions/club78-webhook.mjs)
 
   // General donations (footer "Chip In") — Zeffy donation form (opens in a new tab)
   DONATE_URL:         "https://www.zeffy.com/en-US/donation-form/grunion-rfc",
