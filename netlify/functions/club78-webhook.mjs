@@ -29,7 +29,7 @@
 //                          override them if ever needed. The account needs
 //                          domain-wide delegation in the sbrfc.com Workspace for
 //                          gmail.send + spreadsheets (see CLUB78-SETUP.md).
-//   DASHBOARD_KEY          (required for GET status + the simulate harness)
+//   DASHBOARD_KEY          (required for GET status + the simulate/dry harness)
 //   CLUB78_DISABLE_EMAIL   set to "1" to log + plaque only (no emails) — for testing
 //
 // Zero npm dependencies (node: built-ins only) — same rule as the other functions.
@@ -344,7 +344,7 @@ function buildRaw({ to, subject, text, replyTo, fromName }) {
 }
 
 // ---- the pipeline ----------------------------------------------------------------------
-async function processPayment(p, { eventId, simulate = false }) {
+async function processPayment(p, { eventId, simulate = false, dry = false }) {
   const started = Date.now();
   const notes = [];
   const email = lower(p.buyer?.email);
@@ -438,11 +438,14 @@ async function processPayment(p, { eventId, simulate = false }) {
   }
   const setCell = async (idx, value) => { if (rowNumber) await g.update(CONFIG.SIGNUPS_SHEET_ID, `${CONFIG.SIGNUPS_TAB}!${COL[idx]}${rowNumber}`, [[value]]).catch(() => {}); };
 
-  const result = { ok: true, payment_id: p.id, email, action, tier: after?.name || null, year_total: year.total / 100, plaque: null, email_sent: false, notify_sent: false, google_mode: auth.mode, notes };
+  const result = { ok: true, dry_run: dry || undefined, payment_id: p.id, email, action, tier: after?.name || null, year_total: year.total / 100, plaque: null, email_sent: false, notify_sent: false, google_mode: auth.mode, notes };
   if (action === 'none') { await setCell(IDX.notes, [...notes, 'below Supporters\' Union minimum'].join(' | ')); return result; }
 
   // ---- plaque (Website Sheet)
-  if (!(existing && done(existing[IDX.plaque]))) {
+  if (dry) {
+    result.plaque = `DRY RUN — would add "${plaqueName}" to ${after.name}`;
+    await setCell(IDX.plaque, 'dry run (not written)');
+  } else if (!(existing && done(existing[IDX.plaque]))) {
     try {
       const status = await updatePlaque(g, { name: plaqueName, tier: after.name, previousName: prevPlaque });
       result.plaque = status; await setCell(IDX.plaque, status);
@@ -455,6 +458,10 @@ async function processPayment(p, { eventId, simulate = false }) {
     const key = action === 'join' ? after.key : action;         // supporters | second | founders | upgrade | topup
     const tpl = templates[key] || templates[action] || null;
     if (!tpl) { await setCell(IDX.email_status, `error: no template "${key}"`); }
+    else if (dry) {
+      result.email_preview = { template: key, to: email, subject: render(tpl.subject, vars), body: render(tpl.body, vars) };
+      await setCell(IDX.email_status, `dry run (would send "${key}")`);
+    }
     else if (emailsOff) { await setCell(IDX.email_status, 'skipped (CLUB78_DISABLE_EMAIL)'); }
     else if (!auth.canEmail) { await setCell(IDX.email_status, `pending: delegation (${key})`); result.email_pending = true; }
     else {
@@ -468,7 +475,8 @@ async function processPayment(p, { eventId, simulate = false }) {
   // ---- internal notice
   if (!(existing && done(existing[IDX.notify]))) {
     const tpl = templates.notify;
-    if (tpl && !emailsOff && !auth.canEmail) { await setCell(IDX.notify, 'pending: delegation'); }
+    if (dry) { await setCell(IDX.notify, 'dry run (not sent)'); }
+    else if (tpl && !emailsOff && !auth.canEmail) { await setCell(IDX.notify, 'pending: delegation'); }
     else if (tpl && !emailsOff) {
       try {
         const extra = { ...vars, kit_lines: kitLines(answers) || '(none)', action, notes: notes.join(' | ') || '(none)', sheet_url: `https://docs.google.com/spreadsheets/d/${CONFIG.SIGNUPS_SHEET_ID}` };
@@ -695,7 +703,11 @@ export default async (req) => {
 
   // Test harness: POST {"simulate": true, "data": {...payment...}} with the dashboard key
   // bypasses the signature so the pipeline can be exercised without a real payment.
-  const simulate = event?.simulate === true && gate(req);
+  const simulate = (event?.simulate === true || event?.dry === true) && gate(req);
+  // "dry": true → walk the whole pipeline and REPORT what would happen, but write
+  // nothing to the public plaque and send no mail. The Signups row is still logged
+  // (marked "dry run") so the test is visible and deletable in one place.
+  const dry = event?.dry === true && gate(req);
   if (!simulate) {
     const v = verifyZeffySignature(raw, req.headers.get('zeffy-signature') || req.headers.get('Zeffy-Signature'), process.env.ZEFFY_WEBHOOK_SECRET);
     if (!v.ok) return json({ error: 'invalid signature', why: v.why }, v.why === 'no secret configured' ? 500 : 400);
@@ -706,7 +718,7 @@ export default async (req) => {
   if (!paymentOk(p)) return json({ ok: true, ignored: `status ${p.status} / refund ${p.refund_status}` });
 
   try {
-    const result = await processPayment(p, { eventId: event.id, simulate });
+    const result = await processPayment(p, { eventId: event.id, simulate, dry });
     return json(result);
   } catch (e) {
     // non-2xx → Zeffy retries (up to 5×); the log row makes the retry resume, not repeat

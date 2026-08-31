@@ -80,10 +80,15 @@ Admin-console note: the sbrfc.com super-admin is **admin@sbrfc.com**, not treasu
 
 ## Dry run without paying
 
+**Use `"dry": true`** (not `"simulate": true`) unless you specifically want the test written through. A dry run walks the whole pipeline — tier maths, membership year, template rendering — and returns the exact email it *would* send, but **writes nothing to the public plaque and sends no mail**. It still logs a row in Signups (marked `dry run`) so the test is visible and deletable in one place.
+
+`"simulate": true` does the same walk but writes for real: the plaque row appears on the live page within minutes. Only use it when you want a genuine end-to-end write, and delete the plaque row afterwards.
+
+
 ```
 curl -s -X POST https://grunionrugby.com/.netlify/functions/club78-webhook \
   -H "content-type: application/json" -H "x-dashboard-key: YOUR_DASHBOARD_PASSCODE" \
-  -d '{"simulate":true,"id":"sim-1","type":"payment.completed","data":{"id":"sim-pay-1","amount":50000,"status":"succeeded","created":'"$(date +%s)"',"campaign_id":"bff55e80-4c68-40d9-9f72-d769d41697b3","campaign_category":"membership","description":"The 78 Club test","contact":null,"refund_status":"none","buyer":{"first_name":"Test","last_name":"Donor","email":"YOUR_EMAIL"},"buyer_questions":[],"items":[{"type":"ticket","amount":50000,"rate_id":null,"questions":[{"question":"Name for the 78 Club plaque","answer":"Test Donor (delete me)","type":"text"}]}]}}'
+  -d '{"dry":true,"id":"sim-1","type":"payment.completed","data":{"id":"sim-pay-1","amount":50000,"status":"succeeded","created":'"$(date +%s)"',"campaign_id":"bff55e80-4c68-40d9-9f72-d769d41697b3","campaign_category":"membership","description":"The 78 Club test","contact":null,"refund_status":"none","buyer":{"first_name":"Test","last_name":"Donor","email":"YOUR_EMAIL"},"buyer_questions":[],"items":[{"type":"ticket","amount":50000,"rate_id":null,"questions":[{"question":"Name for the 78 Club plaque","answer":"Test Donor (delete me)","type":"text"}]}]}}'
 ```
 
 That sends the real Supporters' Union email to YOUR_EMAIL, adds "Test Donor (delete me)" to the plaque tab and logs a row — delete the plaque row and the log row afterwards. Only works with the dashboard passcode; Zeffy deliveries are always signature-checked.
