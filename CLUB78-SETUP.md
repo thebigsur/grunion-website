@@ -62,9 +62,21 @@ If the tab is ever emptied, the function re-seeds the built-in defaults (bottom 
 curl -s -H "x-dashboard-key: YOUR_DASHBOARD_PASSCODE" https://grunionrugby.com/.netlify/functions/club78-webhook | python3 -m json.tool
 ```
 
-Expected: `webhook_secret: true`, `zeffy_api_key: true`, `google_delegation: true`, six template keys, `patron_wall_tab: "'78 Club Patron Wall"`, and `club78_campaign.matches_config_id: true`. This call also creates the sheet tabs and seeds the templates, so run it once after the first deploy.
+Expected: `webhook_secret: true`, `zeffy_api_key: true`, `google_mode: "delegated"` / `google_delegation: true`, six template keys, `patron_wall_tab: "'78 Club Patron Wall"`, and `club78_campaign.matches_config_id: true`. This call also creates the sheet tabs and seeds the templates, so run it once after the first deploy. `google_mode: "service-account"` means delegation is missing (see below) — sheets work, emails wait.
 
 `google_delegation: false` with "unauthorized_client" = the domain-wide delegation step in the sbrfc.com admin console is missing or has the wrong scopes (needs exactly `https://www.googleapis.com/auth/gmail.send,https://www.googleapis.com/auth/spreadsheets` on client id `104737401110086584512`).
+
+## While domain-wide delegation is still missing
+
+The function detects it and runs in **service-account mode**: it still logs the payment and updates the plaque (the two sheets are shared with the service account directly), but it cannot send mail, so the donor email and the notice are marked `pending: delegation` in the Signups tab. Nothing is lost — once the admin-console step is done, run a backfill and the pending emails go out:
+
+```
+curl -s -H "x-dashboard-key: YOUR_DASHBOARD_PASSCODE" "https://grunionrugby.com/.netlify/functions/club78-webhook?backfill=60&max=3" | python3 -m json.tool
+```
+
+Backfill = re-read the last N days of '78 Club payments from the Zeffy API and finish anything not fully processed (also catches payments made while the webhook was disabled). It handles `max` payments per call (keep ≤3 — the function has ~10 s); repeat until `remaining` is 0. Already-finished payments come back as `duplicate: true`.
+
+Admin-console note: the sbrfc.com super-admin is **admin@sbrfc.com**, not treasurer@ — sign in as admin@ to see Security → API controls → Domain-wide delegation.
 
 ## Dry run without paying
 

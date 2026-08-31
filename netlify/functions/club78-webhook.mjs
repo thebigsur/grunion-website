@@ -2,7 +2,8 @@
 // Grunion RFC — The '78 Club signup pipeline (Zeffy webhook receiver)
 // POST /.netlify/functions/club78-webhook        ← Zeffy "payment.completed"
 // GET  /.netlify/functions/club78-webhook        ← status / one-time setup
-//      (requires header  x-dashboard-key: <DASHBOARD_KEY env var>)
+// GET  …/club78-webhook?backfill=30&max=2         ← (re)process recent payments via the API
+//      (both require header  x-dashboard-key: <DASHBOARD_KEY env var>)
 //
 // What it does for every completed Zeffy payment on The '78 Club membership
 // form (and for top-up donations by existing members):
@@ -148,10 +149,10 @@ function googleCreds() {
   return email && key ? { email, key } : null;
 }
 
-async function googleToken(creds, sub, ms = 6000) {
+async function googleToken(creds, sub, ms = 6000, scopes = GOOGLE_SCOPES) {
   const now = Math.floor(Date.now() / 1000);
   const header = b64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
-  const claims = b64url(JSON.stringify({ iss: creds.email, sub, scope: GOOGLE_SCOPES, aud: GOOGLE_TOKEN_URL, iat: now, exp: now + 3600 }));
+  const claims = b64url(JSON.stringify({ iss: creds.email, ...(sub ? { sub } : {}), scope: scopes, aud: GOOGLE_TOKEN_URL, iat: now, exp: now + 3600 }));
   const signer = createSign('RSA-SHA256');
   signer.update(`${header}.${claims}`);
   const sig = b64url(signer.sign(creds.key));
@@ -166,6 +167,20 @@ async function googleToken(creds, sub, ms = 6000) {
     throw new Error(`Google would not issue a token for ${sub}: ${data.error_description || data.error || r.status}`);
   }
   return data.access_token;
+}
+
+// Delegated (acts as treasurer@: Sheets + Gmail send) when the sbrfc.com admin console
+// has authorised the service account; otherwise the plain service-account token, which
+// can still edit any sheet shared with it but cannot send mail. The pipeline degrades to
+// "log + plaque, emails pending" in that second mode and sends the pending emails on the
+// next run (or a backfill) once delegation is live.
+async function googleAuth(creds) {
+  try {
+    return { token: await googleToken(creds, CONFIG.SENDER_USER), mode: 'delegated', canEmail: true };
+  } catch (e) {
+    const token = await googleToken(creds, null, 6000, 'https://www.googleapis.com/auth/spreadsheets');
+    return { token, mode: 'service-account', canEmail: false, delegationError: e.message };
+  }
 }
 
 function gapi(token) {
@@ -342,16 +357,17 @@ async function processPayment(p, { eventId, simulate = false }) {
 
   const creds = googleCreds();
   if (!creds) throw new Error('Google service-account credentials are not set (GA_CLIENT_EMAIL / GA_PRIVATE_KEY)');
-  const token = await googleToken(creds, CONFIG.SENDER_USER);
-  const g = gapi(token);
+  const auth = await googleAuth(creds);
+  const g = gapi(auth.token);
   const templates = await ensureSheets(g);
+  if (!auth.canEmail) notes.push('emails pending: ' + auth.delegationError);
 
   // ---- idempotency + our own history
   const logResp = await g.get(CONFIG.SIGNUPS_SHEET_ID, `${CONFIG.SIGNUPS_TAB}!A2:W5000`).catch(() => ({}));
   const logRows = logResp.values || [];
   const existingIdx = logRows.findIndex((r) => String(r[IDX.payment_id] || '') === String(p.id));
   const existing = existingIdx >= 0 ? logRows[existingIdx] : null;
-  const done = (v) => { const s = String(v || ''); return !!s && !s.startsWith('error'); };
+  const done = (v) => { const s = String(v || ''); return !!s && !s.startsWith('error') && !s.startsWith('pending'); };
   if (existing && done(existing[IDX.email_status]) && done(existing[IDX.plaque]) && done(existing[IDX.notify])) {
     return { ok: true, duplicate: true, payment_id: p.id };
   }
@@ -370,7 +386,8 @@ async function processPayment(p, { eventId, simulate = false }) {
   try {
     const contactId = p.contact || p.contact_id || null;
     const list = contactId ? await zeffyList('/payments', { contact: contactId }) : null;
-    if (list) history = list.filter((x) => paymentOk(x) && (isClub78(x) || isTopupEligible(x)));
+    // defensive: only THIS donor's payments even if the API filter were ignored
+    if (list) history = list.filter((x) => paymentOk(x) && (isClub78(x) || isTopupEligible(x)) && ((contactId && x.contact === contactId) || lower(x.buyer?.email) === email));
     else history = mine.map((r) => ({ id: r[IDX.payment_id], amount: Math.round(Number(r[6]) * 100), created: Date.parse(r[9] || r[0]) / 1000 }));
   } catch (e) { notes.push('history: ' + e.message); history = mine.map((r) => ({ id: r[IDX.payment_id], amount: Math.round(Number(r[6]) * 100), created: Date.parse(r[9] || r[0]) / 1000 })); }
 
@@ -421,7 +438,7 @@ async function processPayment(p, { eventId, simulate = false }) {
   }
   const setCell = async (idx, value) => { if (rowNumber) await g.update(CONFIG.SIGNUPS_SHEET_ID, `${CONFIG.SIGNUPS_TAB}!${COL[idx]}${rowNumber}`, [[value]]).catch(() => {}); };
 
-  const result = { ok: true, payment_id: p.id, email, action, tier: after?.name || null, year_total: year.total / 100, plaque: null, email_sent: false, notify_sent: false, notes };
+  const result = { ok: true, payment_id: p.id, email, action, tier: after?.name || null, year_total: year.total / 100, plaque: null, email_sent: false, notify_sent: false, google_mode: auth.mode, notes };
   if (action === 'none') { await setCell(IDX.notes, [...notes, 'below Supporters\' Union minimum'].join(' | ')); return result; }
 
   // ---- plaque (Website Sheet)
@@ -439,6 +456,7 @@ async function processPayment(p, { eventId, simulate = false }) {
     const tpl = templates[key] || templates[action] || null;
     if (!tpl) { await setCell(IDX.email_status, `error: no template "${key}"`); }
     else if (emailsOff) { await setCell(IDX.email_status, 'skipped (CLUB78_DISABLE_EMAIL)'); }
+    else if (!auth.canEmail) { await setCell(IDX.email_status, `pending: delegation (${key})`); result.email_pending = true; }
     else {
       try {
         await g.send(buildRaw({ to: `${first} ${last} <${email}>`.trim(), subject: render(tpl.subject, vars), text: render(tpl.body, vars) }));
@@ -450,7 +468,8 @@ async function processPayment(p, { eventId, simulate = false }) {
   // ---- internal notice
   if (!(existing && done(existing[IDX.notify]))) {
     const tpl = templates.notify;
-    if (tpl && !emailsOff) {
+    if (tpl && !emailsOff && !auth.canEmail) { await setCell(IDX.notify, 'pending: delegation'); }
+    else if (tpl && !emailsOff) {
       try {
         const extra = { ...vars, kit_lines: kitLines(answers) || '(none)', action, notes: notes.join(' | ') || '(none)', sheet_url: `https://docs.google.com/spreadsheets/d/${CONFIG.SIGNUPS_SHEET_ID}` };
         await g.send(buildRaw({ to: CONFIG.NOTIFY_TO, subject: render(tpl.subject, extra), text: render(tpl.body, extra), fromName: "'78 Club bot" }));
@@ -475,9 +494,14 @@ async function updatePlaque(g, { name, tier, previousName }) {
   const candidates = [name, previousName].filter(Boolean).map(norm);
   const hit = rows.findIndex((r, i) => i > 0 && candidates.includes(norm(r[1])) && norm(r[1]) !== norm('Anonymous'));
   if (hit > 0) {
-    if (norm(rows[hit][0]) === norm(tier) && norm(rows[hit][1]) === norm(name)) return 'already listed';
+    const currentRank = tierRank(tierByName(rows[hit][0])?.key);
+    const newRank = tierRank(tierByName(tier)?.key);
+    // never move a name DOWN a tier (a second donor picking the same plaque text, or a
+    // re-run) — only up, or a rename at the same level
+    if (newRank < currentRank) return `already listed under ${rows[hit][0]} (kept)`;
+    if (newRank === currentRank && norm(rows[hit][1]) === norm(name)) return 'already listed';
     await g.update(CONFIG.WEBSITE_SHEET_ID, `'${title.replace(/'/g, "''")}'!A${hit + 1}:B${hit + 1}`, [[tier, name]]);
-    return `moved to ${tier} (row ${hit + 1})`;
+    return newRank > currentRank ? `moved to ${tier} (row ${hit + 1})` : `renamed to ${name} (row ${hit + 1})`;
   }
   await g.append(CONFIG.WEBSITE_SHEET_ID, `'${title.replace(/'/g, "''")}'!A1:B1`, [[tier, name]]);
   return `added to ${tier}`;
@@ -621,14 +645,17 @@ export default async (req) => {
     out.checks.zeffy_api_key = !!process.env.ZEFFY_API_KEY;
     out.checks.google_credentials = !!googleCreds();
     try {
-      const token = await googleToken(googleCreds(), CONFIG.SENDER_USER);
-      const g = gapi(token);
+      const auth = await googleAuth(googleCreds());
+      const g = gapi(auth.token);
+      out.checks.google_mode = auth.mode;
+      out.checks.google_delegation = auth.canEmail;
+      if (auth.delegationError) out.checks.delegation_error = auth.delegationError;
       const templates = await ensureSheets(g);
-      out.checks.google_delegation = true;
+      out.checks.signups_sheet = true;
       out.checks.templates = Object.keys(templates);
       const meta = await g.meta(CONFIG.WEBSITE_SHEET_ID);
       out.checks.patron_wall_tab = (meta.sheets || []).find((s) => s.properties.sheetId === CONFIG.PATRON_WALL_GID)?.properties.title || null;
-    } catch (e) { out.checks.google_delegation = false; out.checks.google_error = e.message; }
+    } catch (e) { out.checks.google_error = e.message; }
     try {
       const camps = await zeffyList('/campaigns');
       if (camps) {
@@ -636,6 +663,28 @@ export default async (req) => {
         out.checks.club78_campaign = hit ? { id: hit.id, title: hit.title, matches_config_id: lower(hit.id) === lower(CONFIG.CLUB78_CAMPAIGN_ID) } : 'not found';
       }
     } catch (e) { out.checks.zeffy_api_error = e.message; }
+    // ?backfill=DAYS[&max=N]  → (re)process recent '78 Club payments from the Zeffy API:
+    // catches anything paid while the webhook was off or the pipeline was failing, and
+    // finishes rows left "pending" (e.g. emails waiting on delegation). Idempotent.
+    const url = new URL(req.url);
+    if (url.searchParams.has('backfill')) {
+      const days = Math.min(365, Math.max(1, Number(url.searchParams.get('backfill')) || 30));
+      const max = Math.min(10, Math.max(1, Number(url.searchParams.get('max')) || 2));
+      const started = Date.now();
+      out.backfill = { days, processed: [], remaining: 0 };
+      try {
+        const since = Math.floor(Date.now() / 1000) - days * 86400;
+        const list = (await zeffyList('/payments', { campaign: CONFIG.CLUB78_CAMPAIGN_ID, 'created[gte]': since })) || [];
+        const todo = list.filter((p) => paymentOk(p)).sort((a, b) => createdMs(a) - createdMs(b));
+        out.backfill.found = todo.length;
+        for (const p of todo) {
+          if (out.backfill.processed.length >= max || Date.now() - started > CONFIG.BUDGET_MS - 3500) { out.backfill.remaining++; continue; }
+          try { const r = await processPayment(p, { eventId: 'backfill' }); out.backfill.processed.push(r.duplicate ? { payment_id: p.id, duplicate: true } : r); }
+          catch (e) { out.backfill.processed.push({ payment_id: p.id, error: e.message }); }
+        }
+        if (!process.env.ZEFFY_API_KEY) out.backfill.error = 'ZEFFY_API_KEY is not set — backfill needs the API';
+      } catch (e) { out.backfill.error = e.message; }
+    }
     return json(out);
   }
   if (req.method !== 'POST') return json({ error: 'method not allowed' }, 405);
