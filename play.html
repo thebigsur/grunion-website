@@ -89,7 +89,7 @@
 
       <form class="lp-form" name="play-signup" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/play-thanks">
         <input type="hidden" name="form-name" value="play-signup" />
-        <p class="lp-hp"><label>Leave this empty: <input name="bot-field" /></label></p>
+        <p class="lp-hp" hidden aria-hidden="true"><label>Leave this empty: <input name="bot-field" tabindex="-1" autocomplete="off" /></label></p>
 
         <div class="lp-field">
           <label for="p-name">Name</label>
@@ -102,7 +102,7 @@
             <input id="p-phone" name="phone" type="tel" autocomplete="tel" required placeholder="(805) 555-0100" />
           </div>
           <div class="lp-field">
-            <label for="p-email">Email <span class="opt">— optional</span></label>
+            <label for="p-email">Email <span class="opt">(optional)</span></label>
             <input id="p-email" name="email" type="email" autocomplete="email" placeholder="you@email.com" />
           </div>
         </div>
@@ -120,7 +120,7 @@
         <button class="btn btn-gold arrow" type="submit">Save my spot</button>
       </form>
 
-      <p class="lp-micro">"Never" is the most common answer we get. It is not a disqualifier — it is most of the roster's origin story.</p>
+      <p class="lp-micro">"Never" is the most common answer we get. It is not a disqualifier, it is most of the roster's origin story.</p>
       <p class="lp-orelse">Rather not fill in a form? <a href="mailto:grunionrugby@gmail.com?subject=Coming%20to%20practice">Email the club</a> or text Jordan on <a href="tel:+18056186510">(805)&nbsp;618-6510</a>.</p>
     </div>
 
