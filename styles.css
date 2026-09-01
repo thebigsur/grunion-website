@@ -917,9 +917,9 @@ html:has(body[data-page^="lp-"]){scroll-padding-top:22px}
 @media(max-width:560px){
   .lp-hero-inner{padding-block:clamp(104px,26vw,132px) 40px;min-height:auto}
   .lp-hero .eyebrow{font-size:.66rem;letter-spacing:.15em}
-  .lp-hero h1{margin-top:12px}
-  .lp-sub{margin-top:18px;font-size:1.02rem}
-  .lp-facts{margin-top:24px}
+  .lp-hero h1{margin-top:10px;font-size:clamp(2.9rem,10.5vw,8.4rem)}
+  .lp-sub{margin-top:15px;font-size:1.02rem}
+  .lp-facts{margin-top:20px}
   .lp-fact{padding:12px 16px}
   .lp-fact .f-v{font-size:1.24rem}
   .lp-fact .f-n{font-size:.78rem;margin-top:3px}
