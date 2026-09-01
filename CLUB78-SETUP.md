@@ -78,6 +78,30 @@ Backfill = re-read the last N days of '78 Club payments from the Zeffy API and f
 
 Admin-console note: the sbrfc.com super-admin is **admin@sbrfc.com**, not treasurer@ — sign in as admin@ to see Security → API controls → Domain-wide delegation.
 
+## Pushing a new approved copy deck
+
+The live email copy is the `Emails` tab. `netlify/functions/club78-webhook.mjs` also carries the
+same six templates as `DEFAULT_TEMPLATES` — the seed used when the tab is empty, and the copy of
+record in git. To push the code version over the sheet (after Josh approves a new draft):
+
+```
+curl -s -H "x-dashboard-key: YOUR_DASHBOARD_PASSCODE" "https://grunionrugby.com/.netlify/functions/club78-webhook?reseed=1" | python3 -m json.tool
+```
+
+**Destructive** — it overwrites whatever is in the tab. Day-to-day tweaks should be made in the
+sheet, not the code; only reseed when the code has been deliberately updated to a new deck.
+
+## Test switches (with the dashboard key, on a simulate/dry POST)
+
+| Flag | Effect |
+| --- | --- |
+| `"dry": true` | Nothing written, nothing sent. Returns the rendered email as `email_preview`. |
+| `"no_plaque": true` | Runs for real but leaves the public Patron Wall untouched. |
+| `"no_notify": true` | Suppresses the internal notice, so the donor email is the only mail sent. |
+
+`no_plaque` + `no_notify` together is the safe way to send a test email to one person without
+touching the live site or anyone else's inbox.
+
 ## Dry run without paying
 
 **Use `"dry": true`** (not `"simulate": true`) unless you specifically want the test written through. A dry run walks the whole pipeline — tier maths, membership year, template rendering — and returns the exact email it *would* send, but **writes nothing to the public plaque and sends no mail**. It still logs a row in Signups (marked `dry run`) so the test is visible and deletable in one place.

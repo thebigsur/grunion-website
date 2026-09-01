@@ -344,7 +344,7 @@ function buildRaw({ to, subject, text, replyTo, fromName }) {
 }
 
 // ---- the pipeline ----------------------------------------------------------------------
-async function processPayment(p, { eventId, simulate = false, dry = false }) {
+async function processPayment(p, { eventId, simulate = false, dry = false, noPlaque = false, noNotify = false }) {
   const started = Date.now();
   const notes = [];
   const email = lower(p.buyer?.email);
@@ -442,8 +442,8 @@ async function processPayment(p, { eventId, simulate = false, dry = false }) {
   if (action === 'none') { await setCell(IDX.notes, [...notes, 'below Supporters\' Union minimum'].join(' | ')); return result; }
 
   // ---- plaque (Website Sheet)
-  if (dry) {
-    result.plaque = `DRY RUN — would add "${plaqueName}" to ${after.name}`;
+  if (dry || noPlaque) {
+    result.plaque = `${dry ? 'DRY RUN' : 'SKIPPED'} — would add "${plaqueName}" to ${after.name}`;
     await setCell(IDX.plaque, 'dry run (not written)');
   } else if (!(existing && done(existing[IDX.plaque]))) {
     try {
@@ -475,7 +475,7 @@ async function processPayment(p, { eventId, simulate = false, dry = false }) {
   // ---- internal notice
   if (!(existing && done(existing[IDX.notify]))) {
     const tpl = templates.notify;
-    if (dry) { await setCell(IDX.notify, 'dry run (not sent)'); }
+    if (dry || noNotify) { await setCell(IDX.notify, dry ? 'dry run (not sent)' : 'skipped by request'); }
     else if (tpl && !emailsOff && !auth.canEmail) { await setCell(IDX.notify, 'pending: delegation'); }
     else if (tpl && !emailsOff) {
       try {
@@ -516,69 +516,82 @@ async function updatePlaque(g, { name, tier, previousName }) {
 }
 
 // ---- default email templates (seeded into the Emails tab on first run; edit them THERE)
-const SIGNOFF = 'Forever Grunion,\nJosh Timpe (Stretch), Treasurer SBRFC\ntreasurer@sbrfc.com';
+// ---- default email templates ---------------------------------------------------------
+// Josh's copy (Update.docx, Sep 1 2026). These are the SEED only — the live copy lives in
+// the Emails tab of the '78 Club Signups sheet and is edited there, no deploy needed.
+// GET ?reseed=1 overwrites that tab from these (destructive — see CLUB78-SETUP.md).
 const DEFAULT_TEMPLATES = [
   {
     key: 'supporters',
-    subject: "Welcome to The '78 Club, {{first_name}} — Supporters' Union",
+    subject: "Welcome to The '78 Club, {{first_name}} \u2014 Supporters' Union",
     body: `Hi {{first_name}},
 
-You're in. Your gift of {{amount}} makes you a Supporters' Union member of The '78 Club for the year ahead (through {{year_end}}) — one of the stalwarts, olde boys and stubborn friends keeping Grunion rugby competitive.
+Welcome to the club! Your gift of {{amount}} makes you a Supporters' Union member of The '78 Club for the year ahead (through {{year_end}}). As a member you are one of the stalwarts, olde boys and stubborn friends keeping Grunion rugby competitive.
 
 Here's what that means:
-• Your '78 Club pin and custom season mug — half-off beers at every home game. We'll get them to you at the next home match (or tell me where to send them).
-• Exclusive sideline seating at all home matches — chairs and tent provided. Come find the '78 Club tent.
-• Your name on the '78 Club plaque, on the wall of the clubhouse and at {{site_url}} — it will read "{{plaque_name}}". If that's not quite right, just reply and I'll fix it.
-• A vote toward the Founders' XV representative on the SBRFC board.
+• Your '78 Club pin and custom season mug, which gives you half-off beers at every home game.
+• Exclusive sideline seating at all home matches, come find the '78 Club tent.
+• Your name on the '78 Club plaque on the wall of the clubhouse and at {{site_url}}, it will read "{{plaque_name}}" under Supporters' Union. If you'd rather have your donation anonymous, in memory of someone, or under a nickname just let me know and I'll fix it.
+• A vote toward the '78 Club representative on the Grunion board.
+
+We'll hand over the pin & mug at the next home match, or tell me where to send them.
 
 {{next_tier_line}}
 
 {{ack}}
 
-Thank you for showing up after the whistle. That is Grunion behavior.
+Thank you for showing up after the whistle and being a part of what makes this club so great.
 
-${SIGNOFF}`,
+Mer!
+
+Faithfully submitted,
+Josh Timpe (Stretch), Treasurer SBRFC
+treasurer@sbrfc.com`,
   },
   {
     key: 'second',
-    subject: "Welcome to The '78 Club, {{first_name}} — Second XV",
+    subject: "Welcome to The '78 Club, {{first_name}} \u2014 Second XV",
     body: `Hi {{first_name}},
 
-You're in. Your gift of {{amount}} makes you a Second XV member of The '78 Club for the year ahead (through {{year_end}}).
+Welcome to the club! Your gift of {{amount}} makes you a Second XV member of The '78 Club for the year ahead (through {{year_end}}). As a member you are one of the stalwarts, olde boys and stubborn friends keeping Grunion rugby competitive.
 
 Here's what that means:
-• Your '78 Club polo and player training gear — the kit details you gave us:
+• Your '78 Club polo and club training gear, the kit details you gave us are:
 {{kit_lines}}
-• Your '78 Club pin and custom season mug — half-off beers at every home game.
-• Exclusive sideline seating at all home matches — chairs and tent provided.
-• Your name on the '78 Club plaque, on the wall of the clubhouse and at {{site_url}} — it will read "{{plaque_name}}" under Second XV. If that's not quite right, just reply and I'll fix it.
-• A vote toward the Founders' XV representative on the SBRFC board.
+• Your '78 Club pin and custom season mug, half-off beers at every home game.
+• Exclusive sideline seating at all home matches, come find the '78 Club tent.
+• Your name on the '78 Club plaque, on the wall of the clubhouse and at {{site_url}}, it will read "{{plaque_name}}" under Second XV. If you'd rather have your donation anonymous, in memory of someone, or under a nickname just let me know and I'll fix it.
+• A vote toward the '78 Club representative on the Grunion board.
 
-We'll hand over the pin, mug and polo at the next home match, or tell me where to send them.
+We'll hand over the pin, mug, polo, and merch at the next home match, or tell me where to send them.
 
 {{next_tier_line}}
 
 {{ack}}
 
-Thank you for paying in, hauling gear and feeding the pack — in whatever form it takes this season.
+Thank you for showing up after the whistle and being a part of what makes this club so great.
 
-${SIGNOFF}`,
+Mer!
+
+Faithfully submitted,
+Josh Timpe (Stretch), Treasurer SBRFC
+treasurer@sbrfc.com`,
   },
   {
     key: 'founders',
     subject: "Welcome to the Founders' XV, {{first_name}}",
     body: `Hi {{first_name}},
 
-Welcome to the Founders' XV. Your gift of {{amount}} puts you in the top tier of The '78 Club — and permanently on the Founders' XV plaque.
+Welcome to the Founders' XV. Your gift of {{amount}} puts you in the top tier of The '78 Club, and permanently on the Founders' XV plaque. As a member you are one of the stalwarts, olde boys and stubborn friends keeping Grunion rugby competitive.
 
 Here's what that means:
-• Your Founders' XV jersey with your name and number — the details you gave us:
+• Your Founders' XV jersey with your name and number, the details you gave us are:
 {{kit_lines}}
-• Permanent placement on the Founders' XV plaque, in the clubhouse and at {{site_url}} — it will read "{{plaque_name}}". If that's not quite right, just reply and I'll fix it.
-• Your custom season mug — free beers at every home game — plus the '78 Club pin and polo.
-• Exclusive sideline seating at all home matches — chairs and tent provided.
+• Permanent placement on the Founders' XV plaque, in the clubhouse and at {{site_url}}, it will read "{{plaque_name}}". If you'd rather have your donation anonymous, in memory of someone, or under a nickname just let me know and I'll fix it.
+• Your custom season mug earning you free beers at every home game, plus the '78 Club pin and polo.
+• Exclusive sideline seating at all home matches, come find the '78 Club tent.
 • An invitation to the annual Founders' XV get-together.
-• A vote toward the Founders' XV representative on the SBRFC board.
+• A vote toward the '78 Club representative on the Grunion board.
 
 I'll be in touch about the jersey and the get-together. The pin, mug and polo are yours at the next home match, or tell me where to send them.
 
@@ -586,14 +599,18 @@ I'll be in touch about the jersey and the get-together. The pin, mug and polo ar
 
 This is the roll call the club was built on. Thank you for taking your place in it.
 
-${SIGNOFF}`,
+Mer!
+
+Faithfully submitted,
+Josh Timpe (Stretch), Treasurer SBRFC
+treasurer@sbrfc.com`,
   },
   {
     key: 'upgrade',
-    subject: "You've moved up — {{tier}}, The '78 Club",
+    subject: "You've moved up \u2014 {{tier}}, The '78 Club",
     body: `Hi {{first_name}},
 
-Your gift of {{amount}} brings your '78 Club total for the year to {{total}} — which moves you up from {{tier_before}} to {{tier}}. Your name on the plaque moves with you.
+Your gift of {{amount}} brings your '78 Club total for the year to {{total}}, which moves you up from {{tier_before}} to {{tier}}. Your name on the plaque moves with you.
 
 {{kit_lines}}
 
@@ -605,11 +622,15 @@ I'll reach out about the extra kit that comes with {{tier}}. If you'd like the p
 
 Thank you for keeping the club stronger than you found it.
 
-${SIGNOFF}`,
+Mer!
+
+Faithfully submitted,
+Josh Timpe (Stretch), Treasurer SBRFC
+treasurer@sbrfc.com`,
   },
   {
     key: 'topup',
-    subject: "Thank you, {{first_name}} — '78 Club total now {{total}}",
+    subject: "Thank you, {{first_name}} \u2014 '78 Club total now {{total}}",
     body: `Hi {{first_name}},
 
 Thank you for the extra {{amount}}. That brings your '78 Club total for the membership year to {{total}} ({{tier}}).
@@ -618,11 +639,15 @@ Thank you for the extra {{amount}}. That brings your '78 Club total for the memb
 
 {{ack}}
 
-${SIGNOFF}`,
+Mer!
+
+Faithfully submitted,
+Josh Timpe (Stretch), Treasurer SBRFC
+treasurer@sbrfc.com`,
   },
   {
     key: 'notify',
-    subject: "'78 Club: {{action}} — {{first_name}} {{last_name}} — {{tier}} ({{amount}})",
+    subject: "'78 Club: {{action}} \u2014 {{first_name}} {{last_name}} \u2014 {{tier}} ({{amount}})",
     body: `New '78 Club activity.
 
 Donor: {{first_name}} {{last_name}} <{{email}}>
@@ -671,10 +696,24 @@ export default async (req) => {
         out.checks.club78_campaign = hit ? { id: hit.id, title: hit.title, matches_config_id: lower(hit.id) === lower(CONFIG.CLUB78_CAMPAIGN_ID) } : 'not found';
       }
     } catch (e) { out.checks.zeffy_api_error = e.message; }
+    // ?reseed=1 → overwrite the Emails tab from DEFAULT_TEMPLATES above. DESTRUCTIVE:
+    // it discards whatever is in the sheet. Only for pushing a new approved copy deck.
+    const url0 = new URL(req.url);
+    if (url0.searchParams.get('reseed') === '1') {
+      try {
+        const auth = await googleAuth(googleCreds());
+        const g = gapi(auth.token);
+        const rows = [['key', 'subject', 'body — edit freely; placeholders in {{double braces}} are filled in per donor'],
+          ...DEFAULT_TEMPLATES.map((t) => [t.key, t.subject, t.body])];
+        await g.update(CONFIG.SIGNUPS_SHEET_ID, `${CONFIG.EMAILS_TAB}!A1:C${rows.length}`, rows);
+        out.reseeded = DEFAULT_TEMPLATES.map((t) => t.key);
+      } catch (e) { out.reseed_error = e.message; }
+    }
+
     // ?backfill=DAYS[&max=N]  → (re)process recent '78 Club payments from the Zeffy API:
     // catches anything paid while the webhook was off or the pipeline was failing, and
     // finishes rows left "pending" (e.g. emails waiting on delegation). Idempotent.
-    const url = new URL(req.url);
+    const url = url0;
     if (url.searchParams.has('backfill')) {
       const days = Math.min(365, Math.max(1, Number(url.searchParams.get('backfill')) || 30));
       const max = Math.min(10, Math.max(1, Number(url.searchParams.get('max')) || 2));
@@ -708,6 +747,10 @@ export default async (req) => {
   // nothing to the public plaque and send no mail. The Signups row is still logged
   // (marked "dry run") so the test is visible and deletable in one place.
   const dry = event?.dry === true && gate(req);
+  // test-only switches (dashboard key required): keep a test run off the public plaque
+  // and stop the internal notice, so the ONLY mail is the one donor email.
+  const noPlaque = event?.no_plaque === true && gate(req);
+  const noNotify = event?.no_notify === true && gate(req);
   if (!simulate) {
     const v = verifyZeffySignature(raw, req.headers.get('zeffy-signature') || req.headers.get('Zeffy-Signature'), process.env.ZEFFY_WEBHOOK_SECRET);
     if (!v.ok) return json({ error: 'invalid signature', why: v.why }, v.why === 'no secret configured' ? 500 : 400);
@@ -718,7 +761,7 @@ export default async (req) => {
   if (!paymentOk(p)) return json({ ok: true, ignored: `status ${p.status} / refund ${p.refund_status}` });
 
   try {
-    const result = await processPayment(p, { eventId: event.id, simulate, dry });
+    const result = await processPayment(p, { eventId: event.id, simulate, dry, noPlaque, noNotify });
     return json(result);
   } catch (e) {
     // non-2xx → Zeffy retries (up to 5×); the log row makes the retry resume, not repeat
