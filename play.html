@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-LFDMG9SL19"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-LFDMG9SL19');
+</script>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Come Play Tuesday — Grunion RFC · Santa Barbara Men's Rugby</title>
+<meta name="description" content="Rugby in Santa Barbara. Next session Tuesday 7pm at Elings Park. Beginners welcome — no tryout, just show up. Text Jordan (805) 618-6510." />
+<link rel="canonical" href="https://grunionrugby.com/play" />
+<link rel="icon" type="image/png" href="assets/favicon.png" />
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Grunion Rugby Football Club" />
+<meta property="og:title" content="Come Play Tuesday — Grunion RFC" />
+<meta property="og:description" content="Santa Barbara men's rugby since 1978. Tuesday 7pm at Elings Park. Never played? Come anyway." />
+<meta property="og:url" content="https://grunionrugby.com/play" />
+<meta property="og:image" content="https://grunionrugby.com/assets/og-image.jpg" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800;900&family=Libre+Franklin:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="lp-play">
+<a class="skip" href="#lp-main">Skip to content</a>
+
+<!-- ============ HERO : the one screen ============ -->
+<section class="lp-hero on-dark" id="lp-main">
+  <div class="lp-hero-media" style="background-image:url('assets/hero-action.jpg')" role="img" aria-label="Grunion RFC match action at Elings Park"></div>
+
+  <header class="lp-head">
+    <div class="wrap">
+      <a class="lp-brand" href="https://grunionrugby.com" aria-label="Grunion Rugby Football Club">
+        <img src="assets/grunion-crest.png" alt="" width="400" height="400" />
+        <span><b>Grunion R.F.C.</b><i>Santa Barbara · Est. 1978</i></span>
+      </a>
+      <a class="lp-headlink" href="https://grunionrugby.com">grunionrugby.com&nbsp;↗</a>
+    </div>
+  </header>
+
+  <div class="wrap lp-hero-inner">
+    <span class="eyebrow">Santa Barbara Men's Rugby · Since 1978</span>
+    <h1>Come Play<span class="alt">Tuesday</span></h1>
+    <p class="lp-sub">No tryout. No sign-up window. No speech. Beginners walk on every single season — <b>bring shoes and a stubborn streak</b> and we'll handle the rest.</p>
+
+    <div class="lp-facts">
+      <div class="lp-fact">
+        <span class="f-k">Next session</span>
+        <span class="f-v">Tuesday 7:00 PM</span>
+        <span class="f-n">Then Thursday, same time</span>
+      </div>
+      <div class="lp-fact">
+        <span class="f-k">Where</span>
+        <span class="f-v">Elings Park</span>
+        <span class="f-n">1298 Las Positas Rd</span>
+      </div>
+      <div class="lp-fact">
+        <span class="f-k">Who</span>
+        <span class="f-v">Anyone, 18+</span>
+        <span class="f-n">Never played? Come anyway</span>
+      </div>
+    </div>
+
+    <div class="lp-cta" id="hero-cta">
+      <a class="btn btn-gold btn-xl" href="tel:+18056186510">Text Jordan · (805) 618-6510</a>
+      <a class="btn btn-line btn-xl arrow" href="#coming">I'm coming Tuesday</a>
+    </div>
+  </div>
+</section>
+<hr class="rule101" />
+
+<!-- ============ THE MECHANICS ============ -->
+<section class="section lp-band">
+  <div class="wrap lp-grid">
+
+    <!-- form -->
+    <div class="lp-form-card" id="coming">
+      <span class="kicker">Three fields and you're done</span>
+      <h2>Tell us you're<br />coming</h2>
+      <p>Jordan will text you before Tuesday with the exact spot on the field. That's the whole process.</p>
+
+      <form class="lp-form" name="play-signup" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/play-thanks">
+        <input type="hidden" name="form-name" value="play-signup" />
+        <p class="lp-hp"><label>Leave this empty: <input name="bot-field" /></label></p>
+
+        <div class="lp-field">
+          <label for="p-name">Name</label>
+          <input id="p-name" name="name" type="text" autocomplete="name" required placeholder="First and last" />
+        </div>
+
+        <div class="lp-row2">
+          <div class="lp-field">
+            <label for="p-phone">Mobile</label>
+            <input id="p-phone" name="phone" type="tel" autocomplete="tel" required placeholder="(805) 555-0100" />
+          </div>
+          <div class="lp-field">
+            <label for="p-email">Email <span class="opt">— optional</span></label>
+            <input id="p-email" name="email" type="email" autocomplete="email" placeholder="you@email.com" />
+          </div>
+        </div>
+
+        <div class="lp-field">
+          <label for="p-exp">Have you played rugby?</label>
+          <select id="p-exp" name="experience" required>
+            <option value="" selected disabled>Pick one</option>
+            <option>Never</option>
+            <option>A little</option>
+            <option>Club or college</option>
+          </select>
+        </div>
+
+        <button class="btn btn-gold arrow" type="submit">Save my spot</button>
+      </form>
+
+      <p class="lp-micro">"Never" is the most common answer we get. It is not a disqualifier — it is most of the roster's origin story. We text you about rugby, and we don't sell your number.</p>
+      <p class="lp-orelse">Rather not fill in a form? <a href="mailto:grunionrugby@gmail.com?subject=Coming%20to%20practice">Email the club</a> or text Jordan on <a href="tel:+18056186510">(805)&nbsp;618-6510</a>.</p>
+    </div>
+
+    <!-- side stack -->
+    <div class="lp-side">
+
+      <div class="lp-card">
+        <a class="lp-map" href="https://maps.google.com/?q=Elings+Park,+1298+Las+Positas+Rd,+Santa+Barbara,+CA+93105" target="_blank" rel="noopener" aria-label="Open Elings Park in Google Maps">
+          <svg viewBox="0 0 560 300" role="img" aria-label="Schematic map: Elings Park sits off Las Positas Road, south of Highway 101, above the coast">
+            <rect width="560" height="300" fill="#071c2c"/>
+            <!-- ocean -->
+            <rect x="0" y="252" width="560" height="48" fill="#0d2c44"/>
+            <path d="M0 252 H560" stroke="#16466b" stroke-width="1.5"/>
+            <path d="M0 265 q22 -6 44 0 t44 0 t44 0 t44 0 t44 0 t44 0 t44 0 t44 0 t44 0 t44 0 t44 0 t44 0 t44 0" stroke="#16466b" stroke-width="1.2" fill="none" opacity=".7"/>
+            <text x="24" y="288" fill="#3f6f96" font-family="IBM Plex Mono,monospace" font-size="11" letter-spacing="4">PACIFIC</text>
+            <!-- highway 101 across the top -->
+            <path d="M-10 66 C 140 46, 330 58, 575 40" stroke="#8d949b" stroke-width="9" fill="none" opacity=".7"/>
+            <path d="M-10 66 C 140 46, 330 58, 575 40" stroke="#071c2c" stroke-width="1.6" fill="none" stroke-dasharray="8 11"/>
+            <g transform="translate(486,32)">
+              <rect x="-21" y="-16" width="42" height="32" rx="4" fill="#0a2336" stroke="#9aa1a8" stroke-width="1.8"/>
+              <text x="0" y="6" fill="#e8ecef" font-family="Saira Condensed,Arial Narrow,sans-serif" font-weight="800" font-size="17" text-anchor="middle">101</text>
+            </g>
+            <!-- las positas rd: leaves the 101 and runs south to the coast -->
+            <path d="M256 56 C 244 118, 214 186, 186 252" stroke="#33485c" stroke-width="6" fill="none"/>
+            <text transform="translate(238,132) rotate(70)" fill="#7690a8" font-family="IBM Plex Mono,monospace" font-size="10.5" letter-spacing="2.5">LAS POSITAS RD</text>
+            <!-- the park -->
+            <path d="M290 92 C 372 84, 428 116, 430 158 C 432 200, 372 222, 316 214 C 268 207, 254 156, 268 118 C 272 105, 280 93, 290 92 Z" fill="#143d2a" stroke="#2b7a53" stroke-width="1.8"/>
+            <!-- pin -->
+            <g transform="translate(346,140)">
+              <ellipse cy="30" rx="11" ry="3.4" fill="#000" opacity=".38"/>
+              <path d="M0 28 L-12 4 A13 13 0 1 1 12 4 Z" fill="#c2922e"/>
+              <circle cy="-5" r="5" fill="#071c2c"/>
+            </g>
+            <text x="346" y="196" fill="#d8b15f" font-family="Saira Condensed,Arial Narrow,sans-serif" font-weight="800" font-size="20" letter-spacing="1.2" text-anchor="middle">ELINGS PARK</text>
+            <text x="536" y="288" fill="#3f6f96" font-family="IBM Plex Mono,monospace" font-size="9" letter-spacing="2" text-anchor="end">NOT TO SCALE</text>
+          </svg>
+        </a>
+        <div class="lp-card-head"><span class="kicker">Where</span><h3>Elings Park</h3></div>
+        <div class="lp-card-body">
+          <p class="lp-addr"><b>1298 Las Positas Rd</b><span>Santa Barbara, CA 93105 · upper fields</span></p>
+          <div class="lp-dist"><span>10 min from UCSB</span><span>7 min from downtown</span><span>Free parking</span></div>
+          <p style="margin-top:18px"><a class="btn btn-solid-ink btn-sm arrow" href="https://maps.google.com/?q=Elings+Park,+1298+Las+Positas+Rd,+Santa+Barbara,+CA+93105" target="_blank" rel="noopener">Get directions</a></p>
+        </div>
+      </div>
+
+      <div class="lp-card" id="times">
+        <div class="lp-card-head"><span class="kicker">Before you come</span><h3>The short version</h3></div>
+        <div class="lp-card-body">
+          <div class="lp-keys">
+            <div class="lp-key"><span class="k">Bring</span><span class="v"><b>Shoes, water, mouthguard</b><br />Cleats if you have them, trainers if you don't. No mouthguard? We'll sort you out.</span></div>
+            <div class="lp-key"><span class="k">The week</span><span class="v"><b>Tue &amp; Thu, 7–9pm</b><br />Practice at Elings. Saturdays are match day, November through April.</span></div>
+            <div class="lp-key"><span class="k">After</span><span class="v"><b>Baja Sharkeez</b><br />416 State St. The third half is not optional in spirit, only in practice.</span></div>
+            <div class="lp-key"><span class="k">First night</span><span class="v">Show up ten minutes early, find Jordan, and stand in the group. Nobody is going to make you introduce yourself.</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- sticky mobile call bar -->
+<div class="lp-sticky"><a class="btn btn-gold" href="tel:+18056186510">Text Jordan · (805) 618-6510</a></div>
+
+<hr class="rule101" />
+<footer class="lp-foot">
+  <div class="wrap lp-foot-in">
+    <img src="assets/grunion-crest.png" alt="Grunion RFC crest" width="400" height="400" loading="lazy" />
+    <span class="lf-txt"><b>Grunion Rugby Football Club</b>Santa Barbara, CA · Playing since 1978 · Member of the SBRFC, a 501(c)(3)</span>
+    <a href="https://grunionrugby.com">Full site ↗</a>
+  </div>
+</footer>
+
+<script>
+/* Reveal the sticky action bar only once the hero CTA has scrolled away,
+   so the phone never shows the same gold button twice. No JS = bar always on. */
+(function(){
+  var bar=document.querySelector('.lp-sticky'),
+      anchor=document.getElementById('hero-cta');
+  if(!bar||!anchor||!('IntersectionObserver' in window))return;
+  bar.classList.add('is-armed');
+  new IntersectionObserver(function(e){
+    bar.classList.toggle('is-on', !e[0].isIntersecting);
+  },{threshold:0}).observe(anchor);
+})();
+</script>
+
+</body>
+</html>

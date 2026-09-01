@@ -46,6 +46,35 @@
   to = "/thanks.html"
   status = 200
 
+# ---- Paid-ad landing pages ---------------------------------------------------
+# /play and /coach are the destinations for the 2027 paid campaigns. Google
+# Search ads need a real landing page (Meta Instant Forms do not), and Google
+# cannot count a lead-form conversion without a distinct thank-you URL — hence
+# the -thanks pages. Deliberately not in the site nav: on a paid landing page
+# every nav link is an exit.
+[[redirects]]
+  from = "/play"
+  to = "/play.html"
+  status = 200
+
+[[redirects]]
+  from = "/coach"
+  to = "/coach.html"
+  status = 200
+
+# Netlify Forms redirect here on success; these URLs are the Google Ads
+# conversion triggers. Keep the paths stable — changing one silently stops
+# conversion counting.
+[[redirects]]
+  from = "/play-thanks"
+  to = "/play-thanks.html"
+  status = 200
+
+[[redirects]]
+  from = "/coach-thanks"
+  to = "/coach-thanks.html"
+  status = 200
+
 # Site-wide security headers. Deliberately conservative: no Content-Security-Policy,
 # because the Campaign Monitor archive (document.write), inline styles/handlers, and
 # third-party sponsor/Google/Facebook assets would make a strict CSP break silently.
@@ -82,3 +111,20 @@
   [headers.values]
     X-Robots-Tag = "noindex, nofollow, noarchive"
     Cache-Control = "no-store"
+
+# The coach posting is a temporary hire and the thank-you pages are dead ends —
+# keep all three out of search. /play is NOT listed here on purpose.
+[[headers]]
+  for = "/coach.html"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/play-thanks.html"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/coach-thanks.html"
+  [headers.values]
+    X-Robots-Tag = "noindex"

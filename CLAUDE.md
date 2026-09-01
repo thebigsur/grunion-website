@@ -17,6 +17,12 @@ tradeoffs. Simplicity here is deliberate, not an accident.
 - MERchives.html — photo & document archive (Google Drive-backed)
 - fossils.html — Central Coast Fossils retro page
 - thanks.html — newsletter confirmation page, retro Fossils style (Campaign Monitor redirects here)
+- play.html / coach.html — paid-ad landing pages for the 2027 campaigns
+  (/play and /coach). Deliberately have NO site nav: on a paid landing page
+  every nav link is an exit. Not linked from any other page.
+- play-thanks.html / coach-thanks.html — form success pages. These URLs are the
+  Google Ads conversion triggers; Google cannot count a lead-form conversion
+  without them. Do not rename or repath them.
 - 404.html — not-found page
 - styles.css — site styles (modern pages; retro pages carry their own inline CSS on purpose)
 - site.js — site scripts + CONFIG block (all external links/IDs)
@@ -64,6 +70,17 @@ tradeoffs. Simplicity here is deliberate, not an accident.
   exactly where it is in index.html — never add async/defer to it.
 - Retro pages (fossils.html, thanks.html) are deliberately styled like the
   2000s site — don't modernize them.
+- The landing pages (play, coach, and their -thanks pages) are the ONE exception
+  to the duplicated header/footer rule below: they carry a stripped header with
+  no nav, on purpose. Don't "fix" it by adding the site nav — it would undo the
+  reason they exist. Their CSS lives at the bottom of styles.css under the
+  LANDING PAGES banner, namespaced .lp-* and .co-*; the two rules that touch
+  `body`/`html` are scoped to `[data-page^="lp-"]` so they can't reach the rest
+  of the site.
+- /coach and both -thanks pages are noindex (meta tag + X-Robots-Tag in
+  netlify.toml); /play is indexable and IS in sitemap.xml on purpose — it is the
+  site's best organic answer for "rugby santa barbara". When the coach seat is
+  filled, take /coach down or leave it noindex; don't add it to the sitemap.
 - Header/footer markup is duplicated across the modern pages by design. A shared
   change must be applied to index, history, MERchives, the-78-club, and 404.
 - Don't change donation/tax wording (EIN, 501(c)(3), deductibility) without
