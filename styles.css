@@ -380,6 +380,8 @@ body[data-hero="duotone"] .hero-media{background:var(--ocean-700)}
 .tiers .tier:not(:first-child):not(.entry)::after{content:"▸";position:absolute;left:-12px;top:80px;color:var(--gold);font-size:13px}
 .tiers-note{margin-top:18px;font-family:var(--font-mono);font-size:.74rem;letter-spacing:.06em;color:rgba(255,255,255,.6);text-transform:uppercase}
 .club-cta-row{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-top:30px}
+.tip-note{margin-top:16px;max-width:70ch;font-size:.94rem;line-height:1.6;color:rgba(255,255,255,.72)}
+.tip-note b{color:var(--gold-soft);font-weight:600}
 
 /* ways to give */
 .ways{margin-top:74px;border-top:1px solid rgba(255,255,255,.16);padding-top:48px}
