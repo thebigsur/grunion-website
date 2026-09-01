@@ -326,21 +326,117 @@ function ackText(v) {
   return `${base} No goods or services were provided in exchange for this gift, so the full amount may be tax-deductible to the extent allowed by law. Please keep this email with your tax records and consult your tax adviser.`;
 }
 
+// ---- plain text → simple club-styled HTML -------------------------------------------
+// The templates in the Emails tab stay PLAIN TEXT — Josh edits them there without any
+// markup. This turns that text into a restrained HTML email at send time: navy header
+// band, gold rules, real bullets, the tax acknowledgment set apart in its own box.
+// Every message goes out multipart/alternative, so plain-text clients see the original.
+const GOLD = '#c2922e', NAVY = '#14202b', CREAM = '#f4f1ea', INK = '#22303c', MUTED = '#6b7885';
+const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif";
+
+const escHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function linkify(s) {
+  return s
+    .replace(/(https?:\/\/[^\s<>()]+[^\s<>().,;:!?])/g, `<a href="$1" style="color:${GOLD};text-decoration:underline;">$1</a>`)
+    .replace(/\b([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})\b(?![^<]*<\/a>)/g, `<a href="mailto:$1" style="color:${GOLD};text-decoration:underline;">$1</a>`);
+}
+const inline = (s) => linkify(escHtml(s));
+
+function htmlFromText(text, { tier } = {}) {
+  const blocks = String(text).trim().split(/\n\s*\n/);
+  const parts = [];
+  for (const raw of blocks) {
+    const block = raw.replace(/\s+$/, '');
+    if (!block.trim()) continue;
+    const lines = block.split('\n');
+
+    // the tax acknowledgment — set apart, quieter, boxed
+    if (/^For your records:/.test(block.trim())) {
+      parts.push(
+        `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0;"><tr>` +
+        `<td style="background:${CREAM};border-left:3px solid ${GOLD};padding:14px 18px;font-family:${FONT};font-size:13px;line-height:1.6;color:${MUTED};">` +
+        inline(block.replace(/\n/g, ' ')) + `</td></tr></table>`);
+      continue;
+    }
+    // the sign-off block
+    if (/Faithfully submitted,|Forever Grunion,/.test(block)) {
+      parts.push(
+        `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:26px 0 0;"><tr>` +
+        `<td style="border-top:1px solid #ddd7c8;padding-top:16px;font-family:${FONT};font-size:15px;line-height:1.6;color:${INK};">` +
+        lines.map(inline).join('<br />') + `</td></tr></table>`);
+      continue;
+    }
+    // the "Mer!" shout
+    if (/^Mer!?$/i.test(block.trim())) {
+      parts.push(`<p style="margin:22px 0 0;font-family:${FONT};font-size:16px;font-weight:700;letter-spacing:.08em;color:${GOLD};">` +
+        escHtml(block.trim()) + `</p>`);
+      continue;
+    }
+
+    // mixed paragraph / bullet block
+    let html = '', ul = false;
+    const closeUl = () => { if (ul) { html += '</ul>'; ul = false; } };
+    for (const line of lines) {
+      if (/^\s*•\s?/.test(line)) {
+        if (!ul) { html += `<ul style="margin:10px 0 0;padding-left:20px;">`; ul = true; }
+        html += `<li style="margin:0 0 9px;font-family:${FONT};font-size:15px;line-height:1.65;color:${INK};">` +
+          inline(line.replace(/^\s*•\s?/, '')) + `</li>`;
+      } else if (ul && line.trim()) {
+        // continuation under the last bullet (e.g. the kit details)
+        html = html.replace(/<\/li>$/, `<div style="margin:6px 0 0;padding-left:2px;color:${MUTED};font-size:14px;">` +
+          inline(line.trim()) + `</div></li>`);
+      } else if (line.trim()) {
+        closeUl();
+        html += `<p style="margin:0 0 14px;font-family:${FONT};font-size:15px;line-height:1.65;color:${INK};">` +
+          inline(line) + `</p>`;
+      }
+    }
+    closeUl();
+    parts.push(html);
+  }
+
+  const kicker = tier
+    ? `<div style="font-family:${FONT};font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#ffffff;opacity:.75;padding-top:6px;">${escHtml(tier)}</div>`
+    : '';
+
+  return `<!doctype html><html><body style="margin:0;padding:0;background:#eeeae0;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eeeae0;padding:24px 12px;"><tr><td align="center">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%;background:#ffffff;border:1px solid #ddd7c8;">
+  <tr><td style="background:${NAVY};padding:22px 28px;border-bottom:3px solid ${GOLD};">
+    <div style="font-family:${FONT};font-size:20px;font-weight:800;letter-spacing:.12em;color:${GOLD};">THE '78 CLUB</div>
+    <div style="font-family:${FONT};font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#ffffff;opacity:.6;padding-top:3px;">Grunion R.F.C. &middot; Santa Barbara &middot; Est. 1978</div>
+    ${kicker}
+  </td></tr>
+  <tr><td style="padding:28px;">${parts.join('\n')}</td></tr>
+  <tr><td style="background:${CREAM};border-top:1px solid #ddd7c8;padding:16px 28px;font-family:${FONT};font-size:11px;line-height:1.6;color:${MUTED};">
+    Santa Barbara Rugby Football Club &middot; a 501(c)(3) non-profit &middot; Tax ID ${CONFIG.EIN}<br />
+    <a href="${CONFIG.SITE_78}" style="color:${MUTED};text-decoration:underline;">grunionrugby.com/the-78-club</a>
+  </td></tr>
+</table></td></tr></table></body></html>`;
+}
+
 // ---- email ----------------------------------------------------------------------------
 const encWord = (s) => /^[\x20-\x7e]*$/.test(s) ? s : `=?UTF-8?B?${Buffer.from(s, 'utf8').toString('base64')}?=`;
-function buildRaw({ to, subject, text, replyTo, fromName }) {
-  const lines = [
+function buildRaw({ to, subject, text, html, replyTo, fromName }) {
+  const head = [
     `From: ${encWord(fromName || CONFIG.SENDER_NAME)} <${CONFIG.SENDER_USER}>`,
     `To: ${to.replace(/^([^<]*)</, (m, n) => (n.trim() ? encWord(n.trim()) + ' <' : '<'))}`,
     `Reply-To: ${replyTo || CONFIG.SENDER_USER}`,
     `Subject: ${encWord(subject)}`,
     'MIME-Version: 1.0',
-    'Content-Type: text/plain; charset=UTF-8',
-    'Content-Transfer-Encoding: base64',
-    '',
-    Buffer.from(text, 'utf8').toString('base64').replace(/(.{76})/g, '$1\r\n'),
   ];
-  return b64url(lines.join('\r\n'));
+  const b64 = (s) => Buffer.from(s, 'utf8').toString('base64').replace(/(.{76})/g, '$1\r\n');
+  if (!html) {
+    return b64url([...head, 'Content-Type: text/plain; charset=UTF-8', 'Content-Transfer-Encoding: base64', '', b64(text)].join('\r\n'));
+  }
+  const bd = `=_club78_${Date.now().toString(36)}`;
+  return b64url([
+    ...head,
+    `Content-Type: multipart/alternative; boundary="${bd}"`, '',
+    `--${bd}`, 'Content-Type: text/plain; charset=UTF-8', 'Content-Transfer-Encoding: base64', '', b64(text),
+    `--${bd}`, 'Content-Type: text/html; charset=UTF-8', 'Content-Transfer-Encoding: base64', '', b64(html),
+    `--${bd}--`, '',
+  ].join('\r\n'));
 }
 
 // ---- the pipeline ----------------------------------------------------------------------
@@ -466,7 +562,8 @@ async function processPayment(p, { eventId, simulate = false, dry = false, noPla
     else if (!auth.canEmail) { await setCell(IDX.email_status, `pending: delegation (${key})`); result.email_pending = true; }
     else {
       try {
-        await g.send(buildRaw({ to: `${first} ${last} <${email}>`.trim(), subject: render(tpl.subject, vars), text: render(tpl.body, vars) }));
+        const bodyText = render(tpl.body, vars);
+        await g.send(buildRaw({ to: `${first} ${last} <${email}>`.trim(), subject: render(tpl.subject, vars), text: bodyText, html: htmlFromText(bodyText, { tier: after?.name }) }));
         result.email_sent = true; await setCell(IDX.email_status, `sent ${key} ${new Date().toISOString()}`);
       } catch (e) { await setCell(IDX.email_status, 'error: ' + e.message); result.notes.push('email: ' + e.message); }
     }
