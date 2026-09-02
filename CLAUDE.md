@@ -82,7 +82,12 @@ tradeoffs. Simplicity here is deliberate, not an accident.
   site's best organic answer for "rugby santa barbara". When the coach seat is
   filled, take /coach down or leave it noindex; don't add it to the sitemap.
 - Header/footer markup is duplicated across the modern pages by design. A shared
-  change must be applied to index, history, MERchives, the-78-club, and 404.
+  change must be applied to index, history, MERchives, the-78-club, fossils, and 404.
+- Netlify's pretty-URL setting lowercases paths: the MERchives page is canonically
+  `/merchives`; internal links use `/merchives`.
+- The `*.md` handbooks (README, CLAUDE, CLUB78-SETUP, DASHBOARD-SETUP,
+  SPONSOR-BOARD-SETUP) and everything under `/netlify/*` are 404'd by
+  netlify.toml so they are not public pages.
 - Don't change donation/tax wording (EIN, 501(c)(3), deductibility) without
   flagging it for Josh to review. That includes the acknowledgment paragraph the
   '78 Club emails carry (built in club78-webhook.mjs / the Emails tab).

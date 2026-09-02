@@ -74,7 +74,7 @@ var CONFIG = {
   MEMBERS_DRIVE_CURRENT_FOLDER_ID: "1XmNplA1lpLYUzgK70QLeulzEUSosaW71",  // "Current Season" sub-folder (home page only)
 
   // Where any MERchives link points — the in-site archive page.
-  MEMBERS_AREA_URL:   "MERchives.html"
+  MEMBERS_AREA_URL:   "/merchives"
 };
 
 /* ---------- apply CONFIG to the page ---------- */
@@ -117,9 +117,19 @@ var CONFIG = {
   burger.addEventListener('click', function(){
     var open = head.classList.toggle('open');
     burger.setAttribute('aria-expanded', open?'true':'false');
+    // keyboard users: move focus into the menu once it is open
+    if(open){ var first=document.querySelector('#navLinks a'); if(first) first.focus(); }
   });
   document.getElementById('navLinks').addEventListener('click', function(e){
     if(e.target.tagName==='A'){ head.classList.remove('open'); burger.setAttribute('aria-expanded','false'); }
+  });
+  // Escape closes the open menu and returns focus to the burger
+  document.addEventListener('keydown', function(e){
+    if((e.key==='Escape'||e.key==='Esc') && head.classList.contains('open')){
+      head.classList.remove('open');
+      burger.setAttribute('aria-expanded','false');
+      burger.focus();
+    }
   });
 })();
 
@@ -348,7 +358,7 @@ metaEl.hidden=false;
     list.forEach(function(r){
       var res=result(r);
       html+='<div class="mc-row '+res.cls+'">'+
-        '<div class="m-date">'+fmtDate(r.Date)+'</div>'+
+        '<div class="m-date">'+esc(fmtDate(r.Date))+'</div>'+
         '<div class="m-opp">'+esc(r.Opponent||'TBD')+'</div>'+
         '<div class="m-comp">'+esc(r.Competition||'')+'</div>'+
         '<div class="m-loc">'+locLabel(r.Location)+'</div>'+
@@ -386,7 +396,7 @@ metaEl.hidden=false;
       else    { nextOppEl.textContent='—'; nextDateEl.textContent='TBD'; }
     }
   }
-  function esc(s){ return String(s).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   // Venue label: explicit Home/Away; anything else (Neutral, Tournament, …)
   // renders as written in the sheet instead of being guessed as Home.
   function locLabel(v){

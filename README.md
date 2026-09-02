@@ -18,10 +18,22 @@ repository; the host (Netlify) republishes automatically within about a minute.
 | `history.html`       | Club history — crest evolution, Hall of Fame, original team, constitution. |
 | `MERchives.html`     | The MERchives — photo & document archive (pulls from Google Drive). |
 | `fossils.html`       | The Central Coast Fossils retro page (deliberately styled like the 2000s site). |
+| `thanks.html`        | Newsletter confirmation page, retro Fossils style (Campaign Monitor sends subscribers here). |
+| `play.html`          | Paid-ad landing page for new players (/play). No site nav on purpose. |
+| `play-thanks.html`   | "Thanks" page after the /play form — the Google Ads conversion trigger. Don't rename. |
+| `coach.html`         | Paid-ad landing page for the Head Coach posting (/coach). No site nav on purpose. |
+| `coach-thanks.html`  | "Thanks" page after the /coach application — the Google Ads conversion trigger. Don't rename. |
 | `404.html`           | The "page not found" page. |
 | `styles.css`         | All styling for the modern pages. |
 | `site.js`            | All the page logic **and the CONFIG block** (see below). |
 | `assets/`            | All images the site uses (logo, hero photo, gallery photos, sponsor logos). |
+| `dashboard/`         | Private club analytics dashboard (passcode-gated, unlisted, not in the nav). |
+| `netlify/functions/` | Serverless functions: dashboard data proxies, the Sponsor Board, the '78 Club signup webhook. |
+| `robots.txt`         | Search-engine crawl rules. |
+| `sitemap.xml`        | List of public pages for search engines (update it if a page is added or removed). |
+| `CLUB78-SETUP.md`    | Handbook for the '78 Club signup pipeline (env vars, rules, testing). |
+| `DASHBOARD-SETUP.md` | Handbook for the dashboard (env vars, troubleshooting). |
+| `SPONSOR-BOARD-SETUP.md` | Handbook for the Sponsor Board (where the key lives, rotation, definitions). |
 | `netlify.toml`       | Host configuration (pretty URLs, caching). Leave it alone. |
 
 ---
@@ -109,7 +121,10 @@ Send the change to whoever maintains the site and they'll update the files.
 
 Hosted on Netlify, connected to this GitHub repository. Any change pushed here
 publishes automatically. `netlify.toml` provides the pretty URLs
-(/the-78-club, /MERchives, /history, /fossils) and asset caching.
+(/the-78-club, /merchives, /history, /fossils, /thanks, /play, /coach,
+/play-thanks, /coach-thanks) and asset caching. Note that Netlify lowercases
+paths, so the MERchives page lives at /merchives (lowercase) and internal links
+use that form.
 
 One admin note: the Google Drive API key in `site.js` is public by design
 (the browser needs it), but it must stay restricted in the Google Cloud

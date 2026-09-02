@@ -13,7 +13,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Central Coast Fossils R.F.C.</title>
-<meta name="description" content="The Central Coast Fossils — a rejuvenated Olde Boys rugby side originally founded in 1978. A drinking team with a rugby problem." />
+<meta name="description" content="The Central Coast Fossils, a rejuvenated Olde Boys rugby side originally founded in 1978. A drinking team with a rugby problem." />
 <link rel="canonical" href="https://grunionrugby.com/fossils" />
 <link rel="icon" type="image/png" href="assets/favicon.png" />
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
@@ -48,8 +48,8 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
 /* Modern menu bar forced solid (this page is white, so the default transparent
    header would hide its white text) + clear space for the fixed header. */
 .site-head{background:var(--ocean-950);box-shadow:0 1px 0 rgba(255,255,255,.08),0 8px 30px rgba(0,0,0,.25)}
-#fossils-home{padding-top:104px}
-@media(max-width:680px){ #fossils-home{padding-top:92px} }
+#fossils-home{padding-top:131px}
+@media(max-width:680px){ #fossils-home{padding-top:131px} }
 
 .fpage{max-width:1000px;margin:0 auto;padding:18px 24px 60px;
   display:grid;grid-template-columns:200px 1fr;gap:34px;border-top:1px solid #fff}
@@ -114,6 +114,8 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
   .fpage{grid-template-columns:1fr;gap:18px}
   .fside{border-bottom:1px solid #ddd;padding-bottom:18px}
   .fossils-logo{margin:0 auto 18px}
+  .sched{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+  .sched th,.sched td{padding:3px 6px}
 }
 </style>
 </head>
@@ -123,7 +125,7 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
 <!-- ============================ MODERN SITE HEADER (menu bar) ============================ -->
 <header class="site-head solid" id="siteHead">
   <div class="wrap nav">
-    <a class="brand" href="index.html#top" aria-label="Grunion Rugby Football Club — home">
+    <a class="brand" href="index.html#top" aria-label="Grunion Rugby Football Club, home">
       <img class="crest" src="assets/grunion-crest.png" alt="Grunion RFC crest" width="400" height="400" />
       <span><b>Grunion R.F.C.</b><i>Santa Barbara · Est. 1978</i></span>
     </a>
@@ -133,7 +135,7 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
       <a href="history.html">History</a>
       <a href="index.html#news">News</a>
       <a href="the-78-club.html" class="nav-club">'78 Club</a>
-      <a href="MERchives.html" class="nav-merchives">MERchives</a>
+      <a href="/merchives" class="nav-merchives">MERchives</a>
       <a href="fossils.html" class="nav-fossils" aria-current="page">Fossils</a>
       <a href="index.html#sponsors">Sponsors</a>
     </nav>
@@ -147,8 +149,9 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
 <!-- =========================================================== -->
 <!-- HOME                                                        -->
 <!-- =========================================================== -->
+<main>
 <section class="fpage" id="fossils-home">
-  <aside class="fside">
+  <aside class="fside" aria-label="Fossils menu">
     <a href="index.html"><img class="logo-fosters" src="assets/fossils-fosters.png" alt="Foster's" width="100" height="73" /></a>
     <a href="index.html"><img class="logo-grunion" src="assets/fossils-grunion-oval.png" alt="Grunion Rugby" width="144" height="95" /></a>
     <a class="home" href="#fossils-home">Home</a>
@@ -162,14 +165,14 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
     </div>
   </aside>
 
-  <main class="fmain">
+  <div class="fmain">
     <img class="fossils-logo" src="assets/fossils-logo.jpg" alt="Fossils Rugby Football Club" width="233" height="201" />
-    <img class="banner" src="assets/fossils-banner.png" alt="Fossils R.F.C. — a drinking team with a rugby problem · Olde Boys Side California's Central Coast" width="501" height="123" />
+    <img class="banner" src="assets/fossils-banner.png" alt="Fossils R.F.C., a drinking team with a rugby problem · Olde Boys Side California's Central Coast" width="501" height="123" />
 
     <p class="intro">THE CENTRAL COAST FOSSILS IS A rejuvinated OLDE BOYS SIDE THAT WAS ORIGINALLY FOUNDED IN 1978.</p>
     <p class="intro big">Check latest update on the menu on the left!!!</p>
 
-    <img class="photo" src="assets/originalteam.jpg" alt="The original Grunion / Fossils side" width="633" height="359" />
+    <img class="photo" src="assets/originalteam.jpg" alt="The original Grunion / Fossils side" width="633" height="359" loading="lazy" decoding="async" />
 
     <p class="announce">We are in the process of scheduling games to be played at our home pitch at Elings Park in Santa Barbara in conjunction with the Santa Barbara Grunions. We have excellent match facilities that include BBQ, rugby pro shop, beer garden and family play ground for kids.</p>
     <p class="announce">We will play either &ldquo;O 35&rdquo; or &ldquo;O 40&rdquo; sides that are looking for a friendly. Our club now has an active member ship of 45 players that reside from San Luis Obispo to the San Fernando Valley.</p>
@@ -180,17 +183,17 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
 
     <div class="memberof">
       <div class="mlabel">MEMBER OF</div>
-      <img src="assets/fossils-sbra.jpg" alt="Santa Barbara Rugby Association" width="1178" height="668" />
+      <img src="assets/fossils-sbra.jpg" alt="Santa Barbara Rugby Association" width="1178" height="668" loading="lazy" decoding="async" />
       <div class="corp">a 501[c][3] Corporation</div>
     </div>
-  </main>
+  </div>
 </section>
 
 <!-- =========================================================== -->
 <!-- CATALINA 05                                                 -->
 <!-- =========================================================== -->
 <section class="fpage" id="catalina">
-  <aside class="fside">
+  <aside class="fside" aria-label="Catalina menu">
     <a href="index.html"><img class="logo-fosters" src="assets/fossils-fosters.png" alt="Foster's" width="100" height="73" loading="lazy" decoding="async" /></a>
     <a href="index.html"><img class="logo-grunion" src="assets/fossils-grunion-oval.png" alt="Grunion Rugby" width="144" height="95" loading="lazy" decoding="async" /></a>
     <a class="home" href="#fossils-home">Home</a>
@@ -204,7 +207,7 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
     </div>
   </aside>
 
-  <main class="fmain">
+  <div class="fmain">
     <img class="fossils-logo" src="assets/fossils-logo.jpg" alt="Fossils Rugby Football Club" width="233" height="201" loading="lazy" decoding="async" />
     <h1 class="ptitle">Catalina 05</h1>
 
@@ -234,7 +237,7 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
     <img class="photo" src="assets/catalina-grumpy.jpg" alt="Fossils clowning around at Catalina" width="640" height="480" loading="lazy" decoding="async" />
     <img class="photo" src="assets/catalina-sitting.jpg" alt="Fossils relaxing between matches" width="640" height="480" loading="lazy" decoding="async" />
 
-    <table class="sched">
+    <table class="sched" tabindex="0" aria-label="Catalina tournament schedule">
       <tr><td class="schhead">Schedule</td><td class="schhead" colspan="3">Saturday May 7</td></tr>
       <tr><td class="time">8:35 a.m.</td><td>Back Bay Old Boys</td><td class="vs">vs.</td><td>Colusa County Old Boys</td></tr>
       <tr><td class="time">9:10 a.m.</td><td>Northwest Old Growth</td><td class="vs">vs.</td><td>Lunchtime Legends</td></tr>
@@ -257,14 +260,14 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
       <img src="assets/fossils-sbra.jpg" alt="Santa Barbara Rugby Association" width="1178" height="668" loading="lazy" decoding="async" />
       <div class="corp">a 501[c][3] Corporation</div>
     </div>
-  </main>
+  </div>
 </section>
 
 <!-- =========================================================== -->
 <!-- FOSSILS vs SMOG 05                                          -->
 <!-- =========================================================== -->
 <section class="fpage" id="smog">
-  <aside class="fside">
+  <aside class="fside" aria-label="Smog menu">
     <a href="index.html"><img class="logo-fosters" src="assets/fossils-fosters.png" alt="Foster's" width="100" height="73" loading="lazy" decoding="async" /></a>
     <a href="index.html"><img class="logo-grunion" src="assets/fossils-grunion-oval.png" alt="Grunion Rugby" width="144" height="95" loading="lazy" decoding="async" /></a>
     <a class="home" href="#fossils-home">Home</a>
@@ -278,7 +281,7 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
     </div>
   </aside>
 
-  <main class="fmain">
+  <div class="fmain">
     <img class="fossils-logo" src="assets/fossils-logo.jpg" alt="Fossils Rugby Football Club" width="233" height="201" loading="lazy" decoding="async" />
     <h1 class="ptitle">Fossils vs Smog 05</h1>
 
@@ -296,8 +299,9 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
       <img src="assets/fossils-sbra.jpg" alt="Santa Barbara Rugby Association" width="1178" height="668" loading="lazy" decoding="async" />
       <div class="corp">a 501[c][3] Corporation</div>
     </div>
-  </main>
+  </div>
 </section>
+</main>
 
 <!-- minimal menu-bar behavior (mobile burger toggle); header stays solid via CSS -->
 <script>
@@ -306,9 +310,18 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
   if(burger){ burger.addEventListener('click', function(){
     var open=head.classList.toggle('open');
     burger.setAttribute('aria-expanded', open?'true':'false');
+    // keyboard users: move focus into the menu once it is open
+    if(open){ var first=head.querySelector('.nav-links a'); if(first) first.focus(); }
   }); }
   head.querySelectorAll('.nav-links a').forEach(function(a){
     a.addEventListener('click', function(){ head.classList.remove('open'); });
+  });
+  // Escape closes the open menu and returns focus to the burger
+  document.addEventListener('keydown', function(e){
+    if((e.key==='Escape'||e.key==='Esc') && head.classList.contains('open')){
+      head.classList.remove('open');
+      if(burger){ burger.setAttribute('aria-expanded','false'); burger.focus(); }
+    }
   });
 })();
 </script>

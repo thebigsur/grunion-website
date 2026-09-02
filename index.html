@@ -68,7 +68,7 @@
 <!-- ============================ HEADER ============================ -->
 <header class="site-head" id="siteHead">
   <div class="wrap nav">
-    <a class="brand" href="#top" aria-label="Grunion Rugby Football Club — home">
+    <a class="brand" href="#top" aria-label="Grunion Rugby Football Club, home">
       <img class="crest" src="assets/grunion-crest.png" alt="Grunion RFC crest" width="400" height="400" />
       <span><b>Grunion R.F.C.</b><i>Santa Barbara · Est. 1978</i></span>
     </a>
@@ -78,7 +78,7 @@
       <a href="history.html">History</a>
       <a href="#news">News</a>
       <a href="the-78-club.html" class="nav-club">'78 Club</a>
-      <a href="MERchives.html" class="nav-merchives">MERchives</a>
+      <a href="/merchives" class="nav-merchives">MERchives</a>
       <a href="fossils.html" class="nav-fossils">Fossils</a>
       <a href="#sponsors">Sponsors</a>
     </nav>
@@ -149,7 +149,7 @@
         <button type="button" class="gal-arrow" data-gal="next" aria-label="Scroll gallery right">→</button>
       </div>
     </div>
-    <div class="gal-strip" id="galStrip">
+    <div class="gal-strip" id="galStrip" tabindex="0" role="region" aria-label="Match photo gallery">
       <figure class="g-item"><div class="ph" data-photo="assets/history-1.jpg"><span class="ph-tag">The early side · 1978</span></div></figure>
       <figure class="g-item"><div class="ph green" data-photo="assets/history-2.jpg"><span class="ph-tag">Clubhouse &amp; mates</span></div></figure>
       <figure class="g-item"><div class="ph" data-photo="assets/history-3.jpg"><span class="ph-tag">Recent match day</span></div></figure>
@@ -167,7 +167,7 @@
     <div class="section-head">
       <span class="kicker">Partner With The Club</span>
       <h2 id="sp-h">Sponsors</h2>
-      <p class="lede sp-intro" style="margin-top:20px">Local business is the engine of Santa Barbara rugby. A Grunion sponsorship puts your name in front of an active, loyal community — on the pitch at Elings Park visited by 250,000+ people each year, across our socials, and right here on our home page. Packages can be tailored; reach out and we'll build the right fit.</p>
+      <p class="lede sp-intro" style="margin-top:20px">Local business is the engine of Santa Barbara rugby. A Grunion sponsorship puts your name in front of an active, loyal community, on the pitch at Elings Park visited by 250,000+ people each year, across our socials, and right here on our home page. Packages can be tailored; reach out and we'll build the right fit.</p>
     </div>
 
     <div class="sp-wall">
@@ -182,12 +182,12 @@
       </a>
       <a class="sp-logo sp-named" href="https://www.rinconbrewery.com/" target="_blank" rel="noopener">
         <!-- local logo first; falls back to the remote copy until assets/rincon-logo.png exists -->
-        <img src="assets/rincon-logo.png" alt="Rincon Brewery" loading="lazy" onerror="this.onerror=function(){this.remove()};this.src='https://www.rinconbrewery.com/favicon.png'" />
+        <img src="assets/rincon-logo.png" alt="Rincon Brewery" width="180" height="180" loading="lazy" onerror="this.onerror=function(){this.remove()};this.src='https://www.rinconbrewery.com/favicon.png'" />
         <span>Rincon Brewery</span>
       </a>
       <a class="sp-logo sp-named" href="https://www.goldenroostersb.com/" target="_blank" rel="noopener">
         <!-- local logo first; falls back to the remote copy until assets/golden-rooster-logo.png exists -->
-        <img src="assets/golden-rooster-logo.png" alt="Golden Rooster Transportation" loading="lazy" onerror="this.onerror=function(){this.remove()};this.src='https://storage.googleapis.com/wzukusers/user-29017026/images/fav-ee4c346946734a4eb46b03ace15156ea/mstile-150x150.png'" />
+        <img src="assets/golden-rooster-logo.png" alt="Golden Rooster Transportation" width="127" height="150" loading="lazy" onerror="this.onerror=function(){this.remove()};this.src='https://storage.googleapis.com/wzukusers/user-29017026/images/fav-ee4c346946734a4eb46b03ace15156ea/mstile-150x150.png'" />
         <span>Golden Rooster Transportation</span>
       </a>
       <div class="sp-logo">Sponsor logo</div>
@@ -262,7 +262,7 @@
         <h2 id="play-h" style="font-size:clamp(2.6rem,7vw,5.2rem);margin-top:14px">Play for the Grunion</h2>
         <p class="lede" style="margin-top:24px">Beginners and veterans both welcome at any session. First heard about rugby last week? No problem, come on by!</p>
         <div class="fact-strip">
-          <div class="fact"><div class="f-k">Season</div><div class="f-v">Nov – April</div></div>
+          <div class="fact"><div class="f-k">Season</div><div class="f-v">Jan – April</div></div>
           <div class="fact"><div class="f-k">Training</div><div class="f-v">Tue &amp; Thu<br>7:00–9:00 PM</div></div>
           <div class="fact"><div class="f-k">Home Pitch</div><div class="f-v">Elings Park<br>Santa Barbara</div></div>
         </div>
@@ -277,7 +277,7 @@
         <span class="eyebrow" style="color:var(--gold-soft)">More Information</span>
         <div class="join-info">
           <h4>Questions? Reach out anytime</h4>
-          <p>Beginners and veterans both welcome — just turn up to a session, or get in touch first and we'll look out for you.</p>
+          <p>Beginners and veterans both welcome, just turn up to a session, or get in touch first and we'll look out for you.</p>
           <div class="ji-contacts">
             <a class="ji-row" href="tel:+18056186510">
               <span class="ji-k">Call / Text Jordan</span>
@@ -323,7 +323,7 @@
       <div class="nl-block">
         <span class="kicker">Newsletter</span>
         <h3>MerMers from the Deep</h3>
-        <p>Match reports, socials, fundraisers and the occasional tale from the third half — sign up for our Mermers from the Deep newsletter.</p>
+        <p>Match reports, socials, fundraisers and the occasional tale from the third half, sign up for our Mermers from the Deep newsletter.</p>
         <!-- Campaign Monitor embedded form — submissions go straight to the
              MER List. copypastesubscribeformlogic.js (loaded at the bottom of
              the page) handles validation and submission. -->
@@ -489,7 +489,7 @@
 
   <div class="wrap foot-legal">
     <span>© <span id="year">2026</span> Grunion Rugby Football Club · Santa Barbara, CA</span>
-    <span>Proud member of the SBRFC, a 501(c)(3) non-profit organization · TAX ID: 93-4659131</span>
+    <span>Proud member of the SBRFC, a 501(c)(3) non-profit organization · Tax ID: 93-4659131</span>
   </div>
 </footer>
 

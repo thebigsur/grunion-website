@@ -13,15 +13,15 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>The MERchives — The '78 Club · Grunion RFC</title>
-<meta name="description" content="The MERchives — The '78 Club's photo and document archive for Grunion Rugby Football Club." />
-<link rel="canonical" href="https://grunionrugby.com/MERchives" />
+<meta name="description" content="The MERchives, The '78 Club's photo and document archive for Grunion Rugby Football Club." />
+<link rel="canonical" href="https://grunionrugby.com/merchives" />
 <link rel="icon" type="image/png" href="assets/favicon.png" />
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="Grunion Rugby Football Club" />
 <meta property="og:title" content="The MERchives — The '78 Club · Grunion RFC" />
 <meta property="og:description" content="Match photography, event galleries, and club documents from the Grunion archive." />
-<meta property="og:url" content="https://grunionrugby.com/MERchives" />
+<meta property="og:url" content="https://grunionrugby.com/merchives" />
 <meta property="og:image" content="https://grunionrugby.com/assets/og-image.jpg" />
 <meta name="twitter:card" content="summary_large_image" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -90,7 +90,7 @@
   background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.045) 0 14px,transparent 14px 28px);
   border:1px solid rgba(255,255,255,.12);padding:32px}
 .member-gallery-loading .gl-label{font-family:var(--font-mono);font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.62)}
-.member-gallery-loading .gl-sub{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.08em;color:rgba(255,255,255,.4);max-width:40ch}
+.member-gallery-loading .gl-sub{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.08em;color:rgba(255,255,255,.55);max-width:40ch}
 
 /* ---- documents list ---- */
 .member-docs{margin-top:clamp(20px,3vw,28px);border-top:2px solid rgba(255,255,255,.22)}
@@ -110,7 +110,7 @@
 .md-meta{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:7px}
 .md-type{font-family:var(--font-mono);font-size:.62rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;
   color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.22);padding:3px 8px;border-radius:2px}
-.md-note{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.06em;color:rgba(255,255,255,.4)}
+.md-note{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.06em;color:rgba(255,255,255,.55)}
 .md-dl{flex:none;font-family:var(--font-display);font-weight:700;text-transform:uppercase;letter-spacing:.03em;
   font-size:1rem;color:var(--gold-soft);display:inline-flex;align-items:center;gap:.5em;white-space:nowrap}
 .md-dl::after{content:"→";font-family:var(--font-body);font-weight:400}
@@ -170,7 +170,7 @@
 .mp-know{margin-top:9px;align-self:flex-start;display:inline-flex;align-items:center;gap:.6em;
   background:none;border:0;padding:0;cursor:pointer;text-align:left;
   font-family:var(--font-mono);font-size:.64rem;letter-spacing:.13em;text-transform:uppercase;
-  color:rgba(255,255,255,.42);transition:color .15s ease}
+  color:rgba(255,255,255,.55);transition:color .15s ease}
 .mp-know::before{content:"?";width:15px;height:15px;flex:none;display:grid;place-items:center;
   border:1px solid rgba(216,177,95,.45);border-radius:2px;font-size:.6rem;color:var(--gold-soft)}
 .mp-know:hover:not(:disabled),.mp-know:focus-visible{color:var(--gold-soft)}
@@ -209,7 +209,7 @@
 .pi-actions{margin-top:20px;display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px}
 .pi-err{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.08em;color:#e8a3a3}
 .pi-note{margin-top:14px;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.1em;
-  text-transform:uppercase;color:rgba(255,255,255,.38)}
+  text-transform:uppercase;color:rgba(255,255,255,.55)}
 .pi-done{margin-top:22px}
 .pi-done p{font-size:1.05rem;line-height:1.7;color:rgba(255,255,255,.88)}
 .pi-done .btn{margin-top:20px}
@@ -245,7 +245,7 @@
 <a class="skip" href="#memberlib">Skip to content</a>
 <header class="site-head" id="siteHead">
   <div class="wrap nav">
-    <a class="brand" href="index.html#top" aria-label="Grunion Rugby Football Club — home">
+    <a class="brand" href="index.html#top" aria-label="Grunion Rugby Football Club, home">
       <img class="crest" src="assets/grunion-crest.png" alt="Grunion RFC crest" width="400" height="400" />
       <span><b>Grunion R.F.C.</b><i>Santa Barbara · Est. 1978</i></span>
     </a>
@@ -255,7 +255,7 @@
       <a href="history.html">History</a>
       <a href="index.html#news">News</a>
       <a href="the-78-club.html" class="nav-club">'78 Club</a>
-      <a href="MERchives.html" class="nav-merchives">MERchives</a>
+      <a href="/merchives" class="nav-merchives">MERchives</a>
       <a href="fossils.html" class="nav-fossils">Fossils</a>
       <a href="index.html#sponsors">Sponsors</a>
     </nav>
@@ -408,7 +408,7 @@
 
       <!-- site.js builds one .member-folder gallery section in here per Drive
            sub-folder, each tagged data-view="<slug>" for the hash router. -->
-      <div id="memberGallery" aria-busy="true" aria-labelledby="gallery-h"></div>
+      <div id="memberGallery" role="region" aria-busy="true" aria-labelledby="gallery-h"></div>
 
       <!-- DOCUMENTS -->
       <section class="member-folder" data-view="documents" aria-labelledby="docs-h" hidden>
@@ -440,7 +440,7 @@
   <div class="pi-panel" role="dialog" aria-modal="true" aria-labelledby="piTitle">
     <button type="button" class="pi-close" id="piClose" aria-label="Close">&times;</button>
     <div class="pi-head">
-      <img id="piThumb" src="" alt="" width="88" height="88" />
+      <img id="piThumb" alt="" width="88" height="88" />
       <div>
         <span class="kicker">From the archive</span>
         <h4 id="piTitle">Know this photo?</h4>
@@ -456,7 +456,7 @@
       <p hidden aria-hidden="true"><label>Leave this field empty: <input name="bot-field" tabindex="-1" autocomplete="off" /></label></p>
       <label class="pi-lab" for="piInfo">What do you know about it?</label>
       <textarea id="piInfo" name="info" rows="4" required
-        placeholder="e.g. Practice at UCSB, spring 2001 — that's Smitty with the ball."></textarea>
+        placeholder="e.g. Practice at UCSB, spring 2001, that's Smitty with the ball."></textarea>
       <div class="pi-row">
         <div>
           <label class="pi-lab" for="piName">Your name <i>(optional)</i></label>
@@ -469,7 +469,7 @@
       </div>
       <div class="pi-actions">
         <button type="submit" class="btn btn-gold" id="piSend">Send it in</button>
-        <span class="pi-err" id="piErr" hidden>Couldn&rsquo;t send just now &mdash; please try again in a minute.</span>
+        <span class="pi-err" id="piErr" hidden>Couldn&rsquo;t send just now, please try again in a minute.</span>
       </div>
       <p class="pi-note">Submissions are reviewed before anything appears in the archive.</p>
     </form>
@@ -509,7 +509,6 @@
   if(location.hash) route(false);
 })();
 </script>
-<hr class="rule101" />
 <footer class="site-foot">
   <hr class="rule101" />
   <!-- Chip In — general donations (distinct from The '78 Club) -->
@@ -518,7 +517,7 @@
       <div>
         <span class="kicker">Chip In</span>
         <h3>Donate Any Amount</h3>
-        <p>Not ready for The '78 Club? Any amount helps the Grunion keep playing. SBRFC is a 501(c)(3) — gifts may be tax-deductible to the extent allowed by law.</p>
+        <p>Not ready for The '78 Club? Any amount helps the Grunion keep playing. Gifts may be tax-deductible to the extent allowed by law.</p>
       </div>
       <div class="chip-cta"><a href="#" data-link="donate" class="btn btn-gold arrow">Donate to the Grunion</a></div>
     </div>

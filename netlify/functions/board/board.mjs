@@ -459,14 +459,12 @@ async function build(key) {
   }
   const gmailOptouts = new Map(); // email -> { when, how, company, inbox, instantly_status }
   let gmailIgnored = 0;
-  const gmailIgnoredList = []; // what the search matched but the board did not count — for checking its work
   for (const h of gmailHits) {
     const lead = leadByEmail.get(h.from);
     const isLead = lead && liveIds.has(String(lead.campaign || ''));
     const looksLikeOptout = h.unsubscribe_mail || OPTOUT_RE.test(h.subject) || OPTOUT_RE.test(h.snippet);
     if (!isLead || !looksLikeOptout) {
       gmailIgnored++;
-      if (gmailIgnoredList.length < 60) gmailIgnoredList.push({ inbox: h.inbox, from: h.from, subject: h.subject.slice(0, 80), when: h.when, why: !isLead ? 'sender is not a campaign lead' : 'no opt-out wording' });
       continue;
     }
     const prev = gmailOptouts.get(h.from);
@@ -511,7 +509,6 @@ async function build(key) {
     errors: gmailErrors,
     hits: gmailHits.length,
     ignored: gmailIgnored,
-    ignored_list: gmailIgnoredList,
     sent_unsubscribes: gmailScans.flatMap((g) => g.sent_unsubscribes),
   };
 

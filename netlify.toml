@@ -26,7 +26,7 @@
 # Send the old /members URL to the renamed MERchives page
 [[redirects]]
   from = "/members"
-  to = "/MERchives.html"
+  to = "/merchives"
   status = 301
 
 # Pretty URLs for the History and Fossils pages (matches /the-78-club and /MERchives)
@@ -75,6 +75,50 @@
   to = "/coach-thanks.html"
   status = 200
 
+# /index.html is a duplicate of / — send it home
+[[redirects]]
+  from = "/index.html"
+  to = "/"
+  status = 301
+
+# Internal docs and function sources live in the repo root/subfolders and would
+# otherwise be served as public pages. Return the 404 page for them.
+[[redirects]]
+  from = "/netlify/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/CLAUDE.md"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/README.md"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/CLUB78-SETUP.md"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/DASHBOARD-SETUP.md"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/SPONSOR-BOARD-SETUP.md"
+  to = "/404.html"
+  status = 404
+  force = true
+
 # Site-wide security headers. Deliberately conservative: no Content-Security-Policy,
 # because the Campaign Monitor archive (document.write), inline styles/handlers, and
 # third-party sponsor/Google/Facebook assets would make a strict CSP break silently.
@@ -113,9 +157,17 @@
     Cache-Control = "no-store"
 
 # The coach posting is a temporary hire and the thank-you pages are dead ends —
-# keep all three out of search. /play is NOT listed here on purpose.
+# keep them out of search. Netlify matches header rules against the path the
+# visitor actually requested, so each page is listed in BOTH forms: the pretty
+# extensionless path (what the links use) and the .html path.
+# /play is NOT listed here on purpose.
 [[headers]]
   for = "/coach.html"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/coach"
   [headers.values]
     X-Robots-Tag = "noindex"
 
@@ -125,6 +177,26 @@
     X-Robots-Tag = "noindex"
 
 [[headers]]
+  for = "/play-thanks"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
   for = "/coach-thanks.html"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/coach-thanks"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/thanks.html"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/thanks"
   [headers.values]
     X-Robots-Tag = "noindex"
