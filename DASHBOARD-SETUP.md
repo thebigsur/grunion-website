@@ -95,7 +95,9 @@ This gives the dashboard read-only access to GA without your Google password.
 
 - **"Function not found"** — the site deployed without the `netlify/functions`
   folder, or the `[functions]` block in `netlify.toml` is missing. Redeploy.
-- **"DASHBOARD_KEY isn't set"** — add the env var, then trigger a redeploy.
+- **Every passcode is rejected right after setup** — `DASHBOARD_KEY` is probably
+  missing on the site (the functions fail closed with a plain 401 and log the
+  reason). Add the env var, then trigger a redeploy.
 - **GA error mentioning permission** — step 4.6 wasn't done (the service
   account isn't a Viewer on the property), or it was added to the wrong property.
 - **GA "token exchange failed"** — `GA_PRIVATE_KEY` got mangled in pasting;

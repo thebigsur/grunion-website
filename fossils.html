@@ -27,7 +27,7 @@
 <!-- Modern site header (menu bar) styles + fonts, shared with the rest of the site -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800;900&family=Libre+Franklin:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@700;800;900&family=Libre+Franklin:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="styles.css" />
 <style>
 /* =====================================================================
@@ -99,6 +99,7 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
 /* ---- roster table (Catalina) ---- */
 .roster{border-collapse:collapse;margin:22px 0 30px;width:360px;max-width:100%}
 .roster td{border:1px solid #000;padding:4px 10px;color:var(--blue);font-size:18px}
+.roster caption{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0} /* read by screen readers only */
 
 /* ---- schedule table (Catalina) ---- */
 .sched{border-collapse:collapse;margin:14px 0 30px;font-size:17px;width:100%;max-width:680px}
@@ -125,22 +126,22 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
 <!-- ============================ MODERN SITE HEADER (menu bar) ============================ -->
 <header class="site-head solid" id="siteHead">
   <div class="wrap nav">
-    <a class="brand" href="index.html#top" aria-label="Grunion Rugby Football Club, home">
+    <a class="brand" href="/#top" aria-label="Grunion Rugby Football Club, home">
       <img class="crest" src="assets/grunion-crest.png" alt="Grunion RFC crest" width="400" height="400" />
       <span><b>Grunion R.F.C.</b><i>Santa Barbara · Est. 1978</i></span>
     </a>
     <nav class="nav-links" id="navLinks" aria-label="Primary">
-      <a href="index.html#fixtures">Fixtures</a>
-      <a href="index.html#play">Play</a>
-      <a href="history.html">History</a>
-      <a href="index.html#news">News</a>
-      <a href="the-78-club.html" class="nav-club">'78 Club</a>
+      <a href="/#fixtures">Fixtures</a>
+      <a href="/#play">Play</a>
+      <a href="/history">History</a>
+      <a href="/#news">News</a>
+      <a href="/the-78-club" class="nav-club">'78 Club</a>
       <a href="/merchives" class="nav-merchives">MERchives</a>
-      <a href="fossils.html" class="nav-fossils" aria-current="page">Fossils</a>
-      <a href="index.html#sponsors">Sponsors</a>
+      <a href="/fossils" class="nav-fossils" aria-current="page">Fossils</a>
+      <a href="/#sponsors">Sponsors</a>
     </nav>
     <div class="nav-actions">
-      <a href="index.html#play" class="btn btn-gold btn-sm">Join</a>
+      <a href="/#play" class="btn btn-gold btn-sm">Join</a>
       <button class="burger" id="burger" aria-label="Menu" aria-expanded="false" aria-controls="navLinks"><span></span></button>
     </div>
   </div>
@@ -152,8 +153,8 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
 <main>
 <section class="fpage" id="fossils-home">
   <aside class="fside" aria-label="Fossils menu">
-    <a href="index.html"><img class="logo-fosters" src="assets/fossils-fosters.png" alt="Foster's" width="100" height="73" /></a>
-    <a href="index.html"><img class="logo-grunion" src="assets/fossils-grunion-oval.png" alt="Grunion Rugby" width="144" height="95" /></a>
+    <a href="/"><img class="logo-fosters" src="assets/fossils-fosters.png" alt="Foster's" width="100" height="73" /></a>
+    <a href="/"><img class="logo-grunion" src="assets/fossils-grunion-oval.png" alt="Grunion Rugby" width="144" height="95" /></a>
     <a class="home" href="#fossils-home">Home</a>
     <div class="head">Coming up:</div>
     <div class="smile">:)</div>
@@ -194,8 +195,8 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
 <!-- =========================================================== -->
 <section class="fpage" id="catalina">
   <aside class="fside" aria-label="Catalina menu">
-    <a href="index.html"><img class="logo-fosters" src="assets/fossils-fosters.png" alt="Foster's" width="100" height="73" loading="lazy" decoding="async" /></a>
-    <a href="index.html"><img class="logo-grunion" src="assets/fossils-grunion-oval.png" alt="Grunion Rugby" width="144" height="95" loading="lazy" decoding="async" /></a>
+    <a href="/"><img class="logo-fosters" src="assets/fossils-fosters.png" alt="Foster's" width="100" height="73" loading="lazy" decoding="async" /></a>
+    <a href="/"><img class="logo-grunion" src="assets/fossils-grunion-oval.png" alt="Grunion Rugby" width="144" height="95" loading="lazy" decoding="async" /></a>
     <a class="home" href="#fossils-home">Home</a>
     <div class="head">Coming up:</div>
     <div class="smile">:)</div>
@@ -214,6 +215,7 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
     <img class="photo" src="assets/catalina-team.jpg" alt="The Fossils at the Catalina Island rugby festival, 2005" width="640" height="480" loading="lazy" decoding="async" />
 
     <table class="roster">
+      <caption>The Fossils' Catalina roster: player and position</caption>
       <tr><td>DAVE CROOKS&nbsp;&nbsp;scrum &frac12;</td></tr>
       <tr><td>ANDRES&nbsp;&nbsp;back</td></tr>
       <tr><td>CRAIG MARLO&nbsp;&nbsp;forward</td></tr>
@@ -238,7 +240,7 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
     <img class="photo" src="assets/catalina-sitting.jpg" alt="Fossils relaxing between matches" width="640" height="480" loading="lazy" decoding="async" />
 
     <table class="sched" tabindex="0" aria-label="Catalina tournament schedule">
-      <tr><td class="schhead">Schedule</td><td class="schhead" colspan="3">Saturday May 7</td></tr>
+      <tr><th scope="col" class="schhead">Schedule</th><th scope="colgroup" class="schhead" colspan="3">Saturday May 7</th></tr>
       <tr><td class="time">8:35 a.m.</td><td>Back Bay Old Boys</td><td class="vs">vs.</td><td>Colusa County Old Boys</td></tr>
       <tr><td class="time">9:10 a.m.</td><td>Northwest Old Growth</td><td class="vs">vs.</td><td>Lunchtime Legends</td></tr>
       <tr class="hl"><td class="time">9:45 a.m.</td><td>Red Rock Roaches</td><td class="vs">vs.</td><td>SMOG/Fossils</td></tr>
@@ -268,8 +270,8 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
 <!-- =========================================================== -->
 <section class="fpage" id="smog">
   <aside class="fside" aria-label="Smog menu">
-    <a href="index.html"><img class="logo-fosters" src="assets/fossils-fosters.png" alt="Foster's" width="100" height="73" loading="lazy" decoding="async" /></a>
-    <a href="index.html"><img class="logo-grunion" src="assets/fossils-grunion-oval.png" alt="Grunion Rugby" width="144" height="95" loading="lazy" decoding="async" /></a>
+    <a href="/"><img class="logo-fosters" src="assets/fossils-fosters.png" alt="Foster's" width="100" height="73" loading="lazy" decoding="async" /></a>
+    <a href="/"><img class="logo-grunion" src="assets/fossils-grunion-oval.png" alt="Grunion Rugby" width="144" height="95" loading="lazy" decoding="async" /></a>
     <a class="home" href="#fossils-home">Home</a>
     <div class="head">Coming up:</div>
     <div class="smile">:)</div>

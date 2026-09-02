@@ -13,7 +13,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Grunion Rugby Football Club · Santa Barbara · Est. 1978</title>
-<meta name="description" content="We, the members of the Grunion Rugby Football Club, in order to achieve a quality of enjoyment missing in our ordinary mundane &amp; strife-ridden lives, come together through the medium of Rugby..." />
+<meta name="description" content="Santa Barbara's men's rugby club since 1978. Fixtures and results, training Tuesday and Thursday at Elings Park, sponsors, history and the '78 Club." />
 <link rel="canonical" href="https://grunionrugby.com/" />
 <link rel="icon" type="image/png" href="assets/favicon.png" />
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
@@ -47,7 +47,7 @@
   ]
 }
 </script>
-<link rel="preload" as="image" href="assets/hero-action.jpg" />
+<link rel="preload" as="image" href="assets/hero-action.jpg" fetchpriority="high" />
 
 <!-- ============================================================= -->
 <!--  GRUNION RFC — homepage. Drag the whole project onto Netlify. -->
@@ -57,7 +57,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800;900&family=Libre+Franklin:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@700;800;900&family=Libre+Franklin:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 
 <link rel="stylesheet" href="styles.css" />
 </head>
@@ -75,11 +75,11 @@
     <nav class="nav-links" id="navLinks" aria-label="Primary">
       <a href="#fixtures">Fixtures</a>
       <a href="#play">Play</a>
-      <a href="history.html">History</a>
+      <a href="/history">History</a>
       <a href="#news">News</a>
-      <a href="the-78-club.html" class="nav-club">'78 Club</a>
+      <a href="/the-78-club" class="nav-club">'78 Club</a>
       <a href="/merchives" class="nav-merchives">MERchives</a>
-      <a href="fossils.html" class="nav-fossils">Fossils</a>
+      <a href="/fossils" class="nav-fossils">Fossils</a>
       <a href="#sponsors">Sponsors</a>
     </nav>
     <div class="nav-actions">
@@ -153,9 +153,6 @@
       <figure class="g-item"><div class="ph" data-photo="assets/history-1.jpg"><span class="ph-tag">The early side · 1978</span></div></figure>
       <figure class="g-item"><div class="ph green" data-photo="assets/history-2.jpg"><span class="ph-tag">Clubhouse &amp; mates</span></div></figure>
       <figure class="g-item"><div class="ph" data-photo="assets/history-3.jpg"><span class="ph-tag">Recent match day</span></div></figure>
-      <figure class="g-item"><div class="ph green" data-photo="assets/gallery-4.jpg"><span class="ph-tag">Match day</span></div></figure>
-      <figure class="g-item"><div class="ph" data-photo="assets/gallery-5.jpg"><span class="ph-tag">Match day</span></div></figure>
-      <figure class="g-item"><div class="ph green" data-photo="assets/gallery-6.jpg"><span class="ph-tag">Match day</span></div></figure>
     </div>
   </div>
 </section>
@@ -174,7 +171,7 @@
       <a class="sp-feature" href="https://www.sharkeez.net" target="_blank" rel="noopener">
         <span class="kicker">Featured Sponsor</span>
         <div class="spf-body">
-          <span class="spf-logo"><img src="assets/sharkeez-logo.png" alt="Baja Sharkeez" width="360" height="239" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://sharkeez.net/wp-content/uploads/2025/09/sharkeez-light.png';this.classList.add('spf-img-mascot')" /></span>
+          <span class="spf-logo"><img src="assets/sharkeez-logo.png" alt="Baja Sharkeez" width="199" height="132" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://sharkeez.net/wp-content/uploads/2025/09/sharkeez-light.png';this.classList.add('spf-img-mascot')" /></span>
           <span class="spf-name">Baja Sharkeez</span>
           <p>Our home away from home and host of the third half. The club gathers here every Thursday after training and after home matches.</p>
         </div>
@@ -269,14 +266,14 @@
         <p class="reassure">Off-season and schedule changes are posted to Facebook and Instagram.</p>
         <div class="thirdhalf">
           <span class="kicker">The Third Half</span>
-          <h4>Win or lose, the night ends at Baja Sharkeez</h4>
+          <h3>Win or lose, the night ends at Baja Sharkeez</h3>
           <p>Every Thursday after training and after home matches on Saturday. <b>416 State St · Santa Barbara.</b></p>
         </div>
       </div>
       <div>
         <span class="eyebrow" style="color:var(--gold-soft)">More Information</span>
         <div class="join-info">
-          <h4>Questions? Reach out anytime</h4>
+          <h3>Questions? Reach out anytime</h3>
           <p>Beginners and veterans both welcome, just turn up to a session, or get in touch first and we'll look out for you.</p>
           <div class="ji-contacts">
             <a class="ji-row" href="tel:+18056186510">
@@ -368,7 +365,7 @@
     </div>
     <div class="fam-grid">
       <a class="fam-card" href="https://sbwomensrugby.com" target="_blank" rel="noopener">
-        <div class="ph photo" style="background-image:url('assets/mermaids-team.jpg')" role="img" aria-label="Santa Barbara Mermaids team photo"></div>
+        <div class="ph photo"><img class="ph-img" src="assets/mermaids-team.jpg" alt="Santa Barbara Mermaids team photo" width="720" height="717" loading="lazy" decoding="async" /></div>
         <div class="fc-body">
           <span class="fc-tag">Women's Rugby</span>
           <h3>Santa Barbara Mermaids</h3>
@@ -377,8 +374,7 @@
         </div>
       </a>
       <a class="fam-card" href="https://stingraysrfc.com" target="_blank" rel="noopener">
-        <!-- local photo layered above the remote copy; remote shows until assets/stingrays-youth.jpg exists -->
-        <div class="ph photo" style="background-image:url('assets/stingrays-youth.jpg'),url('https://images.squarespace-cdn.com/content/v1/672e83d9472ba44258bdb8a4/9d4e0eaa-09dc-4896-b007-6475c86af97d/20250118_110138.jpg?format=1200w')" role="img" aria-label="Santa Barbara Stingrays youth rugby"></div>
+        <div class="ph photo"><img class="ph-img" src="assets/stingrays-youth.jpg" width="720" height="406" loading="lazy" decoding="async" alt="Santa Barbara Stingrays youth rugby" /></div>
         <div class="fc-body">
           <span class="fc-tag">Youth Rugby</span>
           <h3>Santa Barbara Stingrays</h3>
@@ -407,18 +403,18 @@
           <div class="ct-row"><div class="c-k">Third Half</div><div class="c-v">Baja Sharkeez<br>416 State St</div></div>
           <div class="ct-row"><div class="c-k">Social</div><div class="c-v"><a href="https://www.facebook.com/GrunionRugby" target="_blank" rel="noopener">Facebook</a> · <a href="https://www.instagram.com/santabarbaragrunionrugby" target="_blank" rel="noopener">Instagram</a></div></div>
         </div>
-        <a href="tel:+18056186510" class="btn btn-solid-ink arrow" style="margin-top:28px">Text Jordan to Get Started</a>
+        <a href="sms:+18056186510" class="btn btn-solid-ink arrow" style="margin-top:28px">Text Jordan to Get Started</a>
       </div>
       <div class="maps">
         <div class="map-card">
-          <div class="ph photo" style="background-image:url('assets/elings-park.jpg')" role="img" aria-label="Elings Park"></div>
+          <div class="ph photo"><img class="ph-img" src="assets/elings-park.jpg" alt="Elings Park" width="900" height="450" loading="lazy" decoding="async" /></div>
           <div class="map-body">
             <div><div class="m-name">Elings Park</div><div class="m-addr">Home pitch · Santa Barbara, CA</div></div>
             <a class="btn btn-line btn-sm arrow" href="https://www.google.com/maps/search/?api=1&query=Elings+Park+Santa+Barbara" target="_blank" rel="noopener">Open in Maps</a>
           </div>
         </div>
         <div class="map-card">
-          <div class="ph photo" style="background-image:url('assets/sharkeez-bar.jpg')" role="img" aria-label="Baja Sharkeez interior"></div>
+          <div class="ph photo"><img class="ph-img" src="assets/sharkeez-bar.jpg" alt="Baja Sharkeez interior" width="900" height="563" loading="lazy" decoding="async" /></div>
           <div class="map-body">
             <div><div class="m-name">Baja Sharkeez</div><div class="m-addr">416 State St · Santa Barbara, CA</div></div>
             <a class="btn btn-line btn-sm arrow" href="https://www.google.com/maps/search/?api=1&query=Baja+Sharkeez+416+State+St+Santa+Barbara" target="_blank" rel="noopener">Open in Maps</a>
@@ -465,11 +461,11 @@
       <h4>Club</h4>
       <a href="#fixtures">Fixtures</a>
       <a href="#play">Play</a>
-      <a href="history.html">History</a>
+      <a href="/history">History</a>
     </div>
     <div class="foot-col">
       <h4>Support</h4>
-      <a href="the-78-club.html">The '78 Club</a>
+      <a href="/the-78-club">The '78 Club</a>
       <a href="#sponsors">Sponsors</a>
       <a href="#" data-link="donate">Donate</a>
     </div>

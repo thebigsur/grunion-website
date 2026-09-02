@@ -3,7 +3,7 @@
 // POST /.netlify/functions/club78-webhook        ← Zeffy "payment.completed"
 // GET  /.netlify/functions/club78-webhook        ← status / one-time setup
 // GET  …/club78-webhook?backfill=30&max=2         ← (re)process recent payments via the API
-//      (both require header  x-dashboard-key: <DASHBOARD_KEY env var>)
+//      (both require header  x-dashboard-key: <CLUB78_ADMIN_KEY env var>)
 //
 // What it does for every completed Zeffy payment on The '78 Club membership
 // form (and for top-up donations by existing members):
@@ -29,7 +29,12 @@
 //                          override them if ever needed. The account needs
 //                          domain-wide delegation in the sbrfc.com Workspace for
 //                          gmail.send + spreadsheets (see CLUB78-SETUP.md).
-//   DASHBOARD_KEY          (required for GET status + the simulate/dry harness)
+//   CLUB78_ADMIN_KEY       (recommended) long random secret for GET status/backfill/reseed
+//                          and the simulate/dry harness. Until it is set the webhook
+//                          falls back to DASHBOARD_KEY, i.e. the committee passcode —
+//                          which can send real mail as treasurer@ and edit the plaque, so
+//                          set this one (openssl rand -hex 24) and keep it off the dashboard.
+//   CLUB78_SIGNUPS_SHEET_ID (optional) overrides the private Signups sheet id below
 //   CLUB78_DISABLE_EMAIL   set to "1" to log + plaque only (no emails) — for testing
 //
 // Zero npm dependencies (node: built-ins only) — same rule as the other functions.
@@ -45,8 +50,9 @@ const CONFIG = {
   CLUB78_TITLE_RE: /78\s*club/i,
   CLUB78_FORM_URL: 'https://www.zeffy.com/en-US/ticketing/the-78-club-grunion-rfc-legacy-donors',
 
-  // Private log + email templates (Grunion Private shared drive)
-  SIGNUPS_SHEET_ID: '1XJpBEDfpRu8BrF8yY6BotoyUSn2xOjbyTH3GOyedX2w',
+  // Private log + email templates (Grunion Private shared drive). The id grants nothing
+  // by itself, but an env var keeps it out of the public repo if it is ever changed.
+  SIGNUPS_SHEET_ID: process.env.CLUB78_SIGNUPS_SHEET_ID || '1XJpBEDfpRu8BrF8yY6BotoyUSn2xOjbyTH3GOyedX2w',
   SIGNUPS_TAB: 'Signups',
   EMAILS_TAB: 'Emails',
 
@@ -72,9 +78,9 @@ const CONFIG = {
   // joined through the '78 form. Events / shop / raffles never count.
   TOPUP_CATEGORIES: ['donation', 'membership'],
 
-  MEMBERSHIP_DAYS: 365,
   SIGNATURE_TOLERANCE_S: 5 * 60,
-  BUDGET_MS: 9000,
+  BUDGET_MS: 9000,           // overall budget per run; stays under Netlify's 10 s function limit
+  STUCK_SENDING_MS: 15 * 60 * 1000, // a "sending…" marker older than this is reported by GET status
   ORG_NAME: 'Santa Barbara Rugby Football Club',
   EIN: '93-4659131',
   SITE_78: 'https://grunionrugby.com/the-78-club',
@@ -116,8 +122,12 @@ const tierRank = (k) => { const i = CONFIG.TIERS.findIndex((t) => t.key === k); 
 const tierFor = (cents) => CONFIG.TIERS.find((t) => cents >= t.min) || null;
 const nextTierAbove = (cents) => [...CONFIG.TIERS].reverse().find((t) => t.min > cents) || null;
 
+// Admin gate for GET status / backfill / reseed and the simulate + dry harness. Uses
+// CLUB78_ADMIN_KEY; falls back to the committee's DASHBOARD_KEY only while the admin
+// key is unset, so nothing breaks before Josh adds it (and stops accepting the
+// dashboard passcode the moment he does).
 function gate(req) {
-  const expected = process.env.DASHBOARD_KEY;
+  const expected = process.env.CLUB78_ADMIN_KEY || process.env.DASHBOARD_KEY;
   if (!expected) return false;
   const got = req.headers.get('x-dashboard-key') || '';
   const a = Buffer.from(String(got)), b = Buffer.from(String(expected));
@@ -178,17 +188,26 @@ async function googleAuth(creds) {
   try {
     return { token: await googleToken(creds, CONFIG.SENDER_USER), mode: 'delegated', canEmail: true };
   } catch (e) {
+    // Only a missing delegation grant degrades to log-and-plaque mode. Anything else
+    // (a timeout, a Google 5xx, a bad key) must fail the run so Zeffy retries later;
+    // otherwise the donor's email is parked as "pending" behind a 200 nobody sees.
+    if (!/has not granted|unauthorized_client/i.test(String(e?.message || ''))) throw e;
     const token = await googleToken(creds, null, 6000, 'https://www.googleapis.com/auth/spreadsheets');
     return { token, mode: 'service-account', canEmail: false, delegationError: e.message };
   }
 }
 
-function gapi(token) {
+// Google API client. `deadline` (ms epoch) caps every call so a slow run fails with a
+// clear error (→ non-2xx → Zeffy retries) instead of being killed mid-flight by the
+// platform. Each call gets what is left of the budget, never more than 7 s.
+function gapi(token, deadline = Date.now() + CONFIG.BUDGET_MS) {
   const call = async (url, init = {}) => {
+    const left = deadline - Date.now();
+    if (left < 400) throw Object.assign(new Error(`out of time before ${init.method || 'GET'} ${url.split('?')[0].replace(SHEETS_API, 'sheets')} (budget ${CONFIG.BUDGET_MS} ms)`), { code: 'BUDGET' });
     const r = await fetch(url, {
       ...init,
       headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json', ...(init.headers || {}) },
-      signal: AbortSignal.timeout(7000),
+      signal: AbortSignal.timeout(Math.min(7000, left)),
     });
     const text = await r.text();
     let data = {};
@@ -219,7 +238,9 @@ async function ensureSheets(g) {
   if (!titles.has(CONFIG.SIGNUPS_TAB)) await g.update(CONFIG.SIGNUPS_SHEET_ID, `${CONFIG.SIGNUPS_TAB}!A1`, [SIGNUP_HEADERS]);
 
   let templates = {};
-  const existing = titles.has(CONFIG.EMAILS_TAB) ? await g.get(CONFIG.SIGNUPS_SHEET_ID, `${CONFIG.EMAILS_TAB}!A1:C200`).catch(() => ({})) : {};
+  // A failed read must THROW here (Zeffy retries on a non-2xx). Treating a timeout/429 as an
+  // empty tab would silently re-seed the live Emails tab and discard hand-edited copy.
+  const existing = titles.has(CONFIG.EMAILS_TAB) ? await g.get(CONFIG.SIGNUPS_SHEET_ID, `${CONFIG.EMAILS_TAB}!A1:C200`) : { values: [] };
   const rows = existing.values || [];
   if (rows.length < 2) {
     const seed = [['key', 'subject', 'body — edit freely; placeholders in {{double braces}} are filled in per donor (see the notes row)'], ...DEFAULT_TEMPLATES.map((t) => [t.key, t.subject, t.body])];
@@ -299,19 +320,20 @@ function kitLines(a) {
 }
 
 // Membership-year maths. `payments` = this donor's qualifying payments (any order).
-// Years start at the first payment and roll over at the first payment after
-// MEMBERSHIP_DAYS. Returns the year containing `current`.
+// Years start at the first payment and roll over at the first payment on or after the
+// same calendar date a year later (calendar maths, so a year that crosses Feb 29 is
+// still a full year). Returns the year containing `current`.
+export const yearAfter = (ms) => { const d = new Date(ms); d.setUTCFullYear(d.getUTCFullYear() + 1); return d.getTime(); };
 export function membershipYear(payments, current) {
   const all = [...payments.filter((p) => p.id !== current.id), current].sort((a, b) => createdMs(a) - createdMs(b));
-  const span = CONFIG.MEMBERSHIP_DAYS * 86400000;
   let start = null, total = 0, inYear = [];
   for (const p of all) {
     const t = createdMs(p);
-    if (start === null || t >= start + span) { start = t; total = 0; inYear = []; }
+    if (start === null || t >= yearAfter(start)) { start = t; total = 0; inYear = []; }
     total += amountOf(p); inYear.push(p);
     if (p.id === current.id) break;
   }
-  return { start, end: start + span, total, payments: inYear, totalBefore: total - amountOf(current) };
+  return { start, end: yearAfter(start), total, payments: inYear, totalBefore: total - amountOf(current) };
 }
 
 // ---- templates -----------------------------------------------------------------------
@@ -440,7 +462,7 @@ function buildRaw({ to, subject, text, html, replyTo, fromName }) {
 }
 
 // ---- the pipeline ----------------------------------------------------------------------
-async function processPayment(p, { eventId, simulate = false, dry = false, noPlaque = false, noNotify = false }) {
+async function processPayment(p, { eventId, simulate = false, dry = false, noPlaque = false, noNotify = false, deadline = Date.now() + CONFIG.BUDGET_MS }) {
   const started = Date.now();
   const notes = [];
   const email = lower(p.buyer?.email);
@@ -448,18 +470,23 @@ async function processPayment(p, { eventId, simulate = false, dry = false, noPla
   if (!email) return { ok: false, skipped: 'no buyer email' };
   const club = isClub78(p);
   const answers = answersOf(p);
-  const titles = await rateTitles(p.campaign_id).catch(() => ({}));
-  const rateTitle = clean((p.items || []).map((it) => it.rate_title || it.title || titles[it.rate_id] || '').filter(Boolean)[0] || '');
+  // The rate title is cosmetic (log + notice). Only look it up when the payload
+  // doesn't already carry it — one network call fewer inside the time budget.
+  const items = p.items || [];
+  const titles = items.some((it) => it.rate_title || it.title) || !items.some((it) => it.rate_id) ? {} : await rateTitles(p.campaign_id).catch(() => ({}));
+  const rateTitle = clean(items.map((it) => it.rate_title || it.title || titles[it.rate_id] || '').filter(Boolean)[0] || '');
 
   const creds = googleCreds();
   if (!creds) throw new Error('Google service-account credentials are not set (GA_CLIENT_EMAIL / GA_PRIVATE_KEY)');
   const auth = await googleAuth(creds);
-  const g = gapi(auth.token);
+  const g = gapi(auth.token, deadline);
   const templates = await ensureSheets(g);
   if (!auth.canEmail) notes.push('emails pending: ' + auth.delegationError);
 
   // ---- idempotency + our own history
-  const logResp = await g.get(CONFIG.SIGNUPS_SHEET_ID, `${CONFIG.SIGNUPS_TAB}!A2:W5000`).catch(() => ({}));
+  // Same rule: if the log can't be read, fail the run so Zeffy retries later. An empty log on a
+  // failed read would defeat the payment-id idempotency check (duplicate rows + duplicate emails).
+  const logResp = await g.get(CONFIG.SIGNUPS_SHEET_ID, `${CONFIG.SIGNUPS_TAB}!A2:W5000`);
   const logRows = logResp.values || [];
   const existingIdx = logRows.findIndex((r) => String(r[IDX.payment_id] || '') === String(p.id));
   const existing = existingIdx >= 0 ? logRows[existingIdx] : null;
@@ -532,9 +559,16 @@ async function processPayment(p, { eventId, simulate = false, dry = false, noPla
     const res = await g.append(CONFIG.SIGNUPS_SHEET_ID, `${CONFIG.SIGNUPS_TAB}!A1:W1`, [row]);
     rowNumber = Number((res.updates?.updatedRange || '').match(/![A-Z]+(\d+)/)?.[1]) || null;
   }
-  const setCell = async (idx, value) => { if (rowNumber) await g.update(CONFIG.SIGNUPS_SHEET_ID, `${CONFIG.SIGNUPS_TAB}!${COL[idx]}${rowNumber}`, [[value]]).catch(() => {}); };
+  // Status cells. Best-effort by default (a failed status write must not fail a run whose
+  // real work succeeded). `strict` is for the "sending…" marker, which MUST land before
+  // any mail goes out; otherwise a retry could send the same email twice.
+  const setCell = async (idx, value, { strict = false } = {}) => {
+    if (!rowNumber) { if (strict) throw new Error('could not find the log row to mark before sending; not sending'); return; }
+    const write = g.update(CONFIG.SIGNUPS_SHEET_ID, `${CONFIG.SIGNUPS_TAB}!${COL[idx]}${rowNumber}`, [[value]]);
+    if (strict) await write; else await write.catch(() => {});
+  };
 
-  const result = { ok: true, dry_run: dry || undefined, payment_id: p.id, email, action, tier: after?.name || null, year_total: year.total / 100, plaque: null, email_sent: false, notify_sent: false, google_mode: auth.mode, notes };
+  const result = { ok: true, dry_run: dry || undefined, payment_id: p.id, email, action, tier: after?.name || null, year_total: year.total / 100, plaque: null, email_sent: false, email_status: existing ? String(existing[IDX.email_status] || '') : '', notify_sent: false, google_mode: auth.mode, notes };
   if (action === 'none') { await setCell(IDX.notes, [...notes, 'below Supporters\' Union minimum'].join(' | ')); return result; }
 
   // ---- plaque (Website Sheet)
@@ -561,13 +595,24 @@ async function processPayment(p, { eventId, simulate = false, dry = false, noPla
     else if (emailsOff) { await setCell(IDX.email_status, 'skipped (CLUB78_DISABLE_EMAIL)'); }
     else if (!auth.canEmail) { await setCell(IDX.email_status, `pending: delegation (${key})`); result.email_pending = true; }
     else {
+      const bodyText = render(tpl.body, vars);
+      // Mark the row BEFORE sending. If the function is killed between the send and the
+      // "sent" write, the row shows "sending …" (GET status lists it after 15 min) and a
+      // retry never sends a second copy. Only a definite failure (Google said no, or we
+      // ran out of budget before calling) is written back as an error, which a retry or
+      // backfill will resend; an ambiguous one (timeout mid-request) keeps the marker.
+      await setCell(IDX.email_status, `sending ${key} ${new Date().toISOString()}`, { strict: true });
       try {
-        const bodyText = render(tpl.body, vars);
         await g.send(buildRaw({ to: `${first} ${last} <${email}>`.trim(), subject: render(tpl.subject, vars), text: bodyText, html: htmlFromText(bodyText, { tier: after?.name }) }));
-        result.email_sent = true; await setCell(IDX.email_status, `sent ${key} ${new Date().toISOString()}`);
-      } catch (e) { await setCell(IDX.email_status, 'error: ' + e.message); result.notes.push('email: ' + e.message); }
+        result.email_sent = true; result.email_status = `sent ${key}`; await setCell(IDX.email_status, `sent ${key} ${new Date().toISOString()}`);
+      } catch (e) {
+        const definite = e?.code === 'BUDGET' || /^Google API \d{3}/.test(String(e?.message || ''));
+        if (definite) await setCell(IDX.email_status, 'error: ' + e.message);
+        result.email_status = definite ? 'error' : 'sending (unconfirmed)';
+        result.notes.push('email: ' + e.message + (definite ? '' : ' (send unconfirmed; check Sent mail before clearing the cell)'));
+      }
     }
-  } else result.email_sent = true;
+  } else result.email_sent = !/^sending /.test(String(existing[IDX.email_status] || ''));
 
   // ---- internal notice
   if (!(existing && done(existing[IDX.notify]))) {
@@ -767,16 +812,19 @@ Log: {{sheet_url}}`,
 
 // ---- handler --------------------------------------------------------------------------
 export default async (req) => {
+  const started = Date.now();
+  const deadline = started + CONFIG.BUDGET_MS;
   if (req.method === 'GET' || req.method === 'HEAD') {
     if (!gate(req)) return json({ ok: true, service: "The '78 Club webhook", hint: 'POST from Zeffy only' });
     // status + one-time setup (creates the tabs and seeds the templates)
     const out = { ok: true, checks: {} };
     out.checks.webhook_secret = !!process.env.ZEFFY_WEBHOOK_SECRET;
     out.checks.zeffy_api_key = !!process.env.ZEFFY_API_KEY;
+    out.checks.admin_key = process.env.CLUB78_ADMIN_KEY ? 'CLUB78_ADMIN_KEY' : 'DASHBOARD_KEY (fallback — set CLUB78_ADMIN_KEY)';
     out.checks.google_credentials = !!googleCreds();
     try {
       const auth = await googleAuth(googleCreds());
-      const g = gapi(auth.token);
+      const g = gapi(auth.token, deadline);
       out.checks.google_mode = auth.mode;
       out.checks.google_delegation = auth.canEmail;
       if (auth.delegationError) out.checks.delegation_error = auth.delegationError;
@@ -785,6 +833,14 @@ export default async (req) => {
       out.checks.templates = Object.keys(templates);
       const meta = await g.meta(CONFIG.WEBSITE_SHEET_ID);
       out.checks.patron_wall_tab = (meta.sheets || []).find((s) => s.properties.sheetId === CONFIG.PATRON_WALL_GID)?.properties.title || null;
+      // rows whose donor email was marked "sending …" but never confirmed "sent": the
+      // function was cut off mid-send. Check treasurer@'s Sent mail; if the email is
+      // not there, clear that cell in the sheet and run ?backfill to resend.
+      const log = await g.get(CONFIG.SIGNUPS_SHEET_ID, `${CONFIG.SIGNUPS_TAB}!A2:W5000`);
+      const stuck = (log.values || [])
+        .map((r, i) => ({ row: i + 2, payment_id: r[IDX.payment_id], email: r[IDX.email], email_status: String(r[IDX.email_status] || '') }))
+        .filter((x) => /^sending /.test(x.email_status) && Date.now() - (Date.parse(x.email_status.split(' ')[2] || '') || 0) > CONFIG.STUCK_SENDING_MS);
+      out.checks.stuck_sending = stuck.length ? stuck : 'none';
     } catch (e) { out.checks.google_error = e.message; }
     try {
       const camps = await zeffyList('/campaigns');
@@ -793,18 +849,23 @@ export default async (req) => {
         out.checks.club78_campaign = hit ? { id: hit.id, title: hit.title, matches_config_id: lower(hit.id) === lower(CONFIG.CLUB78_CAMPAIGN_ID) } : 'not found';
       }
     } catch (e) { out.checks.zeffy_api_error = e.message; }
-    // ?reseed=1 → overwrite the Emails tab from DEFAULT_TEMPLATES above. DESTRUCTIVE:
-    // it discards whatever is in the sheet. Only for pushing a new approved copy deck.
+    // ?reseed=1&confirm=reseed → overwrite the Emails tab from DEFAULT_TEMPLATES above.
+    // DESTRUCTIVE: it discards whatever is in the sheet, so it needs the second parameter.
+    // Only for pushing a new approved copy deck.
     const url0 = new URL(req.url);
     if (url0.searchParams.get('reseed') === '1') {
-      try {
-        const auth = await googleAuth(googleCreds());
-        const g = gapi(auth.token);
-        const rows = [['key', 'subject', 'body — edit freely; placeholders in {{double braces}} are filled in per donor'],
-          ...DEFAULT_TEMPLATES.map((t) => [t.key, t.subject, t.body])];
-        await g.update(CONFIG.SIGNUPS_SHEET_ID, `${CONFIG.EMAILS_TAB}!A1:C${rows.length}`, rows);
-        out.reseeded = DEFAULT_TEMPLATES.map((t) => t.key);
-      } catch (e) { out.reseed_error = e.message; }
+      if (url0.searchParams.get('confirm') !== 'reseed') {
+        out.reseed_error = 'reseed overwrites every template in the Emails tab; add &confirm=reseed to do it';
+      } else {
+        try {
+          const auth = await googleAuth(googleCreds());
+          const g = gapi(auth.token, deadline);
+          const rows = [['key', 'subject', 'body — edit freely; placeholders in {{double braces}} are filled in per donor'],
+            ...DEFAULT_TEMPLATES.map((t) => [t.key, t.subject, t.body])];
+          await g.update(CONFIG.SIGNUPS_SHEET_ID, `${CONFIG.EMAILS_TAB}!A1:C${rows.length}`, rows);
+          out.reseeded = DEFAULT_TEMPLATES.map((t) => t.key);
+        } catch (e) { out.reseed_error = e.message; }
+      }
     }
 
     // ?backfill=DAYS[&max=N]  → (re)process recent '78 Club payments from the Zeffy API:
@@ -814,7 +875,6 @@ export default async (req) => {
     if (url.searchParams.has('backfill')) {
       const days = Math.min(365, Math.max(1, Number(url.searchParams.get('backfill')) || 30));
       const max = Math.min(10, Math.max(1, Number(url.searchParams.get('max')) || 2));
-      const started = Date.now();
       out.backfill = { days, processed: [], remaining: 0 };
       try {
         const since = Math.floor(Date.now() / 1000) - days * 86400;
@@ -823,7 +883,7 @@ export default async (req) => {
         out.backfill.found = todo.length;
         for (const p of todo) {
           if (out.backfill.processed.length >= max || Date.now() - started > CONFIG.BUDGET_MS - 3500) { out.backfill.remaining++; continue; }
-          try { const r = await processPayment(p, { eventId: 'backfill' }); out.backfill.processed.push(r.duplicate ? { payment_id: p.id, duplicate: true } : r); }
+          try { const r = await processPayment(p, { eventId: 'backfill', deadline }); out.backfill.processed.push(r.duplicate ? { payment_id: p.id, duplicate: true } : r); }
           catch (e) { out.backfill.processed.push({ payment_id: p.id, error: e.message }); }
         }
         if (!process.env.ZEFFY_API_KEY) out.backfill.error = 'ZEFFY_API_KEY is not set — backfill needs the API';
@@ -850,7 +910,11 @@ export default async (req) => {
   const noNotify = event?.no_notify === true && gate(req);
   if (!simulate) {
     const v = verifyZeffySignature(raw, req.headers.get('zeffy-signature') || req.headers.get('Zeffy-Signature'), process.env.ZEFFY_WEBHOOK_SECRET);
-    if (!v.ok) return json({ error: 'invalid signature', why: v.why }, v.why === 'no secret configured' ? 500 : 400);
+    if (!v.ok) {
+      // the reason stays in the function log (Netlify UI) — anonymous callers get no detail
+      console.warn(`club78-webhook: signature rejected (${v.why})`);
+      return json({ error: 'invalid signature' }, v.why === 'no secret configured' ? 500 : 400);
+    }
   }
   if (event?.type && event.type !== 'payment.completed') return json({ ok: true, ignored: event.type });
   const p = event?.data;
@@ -858,7 +922,7 @@ export default async (req) => {
   if (!paymentOk(p)) return json({ ok: true, ignored: `status ${p.status} / refund ${p.refund_status}` });
 
   try {
-    const result = await processPayment(p, { eventId: event.id, simulate, dry, noPlaque, noNotify });
+    const result = await processPayment(p, { eventId: event.id, simulate, dry, noPlaque, noNotify, deadline });
     return json(result);
   } catch (e) {
     // non-2xx → Zeffy retries (up to 5×); the log row makes the retry resume, not repeat

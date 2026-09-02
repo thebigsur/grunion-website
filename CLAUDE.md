@@ -44,7 +44,10 @@ tradeoffs. Simplicity here is deliberate, not an accident.
   webhook receiver (payment.completed) that totals a donor's membership year,
   works out the tier, logs to the private "'78 Club Signups" sheet, puts the
   name on the Patron Wall tab, and emails the donor from treasurer@sbrfc.com.
-  Secrets (ZEFFY_WEBHOOK_SECRET, ZEFFY_API_KEY) live only in Netlify env vars.
+  Secrets (ZEFFY_WEBHOOK_SECRET, ZEFFY_API_KEY, CLUB78_ADMIN_KEY) live only in
+  Netlify env vars. Its admin endpoints use CLUB78_ADMIN_KEY (fallback:
+  DASHBOARD_KEY until that is set); a failed Google read fails the run so Zeffy
+  retries, and the donor email is marked "sending" before it goes out.
 - CLUB78-SETUP.md — '78 Club pipeline handbook (env vars, rules, testing, templates)
 - DASHBOARD-SETUP.md — dashboard env-var setup + troubleshooting guide
 - SPONSOR-BOARD-SETUP.md — Sponsor Board handbook (where the key lives, rotation,
@@ -84,7 +87,14 @@ tradeoffs. Simplicity here is deliberate, not an accident.
 - Header/footer markup is duplicated across the modern pages by design. A shared
   change must be applied to index, history, MERchives, the-78-club, fossils, and 404.
 - Netlify's pretty-URL setting lowercases paths: the MERchives page is canonically
-  `/merchives`; internal links use `/merchives`.
+  `/merchives`. Internal links are extensionless everywhere (`/history`, `/fossils`,
+  `/the-78-club`, `/coach`, `/play`, `/` + `#anchor`), matching the canonicals.
+- Google Fonts: only the weights in use are requested (Saira 700/800/900, Libre
+  Franklin 400/400i/600/700, Plex Mono 400/500/600). A new weight in CSS needs
+  adding to the `<link>` on every page or the browser will synthesize it.
+- The four family/map photos on the home page are real `<img class="ph-img">`
+  tags inside `.ph` boxes (lazy-loaded), not CSS backgrounds; the gallery strip
+  only starts fetching when it scrolls near.
 - The `*.md` handbooks (README, CLAUDE, CLUB78-SETUP, DASHBOARD-SETUP,
   SPONSOR-BOARD-SETUP) and everything under `/netlify/*` are 404'd by
   netlify.toml so they are not public pages.

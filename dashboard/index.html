@@ -217,10 +217,10 @@ button{font-family:inherit;cursor:pointer;color:inherit}
 </head>
 <body>
 <!-- ============================ PASSCODE GATE ============================ -->
-<div class="gatewall" id="gate">
+<div class="gatewall" id="gate" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
   <div class="gate-card">
     <img class="crest" src="/assets/grunion-crest.png" alt="Grunion RFC crest" />
-    <h1>Club Dashboard</h1>
+    <h1 id="gateTitle">Club Dashboard</h1>
     <p>Committee only. Enter the dashboard passcode.</p>
     <form class="gate-form" id="gateForm">
       <label class="sr-only" for="gateKey">Dashboard passcode</label>
@@ -431,10 +431,19 @@ const css = (name) => getComputedStyle(document.documentElement).getPropertyValu
 const KEY_LS = 'grunionDashKey';
 const state = { days: 30, cm: null, ga: null, nl: null };
 
+// While the gate is up, the page behind it is inert (no Tab stops, no clicks) so the
+// passcode dialog is truly modal for keyboard and screen-reader users.
+function setGate(open) {
+  $('gate').hidden = !open;
+  for (const sel of ['header.dhead', 'main#main', 'footer.dfoot', 'hr.rule101']) {
+    const n = document.querySelector(sel);
+    if (n) { n.inert = open; n.setAttribute('aria-hidden', open ? 'true' : 'false'); }
+  }
+}
 function lock(message) {
   localStorage.removeItem(KEY_LS);
   $('gateErr').textContent = message || '';
-  $('gate').hidden = false;
+  setGate(true);
   $('gateKey').value = '';
   setTimeout(() => $('gateKey').focus(), 50);
 }
@@ -449,9 +458,6 @@ async function api(name, params) {
     return { error: 'Network error — are you offline?' };
   }
   if (r.status === 401) { lock('That passcode didn’t match — try again.'); return { error: 'unauthorized' }; }
-  if (r.status === 503) {
-    return { error: 'DASHBOARD_KEY isn’t set on the site yet — add it in Netlify env vars (see DASHBOARD-SETUP.md).' };
-  }
   if (r.status === 404) {
     return { error: 'Function not found — deploy the site with the netlify/functions folder first.' };
   }
@@ -967,13 +973,13 @@ $('gateForm').addEventListener('submit', (ev) => {
   const v = $('gateKey').value.trim();
   if (!v) return;
   localStorage.setItem(KEY_LS, v);
-  $('gate').hidden = true;
+  setGate(false);
   $('gateErr').textContent = '';
   loadAll();
 });
 
 // boot
-if (localStorage.getItem(KEY_LS)) { $('gate').hidden = true; loadAll(); }
+if (localStorage.getItem(KEY_LS)) { setGate(false); loadAll(); }
 else lock('');
 
 

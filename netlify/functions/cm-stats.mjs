@@ -21,8 +21,11 @@ const json = (data, status = 200) =>
   });
 
 function gate(req) {
+  // read-only endpoint: anything but GET/HEAD is refused before the key is even looked at
+  if (req.method !== 'GET' && req.method !== 'HEAD') return json({ error: 'method not allowed' }, 405);
   const expected = process.env.DASHBOARD_KEY;
-  if (!expected) return json({ error: 'DASHBOARD_KEY is not set on this site' }, 503);
+  // a missing passcode fails closed; the env-var name stays in the function log, not the reply
+  if (!expected) { console.error('DASHBOARD_KEY is not set on this site'); return json({ error: 'unauthorized' }, 401); }
   const got = req.headers.get('x-dashboard-key') || '';
   const a = Buffer.from(String(got));
   const b = Buffer.from(String(expected));

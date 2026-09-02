@@ -77,6 +77,34 @@ var CONFIG = {
   MEMBERS_AREA_URL:   "/merchives"
 };
 
+/* ---------- shared helpers ---------- */
+/* CSV → rows of cells. Handles quoted fields, doubled quotes and (unlike a split on
+   newlines) line breaks INSIDE a quoted cell, which Google's CSV export produces
+   whenever someone types a multi-line note into a sheet. Blank rows are dropped. */
+function csvRows(text){
+  var rows=[], row=[], cur='', q=false, i, c;
+  text=String(text||'').replace(/\r\n?/g,'\n');
+  for(i=0;i<text.length;i++){ c=text[i];
+    if(q){
+      if(c==='"'){ if(text[i+1]==='"'){ cur+='"'; i++; } else q=false; }
+      else cur+=c;
+    } else if(c==='"'){ q=true; }
+    else if(c===','){ row.push(cur); cur=''; }
+    else if(c==='\n'){ row.push(cur); rows.push(row); row=[]; cur=''; }
+    else cur+=c;
+  }
+  if(cur.length || row.length){ row.push(cur); rows.push(row); }
+  return rows.filter(function(r){ return r.some(function(v){ return v.trim().length; }); });
+}
+/* fetch() that gives up after `ms` (default 12 s) instead of leaving a section on
+   "Loading…" forever when a request stalls. Rejects like a network error. */
+function fetchTimeout(url, ms, opts){
+  var ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+  var o=opts||{}; if(ctrl) o.signal=ctrl.signal;
+  var t=ctrl?setTimeout(function(){ ctrl.abort(); }, ms||12000):null;
+  return fetch(url, o).then(function(r){ if(t) clearTimeout(t); return r; }, function(e){ if(t) clearTimeout(t); throw e; });
+}
+
 /* ---------- apply CONFIG to the page ---------- */
 (function applyConfig(){
   var yearEl=document.getElementById('year');
@@ -269,28 +297,18 @@ var CONFIG = {
   }
 
   function parseCSV(text){
-    var lines=text.replace(/\r/g,'').split('\n').filter(function(l){return l.trim().length;});
+    var lines=csvRows(text);
     if(lines.length<2) return [];
-    var headers=splitLine(lines[0]).map(function(h){return h.trim().toLowerCase();});
+    var headers=lines[0].map(function(h){return h.trim().toLowerCase();});
     var map={season:'Season',division:'Division',date:'Date',time:'Time',kickoff:'Time',kickofftime:'Time',opponent:'Opponent',competition:'Competition',location:'Location',status:'Status',grunionscore:'GrunionScore',opponentscore:'OpponentScore'};
     var out=[];
     for(var i=1;i<lines.length;i++){
-      var cells=splitLine(lines[i]); var o={};
+      var cells=lines[i]; var o={};
       headers.forEach(function(h,idx){ var key=map[h.replace(/[^a-z]/g,'')]; if(key) o[key]=(cells[idx]||'').trim(); });
       if(o.Opponent||o.Date) out.push(o);
     }
     return out;
   }
-  function splitLine(line){
-    var res=[],cur='',q=false;
-    for(var i=0;i<line.length;i++){var c=line[i];
-      if(c==='"'){ if(q&&line[i+1]==='"'){cur+='"';i++;} else q=!q; }
-      else if(c===','&&!q){res.push(cur);cur='';}
-      else cur+=c;
-    }
-    res.push(cur); return res;
-  }
-
   function seasonsOf(rows){
     var s=[]; rows.forEach(function(r){ if(r.Season && s.indexOf(r.Season)===-1) s.push(r.Season); });
     s.sort().reverse(); return s;
@@ -450,7 +468,7 @@ metaEl.hidden=false;
   if(!slots.length) return;            // only on the '78 Club page
   if(!CONFIG.PATRONS_DOC_URL) return;  // not connected yet — keep placeholders
 
-  fetch(CONFIG.PATRONS_DOC_URL).then(function(r){ if(!r.ok) throw 0; return r.text(); })
+  fetchTimeout(CONFIG.PATRONS_DOC_URL).then(function(r){ if(!r.ok) throw 0; return r.text(); })
     .then(function(txt){
       var groups = parsePatrons(txt);
       slots.forEach(function(el){
@@ -461,24 +479,15 @@ metaEl.hidden=false;
     .catch(function(){ /* unreachable source — leave placeholders */ });
 
   function norm(s){ return String(s||'').toLowerCase().replace(/[^a-z]/g,''); }
-  function splitLine(line){
-    var res=[],cur='',q=false;
-    for(var i=0;i<line.length;i++){var c=line[i];
-      if(c==='"'){ if(q&&line[i+1]==='"'){cur+='"';i++;} else q=!q; }
-      else if(c===','&&!q){res.push(cur);cur='';}
-      else cur+=c;
-    }
-    res.push(cur); return res;
-  }
 
   function parsePatrons(text){
     text = text.replace(/\r/g,'');
     // Published Google Sheet (CSV): header row with a "Tier" column, then Tier,Name rows.
     // The gviz CSV export wraps every field in quotes, so match a quoted header too.
     if(/(^|\n)\s*"?tier"?\s*,/i.test(text)){
-      var out={}, lines=text.split('\n').filter(function(l){return l.trim();});
+      var out={}, lines=csvRows(text);
       for(var i=1;i<lines.length;i++){
-        var c=splitLine(lines[i]), t=norm(c[0]), n=(c[1]||'').trim();
+        var c=lines[i], t=norm(c[0]), n=(c[1]||'').trim();
         if(t&&n){ (out[t]=out[t]||[]).push(n); }
       }
       return out;
@@ -509,7 +518,7 @@ metaEl.hidden=false;
   if(!list) return;                // only on the history page
   if(!CONFIG.HOF_CSV_URL) return;  // not connected yet — keep the built-in list
 
-  fetch(CONFIG.HOF_CSV_URL).then(function(r){ if(!r.ok) throw 0; return r.text(); })
+  fetchTimeout(CONFIG.HOF_CSV_URL).then(function(r){ if(!r.ok) throw 0; return r.text(); })
     .then(function(txt){
       var people = parseHOF(txt);
       if(!people.length) return;   // empty / unreadable — leave the built-in list
@@ -522,24 +531,15 @@ metaEl.hidden=false;
     })
     .catch(function(){ /* unreachable source — leave the built-in list */ });
 
-  function splitLine(line){
-    var res=[],cur='',q=false;
-    for(var i=0;i<line.length;i++){var c=line[i];
-      if(c==='"'){ if(q&&line[i+1]==='"'){cur+='"';i++;} else q=!q; }
-      else if(c===','&&!q){res.push(cur);cur='';}
-      else cur+=c;
-    }
-    res.push(cur); return res;
-  }
   function parseHOF(text){
-    var lines=text.replace(/\r/g,'').split('\n').filter(function(l){return l.trim().length;});
+    var lines=csvRows(text);
     if(lines.length<2) return [];
-    var headers=splitLine(lines[0]).map(function(h){return h.trim().toLowerCase().replace(/[^a-z]/g,'');});
+    var headers=lines[0].map(function(h){return h.trim().toLowerCase().replace(/[^a-z]/g,'');});
     var ni=headers.indexOf('name'); var yi=headers.indexOf('year');
     if(ni===-1) ni=0;                // no header? assume column 1 is the name
     var out=[];
     for(var i=1;i<lines.length;i++){
-      var cells=splitLine(lines[i]);
+      var cells=lines[i];
       var name=(cells[ni]||'').trim();
       var year=yi>-1?(cells[yi]||'').trim().replace(/^'+/,''):'';
       if(name) out.push({name:name, year:year});
@@ -556,21 +556,34 @@ metaEl.hidden=false;
   /* Photo auto-load: each .ph[data-photo] probes for its image file.
      If the file exists, it becomes the slot's background and the placeholder label hides.
      If not, the labeled placeholder stays — so the gallery never looks broken.
-     To update a photo, just upload the matching filename to assets/ (overwrite). */
-  document.querySelectorAll('.ph[data-photo]').forEach(function(ph){
-    var url=ph.getAttribute('data-photo');
-    if(!url) return;
-    var probe=new Image();
-    probe.onload=function(){
-      ph.style.backgroundImage="url('"+url+"')";
-      ph.style.backgroundSize='cover';
-      ph.style.backgroundPosition='center';
-      ph.classList.add('photo');
-      ph.classList.remove('green');
-      var tag=ph.querySelector('.ph-tag'); if(tag) tag.style.display='none';
-    };
-    probe.src=url;
-  });
+     To update a photo, just upload the matching filename to assets/ (overwrite); to add
+     a slot, copy a <figure class="g-item"> in index.html with a new data-photo name. */
+  function loadStaticSlots(){
+    document.querySelectorAll('.ph[data-photo]').forEach(function(ph){
+      var url=ph.getAttribute('data-photo');
+      if(!url) return;
+      var probe=new Image();
+      probe.onload=function(){
+        ph.style.backgroundImage="url('"+url+"')";
+        ph.style.backgroundSize='cover';
+        ph.style.backgroundPosition='center';
+        ph.classList.add('photo');
+        ph.classList.remove('green');
+        var tag=ph.querySelector('.ph-tag'); if(tag) tag.style.display='none';
+      };
+      probe.src=url;
+    });
+  }
+
+  /* Nothing in the gallery is fetched until the strip is within ~400px of the
+     viewport, so the hero photo and the fixtures get the connection first. */
+  function whenNear(el, fn){
+    if(!('IntersectionObserver' in window)){ fn(); return; }
+    var io=new IntersectionObserver(function(entries){
+      if(entries.some(function(e){ return e.isIntersecting; })){ io.disconnect(); fn(); }
+    }, {rootMargin:'400px 0px'});
+    io.observe(el);
+  }
 
   document.querySelectorAll('[data-gal]').forEach(function(b){
     b.addEventListener('click', function(){
@@ -584,7 +597,7 @@ metaEl.hidden=false;
      folder. Every page load gets a fresh random selection. If the Drive API is
      unreachable (or the folder is empty), the static slots above stay put —
      so the gallery never looks broken. */
-  (function(){
+  function loadLivePhotos(){
     var KEY=CONFIG.MEMBERS_DRIVE_API_KEY, FID=CONFIG.MEMBERS_DRIVE_CURRENT_FOLDER_ID;
     if(!KEY || !FID) return;
     var q="'"+FID+"' in parents and mimeType contains 'image/' and trashed=false";
@@ -592,7 +605,7 @@ metaEl.hidden=false;
       +'&pageSize=200&fields='+encodeURIComponent('files(id,name,thumbnailLink)')
       +'&supportsAllDrives=true&includeItemsFromAllDrives=true'  // folders live in a shared drive
       +'&key='+encodeURIComponent(KEY);
-    fetch(url).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    fetchTimeout(url).then(function(r){ if(!r.ok) throw 0; return r.json(); })
       .then(function(j){
         var files=((j&&j.files)||[]).filter(function(f){ return f.thumbnailLink; });
         if(!files.length) return;
@@ -649,7 +662,9 @@ metaEl.hidden=false;
         pump();
       })
       .catch(function(){ /* Drive unreachable — keep the static gallery */ });
-  })();
+  }
+
+  whenNear(strip, function(){ loadStaticSlots(); loadLivePhotos(); });
 })();
 
 /* ============================ HISTORY ASIDE — ARCHIVE SLIDESHOW ============================ */
@@ -832,7 +847,7 @@ metaEl.hidden=false;
           section.setAttribute('data-view', slug);
           section.innerHTML=
             '<div class="folder-head">'+
-              '<h4 class="folder-name">'+esc(folder.name)+'</h4>'+
+              '<h3 class="folder-name">'+esc(folder.name)+'</h3>'+
               '<span class="folder-meta" data-folder-count>Auto-synced</span>'+
             '</div>'+
             '<div class="member-gallery" data-folder-grid role="list">'+
@@ -904,7 +919,7 @@ metaEl.hidden=false;
       + '&fields=' + encodeURIComponent('files(id,name)')
       + '&supportsAllDrives=true&includeItemsFromAllDrives=true'  // folders live in a shared drive
       + '&key=' + encodeURIComponent(KEY);
-    fetch(url).then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    fetchTimeout(url).then(function(r){ if(!r.ok) throw 0; return r.json(); })
       .then(function(j){ cb(null, (j && j.files) || []); })
       .catch(function(){ cb(true, null); });
   }
@@ -927,17 +942,27 @@ metaEl.hidden=false;
             "mimeType contains 'video/')";
     driveList(q, 'files(id,name,mimeType,modifiedTime)', cb);
   }
+  // Follows Drive's paging, so a folder with more than 200 files still lists in full
+  // (capped at 1,000 files = 5 pages, plenty for any archive folder).
   function driveList(q, fields, cb){
-    var url = 'https://www.googleapis.com/drive/v3/files'
+    var base = 'https://www.googleapis.com/drive/v3/files'
       + '?q=' + encodeURIComponent(q)
       + '&orderBy=' + encodeURIComponent('modifiedTime desc')
       + '&pageSize=200'
-      + '&fields=' + encodeURIComponent(fields)
+      + '&fields=' + encodeURIComponent('nextPageToken,' + fields)
       + '&supportsAllDrives=true&includeItemsFromAllDrives=true'  // folders live in a shared drive
       + '&key=' + encodeURIComponent(KEY);
-    fetch(url).then(function(r){ if(!r.ok) throw 0; return r.json(); })
-      .then(function(j){ cb(null, (j && j.files) || []); })
-      .catch(function(){ cb(true, null); });
+    var all=[];
+    (function page(token, n){
+      fetchTimeout(base + (token ? '&pageToken=' + encodeURIComponent(token) : ''))
+        .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+        .then(function(j){
+          all = all.concat((j && j.files) || []);
+          if(j && j.nextPageToken && n < 5) page(j.nextPageToken, n + 1);
+          else cb(null, all);
+        })
+        .catch(function(){ if(all.length) cb(null, all); else cb(true, null); });
+    })(null, 1);
   }
 
   /* ---------- renderers ---------- */

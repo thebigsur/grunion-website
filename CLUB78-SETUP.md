@@ -33,7 +33,9 @@ Donor → Zeffy '78 Club membership form ──payment.completed──▶ /.netl
 | `ZEFFY_WEBHOOK_SECRET` | `whsec_…` from Zeffy → Settings → Integrations → Webhook → Reveal secret. Rotating it in Zeffy invalidates the old one immediately — update Netlify first, then regenerate. |
 | `ZEFFY_API_KEY` | Zeffy → Settings → Integrations → API Key. Read-only. Used to total a donor's giving and to name the rate they chose. Without it the function still works from its own log. |
 | `GA_CLIENT_EMAIL` / `GA_PRIVATE_KEY` | Already set for the dashboard — the same service account. |
-| `DASHBOARD_KEY` | Already set. Gates the GET status endpoint and the simulate harness. |
+| `CLUB78_ADMIN_KEY` | **Set this.** A long random secret (`openssl rand -hex 24`) that gates the GET status/backfill/reseed endpoints and the simulate/dry harness, i.e. everything that can send mail as treasurer@ or write the plaque. Until it exists the function falls back to `DASHBOARD_KEY`, the committee passcode, which is memorable and sits in every committee member's browser. Keep this one out of the dashboard and in the Keys doc only. |
+| `DASHBOARD_KEY` | Already set. Only the fallback for the above while `CLUB78_ADMIN_KEY` is missing. |
+| `CLUB78_SIGNUPS_SHEET_ID` | Optional. Overrides the private Signups sheet id baked into the code. |
 | `CLUB78_DISABLE_EMAIL` | Optional. `1` = log + plaque only, no emails (testing). |
 
 Every secret's value also goes in the **Grunion Project Keys** doc (Grunion Private). Env changes need a redeploy to reach functions (Deploys → Trigger deploy).
@@ -41,7 +43,7 @@ Every secret's value also goes in the **Grunion Project Keys** doc (Grunion Priv
 ## Rules the function follows
 
 - **Only the '78 form creates members.** A payment on any other Zeffy donation form counts as a *top-up* if that email address already joined through the '78 form; events, shop and raffle payments never count.
-- **Membership year** = 365 days from the first qualifying payment; the next payment after the year ends starts a new year. Everything inside the year is summed (Zeffy API history when the key is set, otherwise the Signups log).
+- **Membership year** = one calendar year from the first qualifying payment (same date next year, so leap years are full years); the next payment on or after that date starts a new year. Everything inside the year is summed (Zeffy API history when the key is set, otherwise the Signups log).
 - **Tier** = highest tier whose minimum the year total reaches. First time we see a donor → `join` (welcome email for their tier). Later payments → `upgrade` (crossed a higher minimum, plaque row moves up) or `topup` (thanks + running total).
 - **Plaque name** = their answer to the plaque question, else "First Last". A top-up with no answer keeps the name they gave when they joined. "Anonymous" is a legal answer and is listed as such.
 - **Acknowledgment text** in every email: amount, date, EIN, and either the benefit value deducted ($25 / $50 / $100 for the tier reached — only the *increase* on an upgrade) or "no goods or services" for top-ups. Zeffy issues no tax receipt on pay-what-you-can rates, so this email is the donor's written acknowledgment — don't remove it without talking to Josh.
@@ -59,10 +61,12 @@ If the tab is ever emptied, the function re-seeds the built-in defaults (bottom 
 ## Checking it's alive
 
 ```
-curl -s -H "x-dashboard-key: YOUR_DASHBOARD_PASSCODE" https://grunionrugby.com/.netlify/functions/club78-webhook | python3 -m json.tool
+curl -s -H "x-dashboard-key: YOUR_CLUB78_ADMIN_KEY" https://grunionrugby.com/.netlify/functions/club78-webhook | python3 -m json.tool
 ```
 
-Expected: `webhook_secret: true`, `zeffy_api_key: true`, `google_mode: "delegated"` / `google_delegation: true`, six template keys, `patron_wall_tab: "'78 Club Patron Wall"`, and `club78_campaign.matches_config_id: true`. This call also creates the sheet tabs and seeds the templates, so run it once after the first deploy. `google_mode: "service-account"` means delegation is missing (see below) — sheets work, emails wait.
+(`x-dashboard-key` is the header name; the value is `CLUB78_ADMIN_KEY`, or the dashboard passcode until that is set.)
+
+Expected: `webhook_secret: true`, `zeffy_api_key: true`, `admin_key: "CLUB78_ADMIN_KEY"`, `google_mode: "delegated"` / `google_delegation: true`, six template keys, `patron_wall_tab: "'78 Club Patron Wall"`, `stuck_sending: "none"`, and `club78_campaign.matches_config_id: true`. This call also creates the sheet tabs and seeds the templates, so run it once after the first deploy. `google_mode: "service-account"` means delegation is missing (see below) — sheets work, emails wait.
 
 `google_delegation: false` with "unauthorized_client" = the domain-wide delegation step in the sbrfc.com admin console is missing or has the wrong scopes (needs exactly `https://www.googleapis.com/auth/gmail.send,https://www.googleapis.com/auth/spreadsheets` on client id `104737401110086584512`).
 
@@ -71,7 +75,7 @@ Expected: `webhook_secret: true`, `zeffy_api_key: true`, `google_mode: "delegate
 The function detects it and runs in **service-account mode**: it still logs the payment and updates the plaque (the two sheets are shared with the service account directly), but it cannot send mail, so the donor email and the notice are marked `pending: delegation` in the Signups tab. Nothing is lost — once the admin-console step is done, run a backfill and the pending emails go out:
 
 ```
-curl -s -H "x-dashboard-key: YOUR_DASHBOARD_PASSCODE" "https://grunionrugby.com/.netlify/functions/club78-webhook?backfill=60&max=3" | python3 -m json.tool
+curl -s -H "x-dashboard-key: YOUR_CLUB78_ADMIN_KEY" "https://grunionrugby.com/.netlify/functions/club78-webhook?backfill=60&max=3" | python3 -m json.tool
 ```
 
 Backfill = re-read the last N days of '78 Club payments from the Zeffy API and finish anything not fully processed (also catches payments made while the webhook was disabled). It handles `max` payments per call (keep ≤3 — the function has ~10 s); repeat until `remaining` is 0. Already-finished payments come back as `duplicate: true`.
@@ -85,13 +89,13 @@ same six templates as `DEFAULT_TEMPLATES` — the seed used when the tab is empt
 record in git. To push the code version over the sheet (after Josh approves a new draft):
 
 ```
-curl -s -H "x-dashboard-key: YOUR_DASHBOARD_PASSCODE" "https://grunionrugby.com/.netlify/functions/club78-webhook?reseed=1" | python3 -m json.tool
+curl -s -H "x-dashboard-key: YOUR_CLUB78_ADMIN_KEY" "https://grunionrugby.com/.netlify/functions/club78-webhook?reseed=1&confirm=reseed" | python3 -m json.tool
 ```
 
-**Destructive** — it overwrites whatever is in the tab. Day-to-day tweaks should be made in the
+**Destructive** — it overwrites whatever is in the tab, which is why it needs both `reseed=1` and `confirm=reseed` (without the second it only tells you so). Day-to-day tweaks should be made in the
 sheet, not the code; only reseed when the code has been deliberately updated to a new deck.
 
-## Test switches (with the dashboard key, on a simulate/dry POST)
+## Test switches (with the admin key, on a simulate/dry POST)
 
 | Flag | Effect |
 | --- | --- |
@@ -111,11 +115,11 @@ touching the live site or anyone else's inbox.
 
 ```
 curl -s -X POST https://grunionrugby.com/.netlify/functions/club78-webhook \
-  -H "content-type: application/json" -H "x-dashboard-key: YOUR_DASHBOARD_PASSCODE" \
+  -H "content-type: application/json" -H "x-dashboard-key: YOUR_CLUB78_ADMIN_KEY" \
   -d '{"dry":true,"id":"sim-1","type":"payment.completed","data":{"id":"sim-pay-1","amount":50000,"status":"succeeded","created":'"$(date +%s)"',"campaign_id":"bff55e80-4c68-40d9-9f72-d769d41697b3","campaign_category":"membership","description":"The 78 Club test","contact":null,"refund_status":"none","buyer":{"first_name":"Test","last_name":"Donor","email":"YOUR_EMAIL"},"buyer_questions":[],"items":[{"type":"ticket","amount":50000,"rate_id":null,"questions":[{"question":"Name for the 78 Club plaque","answer":"Test Donor (delete me)","type":"text"}]}]}}'
 ```
 
-That sends the real Supporters' Union email to YOUR_EMAIL, adds "Test Donor (delete me)" to the plaque tab and logs a row — delete the plaque row and the log row afterwards. Only works with the dashboard passcode; Zeffy deliveries are always signature-checked.
+That sends the real Supporters' Union email to YOUR_EMAIL, adds "Test Donor (delete me)" to the plaque tab and logs a row — delete the plaque row and the log row afterwards. Only works with the admin key; Zeffy deliveries are always signature-checked.
 
 ## Real test, then go live
 
@@ -124,6 +128,13 @@ That sends the real Supporters' Union email to YOUR_EMAIL, adds "Test Donor (del
 3. Zeffy → Settings → Integrations → Webhook → **Enable webhook** → Save.
 4. Pay $1 on the form with your own email. Within a minute: Zeffy receipt, then the tier email from treasurer@, the notice, a row in Signups, the name on the plaque tab (the live page updates ~5 min later).
 5. Refund the $1 in Zeffy (Payments → the payment → Refund — free). Remove the test row from the Patron Wall tab and the Signups tab. Put the minimum back.
+
+## What happens when Google is slow or down
+
+- A failed read of the Signups log or the Emails tab **fails the run** (non-2xx). Zeffy retries the delivery (up to 5 times) with the log intact, so nothing is re-seeded or double-counted. Before this, a timeout was treated as an empty tab.
+- A token error that is *not* the missing-delegation case (a Google 5xx, a timeout, a bad key) also fails the run instead of quietly parking the donor's email as `pending`.
+- The whole run has a 9 s budget. If it runs out before the welcome email is sent, the run fails and Zeffy retries; nothing is sent twice.
+- Right before sending, the row's `email_status` is written as `sending <tier> <time>`. If the function is cut off between the send and the `sent` write, the cell stays `sending` and a retry will **not** send again. GET status lists any row stuck in `sending` for more than 15 minutes under `stuck_sending`: check treasurer@'s Sent mail; if the email is not there, clear that cell in the Signups tab and run a backfill, which resends it.
 
 ## Gotchas
 

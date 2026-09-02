@@ -26,7 +26,7 @@
 <meta name="twitter:card" content="summary_large_image" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800;900&family=Libre+Franklin:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@700;800;900&family=Libre+Franklin:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="styles.css" />
 <style>
 /* ============================ MEMBERS LIBRARY (page-local) ============================ */
@@ -46,7 +46,7 @@
 /* shared block scaffold */
 .mlib-block{margin-top:clamp(52px,7vw,84px)}
 .mlib-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:14px 28px}
-.mlib-head h3{font-size:clamp(1.8rem,3.4vw,2.6rem);line-height:.95}
+.mlib-head h2{font-size:clamp(1.8rem,3.4vw,2.6rem);line-height:.95}
 .mlib-count{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.5)}
 
 /* ---- photo gallery: sub-folders ---- */
@@ -191,7 +191,7 @@
 .pi-head img{width:88px;height:88px;object-fit:cover;border-radius:3px;flex:none;
   border:1px solid rgba(255,255,255,.2);background:var(--ocean-800)}
 .pi-head .kicker{color:var(--gold-soft)}
-.pi-head h4{font-family:var(--font-display);font-weight:800;text-transform:uppercase;letter-spacing:.01em;
+.pi-head h3{font-family:var(--font-display);font-weight:800;text-transform:uppercase;letter-spacing:.01em;
   font-size:clamp(1.5rem,4.5vw,1.9rem);line-height:.95;margin-top:8px;color:#fff}
 .pi-file{display:block;margin-top:8px;font-family:var(--font-mono);font-size:.64rem;
   letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.5);word-break:break-word}
@@ -245,22 +245,22 @@
 <a class="skip" href="#memberlib">Skip to content</a>
 <header class="site-head" id="siteHead">
   <div class="wrap nav">
-    <a class="brand" href="index.html#top" aria-label="Grunion Rugby Football Club, home">
+    <a class="brand" href="/#top" aria-label="Grunion Rugby Football Club, home">
       <img class="crest" src="assets/grunion-crest.png" alt="Grunion RFC crest" width="400" height="400" />
       <span><b>Grunion R.F.C.</b><i>Santa Barbara · Est. 1978</i></span>
     </a>
     <nav class="nav-links" id="navLinks" aria-label="Primary">
-      <a href="index.html#fixtures">Fixtures</a>
-      <a href="index.html#play">Play</a>
-      <a href="history.html">History</a>
-      <a href="index.html#news">News</a>
-      <a href="the-78-club.html" class="nav-club">'78 Club</a>
+      <a href="/#fixtures">Fixtures</a>
+      <a href="/#play">Play</a>
+      <a href="/history">History</a>
+      <a href="/#news">News</a>
+      <a href="/the-78-club" class="nav-club">'78 Club</a>
       <a href="/merchives" class="nav-merchives">MERchives</a>
-      <a href="fossils.html" class="nav-fossils">Fossils</a>
-      <a href="index.html#sponsors">Sponsors</a>
+      <a href="/fossils" class="nav-fossils">Fossils</a>
+      <a href="/#sponsors">Sponsors</a>
     </nav>
     <div class="nav-actions">
-      <a href="index.html#play" class="btn btn-gold btn-sm">Join</a>
+      <a href="/#play" class="btn btn-gold btn-sm">Join</a>
       <button class="burger" id="burger" aria-label="Menu" aria-expanded="false" aria-controls="navLinks"><span></span></button>
     </div>
   </div>
@@ -286,7 +286,7 @@
         <div class="mlib-head">
           <div>
             <span class="kicker">From The Archive</span>
-            <h3 id="gallery-h" style="margin-top:12px">Recent Photos</h3>
+            <h2 id="gallery-h" style="margin-top:12px">Recent Photos</h2>
           </div>
           <span class="mlib-count" id="memberGalleryCount" aria-hidden="true"></span>
         </div>
@@ -297,7 +297,7 @@
 
       <div class="mlib-block">
         <div class="mlib-head">
-          <h3 id="legacy-h">Legacy Photos</h3>
+          <h2 id="legacy-h">Legacy Photos</h2>
         </div>
         <nav class="mlib-index" id="legacyTiles" aria-label="Legacy photo folders">
           <div class="mx-loading">Loading folders…</div>
@@ -306,7 +306,7 @@
 
       <div class="mlib-block">
         <div class="mlib-head">
-          <h3 id="docs-index-h">Documents</h3>
+          <h2 id="docs-index-h">Documents</h2>
         </div>
         <nav class="mlib-index" aria-label="Documents">
           <a class="mx-tile" href="#documents">
@@ -324,7 +324,7 @@
         <div class="mlib-head">
           <div>
             <span class="kicker">From The Papers</span>
-            <h3 id="news-h" style="margin-top:12px">Grunion in the News</h3>
+            <h2 id="news-h" style="margin-top:12px">Grunion in the News</h2>
           </div>
           <span class="mlib-count" aria-hidden="true">07 Clippings</span>
         </div>
@@ -332,7 +332,7 @@
           <a class="news-card" href="https://citylifestyle.com/articles/grunions-for-life" target="_blank" rel="noopener">
             <span class="nc-cover" aria-hidden="true">
               <span class="nc-mast">City Lifestyle</span>
-              <img src="assets/news/grunions-for-life.jpg" alt="" width="900" height="563" loading="lazy" decoding="async" onerror="this.remove()" />
+              <img src="assets/news/grunions-for-life.jpg" alt="" width="550" height="412" loading="lazy" decoding="async" onerror="this.remove()" />
             </span>
             <span class="nc-body">
               <span class="nc-meta">City Lifestyle · Club Feature</span>
@@ -342,7 +342,7 @@
           <a class="news-card" href="https://www.independent.com/2023/08/23/local-rugby-teams-invite-public-to-the-santa-barbara-7s-tournament-on-august-26th/" target="_blank" rel="noopener">
             <span class="nc-cover" aria-hidden="true">
               <span class="nc-mast">The Independent</span>
-              <img src="assets/news/sb-7s-independent.jpg" alt="" width="900" height="563" loading="lazy" decoding="async" onerror="this.remove()" />
+              <img src="assets/news/sb-7s-independent.jpg" alt="" width="720" height="456" loading="lazy" decoding="async" onerror="this.remove()" />
             </span>
             <span class="nc-body">
               <span class="nc-meta">The Independent · Aug 2023</span>
@@ -352,7 +352,7 @@
           <a class="news-card" href="https://www.noozhawk.com/santa-barbara-7s-tournament-marks-return-of-local-grunion-rugby/" target="_blank" rel="noopener">
             <span class="nc-cover" aria-hidden="true">
               <span class="nc-mast">Noozhawk</span>
-              <img src="assets/news/sb-7s-noozhawk.jpg" alt="" width="900" height="563" loading="lazy" decoding="async" onerror="this.remove()" />
+              <img src="assets/news/sb-7s-noozhawk.jpg" alt="" width="630" height="723" loading="lazy" decoding="async" onerror="this.remove()" />
             </span>
             <span class="nc-body">
               <span class="nc-meta">Noozhawk · Aug 2023</span>
@@ -362,7 +362,7 @@
           <a class="news-card" href="https://www.independent.com/2022/04/26/santa-barbara-grunion-rugby-club-wins-southern-california-division-3-title/" target="_blank" rel="noopener">
             <span class="nc-cover" aria-hidden="true">
               <span class="nc-mast">The Independent</span>
-              <img src="assets/news/d3-title-independent.jpg" alt="" width="900" height="563" loading="lazy" decoding="async" onerror="this.remove()" />
+              <img src="assets/news/d3-title-independent.jpg" alt="" width="720" height="446" loading="lazy" decoding="async" onerror="this.remove()" />
             </span>
             <span class="nc-body">
               <span class="nc-meta">The Independent · Apr 2022</span>
@@ -381,7 +381,7 @@
           <a class="news-card" href="https://www.independent.com/2018/03/29/santa-barbara-grunion-rugby-turns-40/" target="_blank" rel="noopener">
             <span class="nc-cover" aria-hidden="true">
               <span class="nc-mast">The Independent</span>
-              <img src="assets/news/turns-40.jpg" alt="" width="900" height="563" loading="lazy" decoding="async" onerror="this.remove()" />
+              <img src="assets/news/turns-40.jpg" alt="" width="720" height="515" loading="lazy" decoding="async" onerror="this.remove()" />
             </span>
             <span class="nc-body">
               <span class="nc-meta">The Independent · Mar 2018</span>
@@ -391,7 +391,7 @@
           <a class="news-card" href="https://www.independent.com/2013/02/06/ready-rugby/" target="_blank" rel="noopener">
             <span class="nc-cover" aria-hidden="true">
               <span class="nc-mast">The Independent</span>
-              <img src="assets/news/ready-for-rugby.jpg" alt="" width="900" height="563" loading="lazy" decoding="async" onerror="this.remove()" />
+              <img src="assets/news/ready-for-rugby.jpg" alt="" width="720" height="561" loading="lazy" decoding="async" onerror="this.remove()" />
             </span>
             <span class="nc-body">
               <span class="nc-meta">The Independent · Feb 2013</span>
@@ -413,7 +413,7 @@
       <!-- DOCUMENTS -->
       <section class="member-folder" data-view="documents" aria-labelledby="docs-h" hidden>
         <div class="folder-head">
-          <h4 class="folder-name" id="docs-h">Documents</h4>
+          <h3 class="folder-name" id="docs-h">Documents</h3>
           <span class="folder-meta">Papers &amp; Briefings</span>
         </div>
         <div class="member-docs" id="memberDocs" role="list" aria-busy="true" aria-labelledby="docs-h">
@@ -443,7 +443,7 @@
       <img id="piThumb" alt="" width="88" height="88" />
       <div>
         <span class="kicker">From the archive</span>
-        <h4 id="piTitle">Know this photo?</h4>
+        <h3 id="piTitle">Know this photo?</h3>
         <span class="pi-file" id="piFile"></span>
       </div>
     </div>
@@ -530,7 +530,7 @@
       <a class="fs-logo" href="https://www.sharkeez.net" target="_blank" rel="noopener">Baja Sharkeez</a>
       <a class="fs-logo" href="https://www.rinconbrewery.com/" target="_blank" rel="noopener">Rincon Brewery</a>
       <a class="fs-logo" href="https://www.goldenroostersb.com/" target="_blank" rel="noopener">Golden Rooster Transportation</a>
-      <a href="index.html#sponsors" class="fs-become">Become a sponsor →</a>
+      <a href="/#sponsors" class="fs-become">Become a sponsor →</a>
     </div>
   </div>
 
@@ -541,22 +541,22 @@
     </div>
     <div class="foot-col">
       <h4>Club</h4>
-      <a href="index.html#fixtures">Fixtures</a>
-      <a href="index.html#play">Play</a>
-      <a href="history.html">History</a>
+      <a href="/#fixtures">Fixtures</a>
+      <a href="/#play">Play</a>
+      <a href="/history">History</a>
     </div>
     <div class="foot-col">
       <h4>Support</h4>
-      <a href="the-78-club.html">The '78 Club</a>
-      <a href="index.html#sponsors">Sponsors</a>
+      <a href="/the-78-club">The '78 Club</a>
+      <a href="/#sponsors">Sponsors</a>
       <a href="#" data-link="donate">Donate</a>
     </div>
     <div class="foot-col">
       <h4>Connect</h4>
       <a href="https://www.facebook.com/GrunionRugby" target="_blank" rel="noopener">Facebook</a>
       <a href="https://www.instagram.com/santabarbaragrunionrugby" target="_blank" rel="noopener">Instagram</a>
-      <a href="index.html#news">Newsletter</a>
-      <a href="index.html#contact">Contact</a>
+      <a href="/#news">Newsletter</a>
+      <a href="/#contact">Contact</a>
     </div>
     <div class="foot-col">
       <h4>Family</h4>

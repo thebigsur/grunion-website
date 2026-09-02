@@ -101,8 +101,7 @@ for that name, so it updates automatically.
 - `assets/hero-action.jpg` — the big homepage hero photo (**.jpg**, not .png)
 - `assets/mermaids-team.jpg` — photo on the rugby-family section (**.jpg**)
 - `assets/stingrays-youth.jpg` — Stingrays photo on the rugby-family section (**.jpg**)
-- `assets/history-1.jpg` … `assets/history-3.jpg` — gallery photos
-- `assets/gallery-4.jpg` … `assets/gallery-6.jpg` — extra Match Gallery slots
+- `assets/history-1.jpg` … `assets/history-3.jpg` — the three static Match Gallery photos (the strip is replaced by live Drive photos when the Current Season folder has any; to add a fourth static slot, copy a `<figure class="g-item">` in index.html and point its `data-photo` at the new file)
 - `assets/rincon-logo.png` / `assets/golden-rooster-logo.png` — sponsor logos
   (sponsor logos are served from this folder so a sponsor's own website can't
   silently break ours; if a file is missing the site falls back to the remote copy)
