@@ -42,7 +42,7 @@ Every secret's value also goes in the **Grunion Project Keys** doc (Grunion Priv
 
 ## Rules the function follows
 
-- **Only the '78 form creates members.** A payment on any other Zeffy donation form counts as a *top-up* if that email address already joined through the '78 form; events, shop and raffle payments never count.
+- **Only the '78 form creates members.** A payment on any other Zeffy donation form counts as a *top-up* if that email address already joined through the '78 form; events, shop and raffle payments never count. (The one exception is `?adopt`, below, which brings in someone who gave on the Chip In form or before the pipeline existed.)
 - **Membership year** = one calendar year from the first qualifying payment (same date next year, so leap years are full years); the next payment on or after that date starts a new year. Everything inside the year is summed (Zeffy API history when the key is set, otherwise the Signups log).
 - **Tier** = highest tier whose minimum the year total reaches. First time we see a donor → `join` (welcome email for their tier). Later payments → `upgrade` (crossed a higher minimum, plaque row moves up) or `topup` (thanks + running total).
 - **Plaque name** = their answer to the plaque question, else "First Last". A top-up with no answer keeps the name they gave when they joined. "Anonymous" is a legal answer and is listed as such.
@@ -79,6 +79,23 @@ curl -s -H "x-dashboard-key: YOUR_CLUB78_ADMIN_KEY" "https://grunionrugby.com/.n
 ```
 
 Backfill = re-read the last N days of '78 Club payments from the Zeffy API and finish anything not fully processed (also catches payments made while the webhook was disabled). It handles `max` payments per call (keep ≤3 — the function has ~10 s); repeat until `remaining` is 0. Already-finished payments come back as `duplicate: true`.
+
+## Bringing in a donor who gave on the Chip In form, or before the pipeline existed
+
+`?backfill` only looks at the '78 form, and the webhook ignores a plain Chip In payment unless the address already belongs to a member. So a supporter who gave on the general donation form — or gave at all before Aug 31 2026 — never gets the tier email and never counts. `?adopt` fixes that: it reads the donor's **real** Zeffy payments (any donation or membership form) since a date and runs them through the normal pipeline as '78 Club payments — tier email (with the tax acknowledgment), plaque row, internal notice, log row. Because the log row keeps the real Zeffy payment id and contact, their next gift finds the old one in their history and counts it once, never twice. Built for Dan Freedman ($400 on the Chip In form, Aug 27 2026).
+
+```
+read -s "KEY?Admin key: "; echo
+curl -s -H "x-dashboard-key: $KEY" "https://grunionrugby.com/.netlify/functions/club78-webhook?adopt=EMAIL&since=YYYY-MM-DD&plaque=NAME%20AS%20ON%20WALL" | python3 -m json.tool
+```
+
+- `adopt` — the email address on the Zeffy payment. A mistyped address finds nothing and does nothing (`found: 0`).
+- `since` — a date on or before the gift; only payments from that date on are adopted. Earlier qualifying gifts on the same Zeffy contact still count toward the membership year, which starts at the earliest of them — the same rule as for everyone.
+- `plaque` — optional. If the name is already typed on the Patron Wall tab by hand, pass it exactly ("Dan Freedman") so the pipeline moves that row instead of adding "Daniel Freedman" beside it. Otherwise the name is their plaque answer, else "First Last" from Zeffy.
+- `max` — payments per call (default 2, at most 10); repeat until `remaining` is 0.
+- `list=1` — report only: what would be adopted, what is skipped and why (events, shop, refunds, wrong status), and the full history the pipeline will count. Writes and sends nothing.
+
+Idempotent: run it again and a finished payment answers `duplicate: true`; a half-finished one (Google hiccup) is resumed, never repeated. Note that Zeffy already sent a full-amount tax receipt for a Chip In gift, while the tier email's acknowledgment nets off the $25 / $50 / $100 benefit value — whether to mention that to the donor is Josh's call.
 
 Admin-console note: the sbrfc.com super-admin is **admin@sbrfc.com**, not treasurer@ — sign in as admin@ to see Security → API controls → Domain-wide delegation.
 

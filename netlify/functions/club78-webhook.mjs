@@ -3,7 +3,8 @@
 // POST /.netlify/functions/club78-webhook        ← Zeffy "payment.created"
 // GET  /.netlify/functions/club78-webhook        ← status / one-time setup
 // GET  …/club78-webhook?backfill=30&max=2         ← (re)process recent payments via the API
-//      (both require header  x-dashboard-key: <CLUB78_ADMIN_KEY env var>)
+// GET  …/club78-webhook?adopt=EMAIL&since=DATE    ← bring a Chip In / pre-pipeline donor in
+//      (all three require header  x-dashboard-key: <CLUB78_ADMIN_KEY env var>)
 //
 // What it does for every new Zeffy payment on The '78 Club membership form (and
 // for top-up donations by existing members). It listens to payment.created, not
@@ -469,13 +470,17 @@ function buildRaw({ to, subject, text, html, replyTo, fromName }) {
 }
 
 // ---- the pipeline ----------------------------------------------------------------------
-async function processPayment(p, { eventId, simulate = false, dry = false, noPlaque = false, noNotify = false, deadline = Date.now() + CONFIG.BUDGET_MS }) {
+async function processPayment(p, { eventId, simulate = false, dry = false, noPlaque = false, noNotify = false, asClub = false, plaqueOverride = '', deadline = Date.now() + CONFIG.BUDGET_MS }) {
   const started = Date.now();
   const notes = [];
   const email = lower(p.buyer?.email);
   const first = clean(p.buyer?.first_name), last = clean(p.buyer?.last_name);
   if (!email) return { ok: false, skipped: 'no buyer email' };
-  const club = isClub78(p);
+  // `asClub` (GET ?adopt): a payment made on another Zeffy form — the Chip In donation form,
+  // or anything before this pipeline existed — is run as if it had come through the '78
+  // form, so it creates or extends a membership instead of being ignored.
+  const club = asClub || isClub78(p);
+  if (asClub && !isClub78(p)) notes.push(`adopted into the '78 Club from "${clean(p.description || p.campaign_id || 'another form')}"`);
   const answers = answersOf(p);
   // The rate title is cosmetic (log + notice). Only look it up when the payload
   // doesn't already carry it — one network call fewer inside the time budget.
@@ -533,9 +538,10 @@ async function processPayment(p, { eventId, simulate = false, dry = false, noPla
   const advantageCents = Math.max(0, (after?.advantage || 0) - (tierByKey(prevKey)?.advantage || 0));
 
   // ---- plaque name (their answer, else "First Last"); "Anonymous" is allowed
-  // (a top-up without a plaque answer keeps the name they gave when they joined)
+  // (a top-up without a plaque answer keeps the name they gave when they joined;
+  // ?adopt&plaque= overrides, e.g. to match a name already typed on the wall by hand)
   const prevPlaque = mine.map((r) => clean(r[IDX.plaque_name])).filter(Boolean).pop() || '';
-  const plaqueName = clean(answers.plaque) || prevPlaque || clean(`${first} ${last}`) || email;
+  const plaqueName = clean(plaqueOverride) || clean(answers.plaque) || prevPlaque || clean(`${first} ${last}`) || email;
 
   const vars = {
     first_name: first || 'there', last_name: last, email,
@@ -817,12 +823,70 @@ Log: {{sheet_url}}`,
   },
 ];
 
+// ---- adopt: bring a donor who gave on ANOTHER Zeffy form into the '78 Club ---------------
+// GET ?adopt=EMAIL&since=YYYY-MM-DD[&max=N][&plaque=NAME][&list=1]   (admin key required)
+// For people who gave before this pipeline existed, or on the general Chip In donation
+// form instead of the '78 form (Dan Freedman, $400 on Aug 27 2026). Their REAL payments
+// since `since` are read from the Zeffy API and run through the normal pipeline as '78
+// Club payments: the first becomes a join (welcome email, plaque, notice), later ones
+// upgrades / top-ups. Because the log rows carry the real Zeffy payment ids and contact,
+// a later '78-form gift finds these in the donor's history and counts them once — never
+// twice. Idempotent: a second run answers duplicate: true. `list=1` only reports what
+// would be adopted and writes nothing. `plaque=` fixes the plaque name (e.g. to match a
+// name already typed on the wall by hand) instead of "First Last" from Zeffy.
+async function adoptDonor(url, deadline, started) {
+  const email = lower(url.searchParams.get('adopt'));
+  const sinceMs = Date.parse(url.searchParams.get('since') || '');
+  const max = Math.min(10, Math.max(1, Number(url.searchParams.get('max')) || 2));
+  const plaque = clean(url.searchParams.get('plaque') || '');
+  const listOnly = url.searchParams.get('list') === '1';
+  const out = { email, since: Number.isFinite(sinceMs) ? new Date(sinceMs).toISOString() : null, list_only: listOnly || undefined, found: 0, skipped: [], processed: [], remaining: 0 };
+  if (!process.env.ZEFFY_API_KEY) return { ...out, error: 'ZEFFY_API_KEY is not set — adopt needs the API' };
+  if (!email.includes('@') || !Number.isFinite(sinceMs)) return { ...out, error: 'usage: ?adopt=EMAIL&since=YYYY-MM-DD' };
+  const all = (await zeffyList('/payments', { 'created[gte]': Math.floor(sinceMs / 1000) })) || [];
+  // only THIS donor, only since the date — whatever the API did with the filter
+  const theirs = all.filter((p) => lower(p.buyer?.email) === email && createdMs(p) >= sinceMs).sort((a, b) => createdMs(a) - createdMs(b));
+  const brief = (p) => ({ payment_id: p.id, amount: usd(amountOf(p)), date: fmtDate(createdMs(p)), form: clean(p.description || p.campaign_id || ''), category: p.campaign_category || '', status: p.status || '', contact: p.contact || p.contact_id || null });
+  const todo = [];
+  for (const p of theirs) {
+    if (!paymentOk(p)) out.skipped.push({ ...brief(p), why: `status ${p.status} / refund ${p.refund_status}` });
+    else if (!(isClub78(p) || isTopupEligible(p))) out.skipped.push({ ...brief(p), why: `${p.campaign_category || 'this kind of'} payments never count (events, shop, raffles)` });
+    else todo.push(p);
+  }
+  out.found = todo.length;
+  if (listOnly) {
+    out.would_adopt = todo.map(brief);
+    // What the pipeline will count: EVERY qualifying gift on this donor's Zeffy contact, even
+    // before `since` (the membership year starts at the earliest one — same rule as everyone).
+    const contactId = todo[0]?.contact || todo[0]?.contact_id || null;
+    const hist = contactId ? (await zeffyList('/payments', { contact: contactId })) || [] : [];
+    out.history = hist.filter((x) => paymentOk(x) && (isClub78(x) || isTopupEligible(x)) && (x.contact === contactId || lower(x.buyer?.email) === email))
+      .sort((a, b) => createdMs(a) - createdMs(b)).map(brief);
+    return out;
+  }
+  for (const p of todo) {
+    if (out.processed.length >= max || Date.now() - started > CONFIG.BUDGET_MS - 3500) { out.remaining++; continue; }
+    try {
+      const r = await processPayment(p, { eventId: 'adopt', asClub: true, plaqueOverride: plaque, deadline });
+      out.processed.push(r.duplicate ? { payment_id: p.id, duplicate: true } : { ...brief(p), ...r });
+    } catch (e) { out.processed.push({ payment_id: p.id, error: e.message }); }
+  }
+  return out;
+}
+
 // ---- handler --------------------------------------------------------------------------
 export default async (req) => {
   const started = Date.now();
   const deadline = started + CONFIG.BUDGET_MS;
   if (req.method === 'GET' || req.method === 'HEAD') {
     if (!gate(req)) return json({ ok: true, service: "The '78 Club webhook", hint: 'POST from Zeffy only' });
+    const url0 = new URL(req.url);
+    // ?adopt=EMAIL&since=YYYY-MM-DD → a Chip In / pre-pipeline donor joins the '78 Club (see
+    // adoptDonor above). Runs on its own, before the status checks, so it keeps the full budget.
+    if (url0.searchParams.has('adopt')) {
+      try { return json({ ok: true, adopt: await adoptDonor(url0, deadline, started) }); }
+      catch (e) { return json({ ok: false, adopt: { error: String(e?.message || e) } }); }
+    }
     // status + one-time setup (creates the tabs and seeds the templates)
     const out = { ok: true, checks: {} };
     out.checks.webhook_secret = !!process.env.ZEFFY_WEBHOOK_SECRET;
@@ -859,7 +923,6 @@ export default async (req) => {
     // ?reseed=1&confirm=reseed → overwrite the Emails tab from DEFAULT_TEMPLATES above.
     // DESTRUCTIVE: it discards whatever is in the sheet, so it needs the second parameter.
     // Only for pushing a new approved copy deck.
-    const url0 = new URL(req.url);
     if (url0.searchParams.get('reseed') === '1') {
       if (url0.searchParams.get('confirm') !== 'reseed') {
         out.reseed_error = 'reseed overwrites every template in the Emails tab; add &confirm=reseed to do it';
