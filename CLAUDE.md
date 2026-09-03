@@ -41,7 +41,8 @@ tradeoffs. Simplicity here is deliberate, not an accident.
   Netlify env vars (BOARD_SLUG, INSTANTLY_KEY) — never in files. Unlisted on
   purpose: no nav, sitemap, or robots entry; noindex via meta + header.
 - netlify/functions/club78-webhook.mjs — The '78 Club signup pipeline: Zeffy
-  webhook receiver (payment.completed) that totals a donor's membership year,
+  webhook receiver (payment.created — welcomes ACH donors before the transfer
+  settles, by Josh's decision) that totals a donor's membership year,
   works out the tier, logs to the private "'78 Club Signups" sheet, puts the
   name on the Patron Wall tab, and emails the donor from treasurer@sbrfc.com.
   Secrets (ZEFFY_WEBHOOK_SECRET, ZEFFY_API_KEY, CLUB78_ADMIN_KEY) live only in

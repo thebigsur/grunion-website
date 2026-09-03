@@ -5,7 +5,7 @@ tiered member: welcome email from treasurer@sbrfc.com, name on the plaque,
 internal notice, private log.
 
 ```
-Donor → Zeffy '78 Club membership form ──payment.completed──▶ /.netlify/functions/club78-webhook
+Donor → Zeffy '78 Club membership form ──payment.created───▶ /.netlify/functions/club78-webhook
                                                                 │  verify Zeffy-Signature (HMAC)
                                                                 │  membership-year total (12 mo from joining)
                                                                 │  tier = Supporters' Union $350+ / Second XV $750+ / Founders' XV $2,500+
@@ -116,7 +116,7 @@ touching the live site or anyone else's inbox.
 ```
 curl -s -X POST https://grunionrugby.com/.netlify/functions/club78-webhook \
   -H "content-type: application/json" -H "x-dashboard-key: YOUR_CLUB78_ADMIN_KEY" \
-  -d '{"dry":true,"id":"sim-1","type":"payment.completed","data":{"id":"sim-pay-1","amount":50000,"status":"succeeded","created":'"$(date +%s)"',"campaign_id":"bff55e80-4c68-40d9-9f72-d769d41697b3","campaign_category":"membership","description":"The 78 Club test","contact":null,"refund_status":"none","buyer":{"first_name":"Test","last_name":"Donor","email":"YOUR_EMAIL"},"buyer_questions":[],"items":[{"type":"ticket","amount":50000,"rate_id":null,"questions":[{"question":"Name for the 78 Club plaque","answer":"Test Donor (delete me)","type":"text"}]}]}}'
+  -d '{"dry":true,"id":"sim-1","type":"payment.created","data":{"id":"sim-pay-1","amount":50000,"status":"succeeded","created":'"$(date +%s)"',"campaign_id":"bff55e80-4c68-40d9-9f72-d769d41697b3","campaign_category":"membership","description":"The 78 Club test","contact":null,"refund_status":"none","buyer":{"first_name":"Test","last_name":"Donor","email":"YOUR_EMAIL"},"buyer_questions":[],"items":[{"type":"ticket","amount":50000,"rate_id":null,"questions":[{"question":"Name for the 78 Club plaque","answer":"Test Donor (delete me)","type":"text"}]}]}}'
 ```
 
 That sends the real Supporters' Union email to YOUR_EMAIL, adds "Test Donor (delete me)" to the plaque tab and logs a row — delete the plaque row and the log row afterwards. Only works with the admin key; Zeffy deliveries are always signature-checked.
@@ -125,7 +125,7 @@ That sends the real Supporters' Union email to YOUR_EMAIL, adds "Test Donor (del
 
 1. Netlify env vars set + redeployed; GET status all green.
 2. Zeffy → the '78 form → Edit → temporarily set one tier's minimum to $1 (Membership options → Pay what you can → Min. price).
-3. Zeffy → Settings → Integrations → Webhook → **Enable webhook** → Save.
+3. Zeffy → Settings → Integrations → Webhook → **Enable webhook**, tick the **`payment.created`** event (leave `payment.completed` unticked — the function ignores it anyway) → Save.
 4. Pay $1 on the form with your own email. Within a minute: Zeffy receipt, then the tier email from treasurer@, the notice, a row in Signups, the name on the plaque tab (the live page updates ~5 min later).
 5. Refund the $1 in Zeffy (Payments → the payment → Refund — free). Remove the test row from the Patron Wall tab and the Signups tab. Put the minimum back.
 
@@ -141,5 +141,12 @@ That sends the real Supporters' Union email to YOUR_EMAIL, adds "Test Donor (del
 - Zeffy's own receipt still goes out first (generic thank-you, edited to say the tier email is coming). Its reply-to is the Zeffy org admin's address (org-wide setting).
 - The webhook fires for every Zeffy payment (tile sponsorships, Chip In…); the function ignores what it should.
 - Refunds do not send a webhook — refund a '78 payment and fix the sheet by hand.
+- **Bank transfers (ACH) are welcomed before the money lands — on purpose.** Zeffy shows them as *Processing* for
+  5–10 business days and only fires `payment.completed` when they settle; that is why the function listens to
+  **`payment.created`** instead (Josh's decision, Sep 2 2026, after Gregory Smales's Founders' XV gift sat silent
+  for an evening). The tier email — including the tax acknowledgment — the plaque row and the notice all go out at
+  checkout, for cards and bank transfers alike. The trade-off: if a transfer later fails (bank decline, insufficient
+  funds — Zeffy emails the org and the donor), the acknowledgment is already out and the name is on the plaque, so
+  write to the donor and clean up the Signups tab and the Patron Wall tab by hand. No refund/failure webhook.
 - Netlify secrets scanning: never put a secret value in a repo file.
 - Plaque publishes ~5 minutes after the sheet changes (Google's published-CSV delay) — the emails say "on the plaque" without promising "right now".

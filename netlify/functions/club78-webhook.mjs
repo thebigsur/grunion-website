@@ -1,12 +1,14 @@
 // ============================================================================
 // Grunion RFC — The '78 Club signup pipeline (Zeffy webhook receiver)
-// POST /.netlify/functions/club78-webhook        ← Zeffy "payment.completed"
+// POST /.netlify/functions/club78-webhook        ← Zeffy "payment.created"
 // GET  /.netlify/functions/club78-webhook        ← status / one-time setup
 // GET  …/club78-webhook?backfill=30&max=2         ← (re)process recent payments via the API
 //      (both require header  x-dashboard-key: <CLUB78_ADMIN_KEY env var>)
 //
-// What it does for every completed Zeffy payment on The '78 Club membership
-// form (and for top-up donations by existing members):
+// What it does for every new Zeffy payment on The '78 Club membership form (and
+// for top-up donations by existing members). It listens to payment.created, not
+// payment.completed, so a bank transfer (ACH) is welcomed the moment it is
+// initiated rather than 5-10 business days later when it settles (Josh, Sep 2 2026):
 //   1. verifies the Zeffy-Signature header (HMAC-SHA256, 5-minute tolerance)
 //   2. totals the donor's giving across their membership year (12 months from
 //      the day they joined; Zeffy API when a key is set, else our own log)
@@ -290,7 +292,12 @@ function isClub78(p) {
 function isTopupEligible(p) { return CONFIG.TOPUP_CATEGORIES.includes(lower(p.campaign_category)); }
 function paymentOk(p) {
   const s = lower(p.status);
-  if (/(fail|refund|cancel|dispute|pending|void)/.test(s)) return false;
+  // A bank transfer (ACH) arrives as "pending" / "processing" and settles 5-10 business
+  // days later. Josh's call (Sep 2 2026): welcome the donor straight away — email,
+  // acknowledgment and plaque row — rather than wait for settlement. So only payments
+  // that are definitely NOT money are rejected here. If a transfer later bounces, Zeffy
+  // emails the org; fix the sheet and the plaque by hand (there is no refund webhook).
+  if (/(fail|refund|cancel|dispute|abandon|void)/.test(s)) return false;
   if (p.refund_status && lower(p.refund_status) !== 'none') return false;
   return true;
 }
@@ -916,7 +923,10 @@ export default async (req) => {
       return json({ error: 'invalid signature' }, v.why === 'no secret configured' ? 500 : 400);
     }
   }
-  if (event?.type && event.type !== 'payment.completed') return json({ ok: true, ignored: event.type });
+  // payment.created fires for every new payment whatever its status (full payment in
+  // data). payment.completed — the settlement event — is deliberately ignored: if both
+  // were handled, a card payment would arrive twice within a second and race itself.
+  if (event?.type && event.type !== 'payment.created') return json({ ok: true, ignored: event.type });
   const p = event?.data;
   if (!p || !p.id) return json({ error: 'no payment in event' }, 400);
   if (!paymentOk(p)) return json({ ok: true, ignored: `status ${p.status} / refund ${p.refund_status}` });
