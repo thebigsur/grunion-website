@@ -153,13 +153,16 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
 <main>
 <section class="fpage" id="fossils-home">
   <aside class="fside" aria-label="Fossils menu">
+    <!-- Coming up: one link per upcoming match, data-date = match date (YYYY-MM-DD). The script at the
+         bottom of the page moves each link under News & Photos the day after its date and puts the ":)"
+         back when nothing is left. The sidebar repeats in every section: change all of them together. -->
     <a href="/"><img class="logo-fosters" src="assets/fossils-fosters.png" alt="Foster's" width="100" height="73" /></a>
     <a href="/"><img class="logo-grunion" src="assets/fossils-grunion-oval.png" alt="Grunion Rugby" width="144" height="95" /></a>
     <a class="home" href="#fossils-home">Home</a>
     <div class="head">Coming up:</div>
-    <div class="smile">:)</div>
+    <div class="news upcoming"><a href="#slo-tritip" data-date="2026-09-12">9/12/26 SLO TRI-TIP 7s</a></div>
     <div class="head">News &amp; Photos:</div>
-    <div class="news">
+    <div class="news past">
       <a href="#catalina">5/7/05 CATALINA</a>
       <span class="dead">02/05/05 FOSSILS 10 vs LOS JAGUARS 26</span>
       <a href="#smog">10/20/04 FOSSILS 24 vs L.A. SMOG 10</a>
@@ -191,6 +194,40 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
 </section>
 
 <!-- =========================================================== -->
+<!-- SLO TRI-TIP 7s (coming up 9/12/26)                          -->
+<!-- =========================================================== -->
+<section class="fpage" id="slo-tritip">
+  <aside class="fside" aria-label="SLO Tri-tip 7s menu">
+    <a href="/"><img class="logo-fosters" src="assets/fossils-fosters.png" alt="Foster's" width="100" height="73" loading="lazy" decoding="async" /></a>
+    <a href="/"><img class="logo-grunion" src="assets/fossils-grunion-oval.png" alt="Grunion Rugby" width="144" height="95" loading="lazy" decoding="async" /></a>
+    <a class="home" href="#fossils-home">Home</a>
+    <div class="head">Coming up:</div>
+    <div class="news upcoming"><a href="#slo-tritip" data-date="2026-09-12">9/12/26 SLO TRI-TIP 7s</a></div>
+    <div class="head">News &amp; Photos:</div>
+    <div class="news past">
+      <a href="#catalina">5/7/05 CATALINA</a>
+      <span class="dead">02/05/05 FOSSILS 10 vs LOS JAGUARS 26</span>
+      <a href="#smog">10/20/04 FOSSILS 24 vs L.A. SMOG 10</a>
+    </div>
+  </aside>
+
+  <div class="fmain">
+    <img class="fossils-logo" src="assets/fossils-logo.jpg" alt="Fossils Rugby Football Club" width="233" height="201" loading="lazy" decoding="async" />
+    <h1 class="ptitle">SLO Tri-tip 7s</h1>
+
+    <p class="announce">Saturday, September 12, 2026</p>
+    <p class="announce">There will be at least 2 master's matches, Temecula Old Boys and Fat and SLO will be there, sevens or tens depending upon the numbers.</p>
+    <p class="announce">Players just pay $30 each, comes with a tri-tip meal and VIP entry to the beergarden.</p>
+
+    <div class="memberof">
+      <div class="mlabel">MEMBER OF</div>
+      <img src="assets/fossils-sbra.jpg" alt="Santa Barbara Rugby Association" width="1178" height="668" loading="lazy" decoding="async" />
+      <div class="corp">a 501[c][3] Corporation</div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================== -->
 <!-- CATALINA 05                                                 -->
 <!-- =========================================================== -->
 <section class="fpage" id="catalina">
@@ -199,9 +236,9 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
     <a href="/"><img class="logo-grunion" src="assets/fossils-grunion-oval.png" alt="Grunion Rugby" width="144" height="95" loading="lazy" decoding="async" /></a>
     <a class="home" href="#fossils-home">Home</a>
     <div class="head">Coming up:</div>
-    <div class="smile">:)</div>
+    <div class="news upcoming"><a href="#slo-tritip" data-date="2026-09-12">9/12/26 SLO TRI-TIP 7s</a></div>
     <div class="head">News &amp; Photos:</div>
-    <div class="news">
+    <div class="news past">
       <a href="#catalina">5/7/05 CATALINA</a>
       <span class="dead">02/05/05 FOSSILS 10 vs LOS JAGUARS 26</span>
       <a href="#smog">10/20/04 FOSSILS 24 vs L.A. SMOG 10</a>
@@ -274,9 +311,9 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
     <a href="/"><img class="logo-grunion" src="assets/fossils-grunion-oval.png" alt="Grunion Rugby" width="144" height="95" loading="lazy" decoding="async" /></a>
     <a class="home" href="#fossils-home">Home</a>
     <div class="head">Coming up:</div>
-    <div class="smile">:)</div>
+    <div class="news upcoming"><a href="#slo-tritip" data-date="2026-09-12">9/12/26 SLO TRI-TIP 7s</a></div>
     <div class="head">News &amp; Photos:</div>
-    <div class="news">
+    <div class="news past">
       <a href="#catalina">5/7/05 CATALINA</a>
       <span class="dead">02/05/05 FOSSILS 10 vs LOS JAGUARS 26</span>
       <a href="#smog">10/20/04 FOSSILS 24 vs L.A. SMOG 10</a>
@@ -304,6 +341,26 @@ body{background:#fff;color:#000;font-family:"Times New Roman",Times,serif;font-s
   </div>
 </section>
 </main>
+
+<!-- "Coming up" housekeeping: the day after a match date passes (reader's local date), its link moves to
+     the top of "News & Photos" and the ":)" returns once nothing is left. No JS = links simply stay put. -->
+<script>
+(function(){
+  var d=new Date();
+  var today=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+  document.querySelectorAll('.fside').forEach(function(side){
+    var up=side.querySelector('.news.upcoming'), past=side.querySelector('.news.past');
+    if(!up||!past) return;
+    up.querySelectorAll('a[data-date]').forEach(function(a){
+      if(a.getAttribute('data-date')<today){ past.insertBefore(a, past.firstChild); }
+    });
+    if(!up.querySelector('a')){
+      var smile=document.createElement('div'); smile.className='smile'; smile.textContent=':)';
+      up.parentNode.replaceChild(smile, up);
+    }
+  });
+})();
+</script>
 
 <!-- minimal menu-bar behavior (mobile burger toggle); header stays solid via CSS -->
 <script>
