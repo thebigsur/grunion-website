@@ -629,9 +629,9 @@ metaEl.hidden=false;
             var fig=document.createElement('figure'); fig.className='g-item';
             var a=document.createElement('a');
             a.className='ph photo';
-            a.href='https://drive.google.com/file/d/'+g.id+'/view';
+            a.href='https://drive.google.com/thumbnail?id='+encodeURIComponent(g.id)+'&sz=s0'; // full-size original, no Drive viewer / sign-in
             a.target='_blank'; a.rel='noopener';
-            a.setAttribute('aria-label','Open match photo (Google Drive)');
+            a.setAttribute('aria-label','Open match photo (full size)');
             a.style.backgroundImage="url('"+g.src+"')";
             fig.appendChild(a);
             strip.appendChild(fig);
@@ -756,6 +756,9 @@ metaEl.hidden=false;
   var galleryHost = document.getElementById('memberGallery');
   var docsHost    = document.getElementById('memberDocs');
   if(!galleryHost && !docsHost) return;   // only on MERchives.html
+  // decade folders ("1970s", "1980s") are shown as typed — the tiles and headings are
+  // uppercase via CSS, which would turn the trailing s into "1970S"
+  function isDecade(name){ return /^\d{4}s$/i.test((name||'').trim()); }
 
   var KEY  = CONFIG.MEMBERS_DRIVE_API_KEY;
   var ROOT = CONFIG.MEMBERS_DRIVE_ROOT_FOLDER_ID;   // top-level "MERchives" folder
@@ -836,6 +839,7 @@ metaEl.hidden=false;
           var cover=document.createElement('span'); cover.className='mx-cover'; cover.setAttribute('aria-hidden','true');
           var body=document.createElement('span'); body.className='mx-body';
           var nm=document.createElement('span'); nm.className='mx-name'; nm.textContent=folder.name;
+          if(isDecade(folder.name)) nm.classList.add('as-is');   // "1970s", not "1970S"
           var tMeta=document.createElement('span'); tMeta.className='mx-meta'; tMeta.textContent='Photo gallery';
           body.appendChild(nm); body.appendChild(tMeta);
           tile.appendChild(cover); tile.appendChild(body);
@@ -847,7 +851,7 @@ metaEl.hidden=false;
           section.setAttribute('data-view', slug);
           section.innerHTML=
             '<div class="folder-head">'+
-              '<h3 class="folder-name">'+esc(folder.name)+'</h3>'+
+              '<h3 class="folder-name'+(isDecade(folder.name)?' as-is':'')+'">'+esc(folder.name)+'</h3>'+
               '<span class="folder-meta" data-folder-count>Auto-synced</span>'+
             '</div>'+
             '<div class="member-gallery" data-folder-grid role="list">'+
@@ -1002,10 +1006,13 @@ var PER_PAGE = 32;   // 8 rows × 4 columns
       var slice = files.slice(start, start + PER_PAGE);
       grid.innerHTML='';
       slice.forEach(function(f){
-        // drive.google.com/uc?export=view was deprecated by Google (returns 403 for
-        // many files) — the file/d/{id}/view page is the reliable full-size link.
-        var full = 'https://drive.google.com/file/d/' + f.id + '/view';
-        var thumb = f.thumbnailLink ? f.thumbnailLink.replace(/=s\d+$/, '=s600') : full;
+        // Open the full-size original straight from Drive's image CDN (sz=s0 = original
+        // pixels). The old file/d/{id}/view link opened Google's Drive viewer, which shows
+        // "Could not preview the file" for visitors who aren't signed in to Google or who
+        // run an ad-blocker — the image endpoint works for everyone, no sign-in needed.
+        var full = 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(f.id) + '&sz=s0';
+        var thumb = f.thumbnailLink ? f.thumbnailLink.replace(/=s\d+$/, '=s600')
+                                    : 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(f.id) + '&sz=w600';
         // each grid cell is a <figure>: the photo tile plus (only when the Drive
         // file has a Description) a caption below it. No description, no caption.
         var cell=document.createElement('figure');
