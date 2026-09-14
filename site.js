@@ -966,7 +966,7 @@ metaEl.hidden=false;
   }
 
   /* ---------- renderers ---------- */
-var PER_PAGE = 16;   // 4 rows × 4 columns
+var PER_PAGE = 32;   // 8 rows × 4 columns
 
   function renderPhotos(grid, files, folderName){
     var page = 0;
