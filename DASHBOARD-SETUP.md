@@ -1,8 +1,10 @@
 # Grunion Club Dashboard — setup
 
-A private, live dashboard at **grunionrugby.com/dashboard/** showing ad campaign
-results (Google, Facebook, Instagram), Campaign Monitor email performance, Google Analytics web traffic and traffic sources,
-and site health (form submissions, deploy status). It fetches fresh data every
+A private, live dashboard in two pages: **grunionrugby.com/dashboard/** (Overview:
+Campaign Monitor email performance, Google Analytics web traffic and traffic
+sources, site health) and **grunionrugby.com/dashboard/ads/** (Ad Campaigns:
+Google, Facebook and Instagram results, step 6). One passcode covers both; the
+header links between them. It fetches fresh data every
 time it's opened — no ongoing maintenance.
 
 **How it stays private:** the page isn't linked from anywhere on the site, is
@@ -15,7 +17,9 @@ in the repo or the browser.
 
 | File | What it is |
 |---|---|
-| `dashboard/index.html` | the dashboard page (self-contained, no build step) |
+| `dashboard/index.html` | the Overview page (email, web traffic, site health) |
+| `dashboard/ads/index.html` | the Ad Campaigns page |
+| `dashboard/dashboard.css`, `dashboard/dashboard-core.js` | styles + shared script (gate, api, tiles, charts) both pages load; no build step |
 | `netlify/functions/cm-stats.mjs` | Campaign Monitor: last 12 campaigns, open/click rates, list size |
 | `netlify/functions/ga-stats.mjs` | GA4: daily traffic, totals vs previous period, top pages, channels, referrers |
 | `netlify/functions/netlify-stats.mjs` | Netlify: form submissions + deploy status (documented API only) |
@@ -122,8 +126,8 @@ This gives the dashboard read-only access to GA without your Google password.
 
 ## Step 6 — Ads tracker (Google Ads + Facebook / Instagram)
 
-The **Ad Campaigns** section at the top of the dashboard is fed by
-`netlify/functions/ads-stats.mjs`. It joins three read-only sources by campaign
+The **Ad Campaigns** page (grunionrugby.com/dashboard/ads/, linked from the
+dashboard header) is fed by `netlify/functions/ads-stats.mjs`. It joins three read-only sources by campaign
 name, so a new campaign on either platform shows up on its own the day it
 spends. There is no list of campaigns to keep up to date.
 

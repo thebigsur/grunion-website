@@ -29,8 +29,15 @@ tradeoffs. Simplicity here is deliberate, not an accident.
 - netlify.toml — pretty URLs, caching & security headers
 - robots.txt / sitemap.xml — SEO files (update sitemap if a page is added/removed)
 - assets/ — images and other media
-- dashboard/index.html — private club analytics dashboard (passcode-gated, unlisted;
-  deliberately NOT in nav, sitemap, or robots.txt — noindex via meta + header)
+- dashboard/index.html — private club analytics dashboard, Overview page: email,
+  web traffic, site health (passcode-gated, unlisted; deliberately NOT in nav,
+  sitemap, or robots.txt — noindex via meta + header)
+- dashboard/ads/index.html — the dashboard's Ad Campaigns page (/dashboard/ads/):
+  same passcode, same rules, linked from the dashboard header only
+- dashboard/dashboard.css + dashboard/dashboard-core.js — the styles and the
+  shared script (passcode gate, api calls, tiles, tables, SVG chart) both
+  dashboard pages load; page-specific code stays inline in each page. Still no
+  build step: plain files served as-is.
 - netlify/functions/ — cm-stats.mjs, ga-stats.mjs, netlify-stats.mjs, ads-stats.mjs:
   serverless data proxies for the dashboard (zero npm dependencies; API keys live
   only in Netlify env vars — see DASHBOARD-SETUP.md). ads-stats.mjs is the ads
@@ -86,7 +93,7 @@ tradeoffs. Simplicity here is deliberate, not an accident.
 - The landing-page forms carry hidden utm_* / gclid / fbclid / landing / referrer
   inputs, filled by the attribution script at the bottom of play.html and
   coach.html; the -thanks pages fire gtag lead_play / lead_coach and the landing
-  pages fire tap_text / tap_email. The dashboard's Ad Campaigns section and the
+  pages fire tap_text / tap_email. The dashboard's Ad Campaigns page and the
   Google Ads conversion import depend on all of it. Don't remove or rename them.
 - /coach and both -thanks pages are noindex (meta tag + X-Robots-Tag in
   netlify.toml); /play is indexable and IS in sitemap.xml on purpose — it is the
@@ -115,7 +122,7 @@ tradeoffs. Simplicity here is deliberate, not an accident.
   without calling out the impact first. The Drive API key in site.js is public
   by design and restricted in Google Cloud Console (Drive API only +
   grunionrugby.com referrers — verified July 2026).
-- The dashboard page (dashboard/index.html) must keep NO GA snippet — it would
+- The dashboard pages (dashboard/index.html, dashboard/ads/index.html) must keep NO GA snippet — it would
   inflate the traffic numbers it reports. Keep it out of sitemap.xml, robots.txt,
   and all nav/footers. The functions must stay dependency-free (node: built-ins
   only, no package.json) — the "no build step" rule applies to them too.

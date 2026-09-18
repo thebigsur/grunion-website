@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow, noarchive" />
+<title>Ad Campaigns · Club Dashboard · Grunion RFC</title>
+<!-- Internal club page: no GA snippet on purpose (it would pollute the traffic
+     numbers this page reports), not linked from the public site, noindex'd,
+     and every data endpoint requires the dashboard passcode. -->
+<link rel="icon" type="image/png" href="/assets/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800;900&family=Libre+Franklin:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/dashboard/dashboard.css" />
+</head>
+<body>
+<!-- ============================ PASSCODE GATE ============================ -->
+<div class="gatewall" id="gate" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
+  <div class="gate-card">
+    <img class="crest" src="/assets/grunion-crest.png" alt="Grunion RFC crest" />
+    <h1 id="gateTitle">Club Dashboard</h1>
+    <p>Committee only. Enter the dashboard passcode.</p>
+    <form class="gate-form" id="gateForm">
+      <label class="sr-only" for="gateKey">Dashboard passcode</label>
+      <input id="gateKey" type="password" autocomplete="current-password" placeholder="••••••••" required />
+      <button class="gate-btn" type="submit">Open Dashboard</button>
+      <div class="gate-err" id="gateErr" role="alert"></div>
+    </form>
+    <div class="gate-note">grunionrugby.com · internal · not indexed</div>
+  </div>
+</div>
+
+<!-- ============================ HEADER ============================ -->
+<header class="dhead">
+  <div class="wrap dhead-in">
+    <img class="crest" src="/assets/grunion-crest.png" alt="" />
+    <div class="t">
+      <b>Club Dashboard</b>
+      <i>Grunion RFC · Ad Campaigns</i>
+    </div>
+    <div class="dhead-right">
+      <nav class="dnav" aria-label="Dashboard pages">
+        <a href="/dashboard/">Overview</a>
+        <a href="/dashboard/ads/" aria-current="page">Ad Campaigns</a>
+      </nav>
+      <span class="updated" id="updatedAt">—</span>
+      <button class="hbtn" id="refreshBtn" type="button">Refresh</button>
+      <button class="hbtn" id="lockBtn" type="button" title="Forget the passcode on this device">Lock</button>
+    </div>
+  </div>
+</header>
+<hr class="rule101" />
+
+<main class="wrap" id="main">
+
+  <!-- ============================ ADS ============================ -->
+  <section class="section" id="sec-ads" aria-labelledby="h-ads">
+    <div class="sec-head">
+      <div>
+        <span class="kicker">Google Ads · Facebook · Instagram</span>
+        <h2 id="h-ads">Ad Campaigns</h2>
+      </div>
+      <span class="sec-note" id="adsNote"></span>
+    </div>
+
+    <div class="filter-row" id="adsFilter">
+      <div class="seg" role="group" aria-label="Ads date range">
+        <button type="button" data-adays="7"   aria-pressed="false">7 days</button>
+        <button type="button" data-adays="30"  aria-pressed="true">30 days</button>
+        <button type="button" data-adays="90"  aria-pressed="false">90 days</button>
+        <button type="button" data-adays="all" aria-pressed="false">Since launch</button>
+      </div>
+      <span class="filter-note">applies to this section only · campaigns are found automatically on both platforms</span>
+    </div>
+
+    <div class="ads-warns" id="adsWarnings"></div>
+    <div class="tiles" id="adsTiles"></div>
+
+    <div class="card" id="adsPlatformCard">
+      <div class="card-head">
+        <h3>By Platform</h3>
+        <div class="spacer"></div>
+        <span class="card-sub" id="adsPlatformSub"></span>
+      </div>
+      <div class="tscroll" id="adsPlatformTable"></div>
+    </div>
+
+    <div class="card" id="adsCampaignCard">
+      <div class="card-head">
+        <h3>By Campaign</h3>
+        <div class="spacer"></div>
+        <span class="card-sub" id="adsCampaignSub"></span>
+      </div>
+      <div class="tscroll" id="adsCampaignTable"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card" id="adsSpendCard">
+        <div class="card-head">
+          <h3>Daily Spend</h3>
+          <div class="spacer"></div>
+          <div class="tgl" role="group" aria-label="Daily spend — view as">
+            <button type="button" data-view="chart" aria-pressed="true">Chart</button>
+            <button type="button" data-view="table" aria-pressed="false">Table</button>
+          </div>
+          <span class="card-sub">$ per day · Google (via GA4, about a day behind) and Meta</span>
+        </div>
+        <div class="legend" id="adsSpendLegend"></div>
+        <div class="chart-wrap" id="adsSpendChart"></div>
+        <div class="tscroll" id="adsSpendChartTable" hidden></div>
+      </div>
+      <div class="card" id="adsLeadsDailyCard">
+        <div class="card-head">
+          <h3>Daily Leads</h3>
+          <div class="spacer"></div>
+          <div class="tgl" role="group" aria-label="Daily leads — view as">
+            <button type="button" data-view="chart" aria-pressed="true">Chart</button>
+            <button type="button" data-view="table" aria-pressed="false">Table</button>
+          </div>
+          <span class="card-sub">site sign-ups + coach applications (any source) · Meta Instant Form leads</span>
+        </div>
+        <div class="legend" id="adsLeadsLegend"></div>
+        <div class="chart-wrap" id="adsLeadsChart"></div>
+        <div class="tscroll" id="adsLeadsChartTable" hidden></div>
+      </div>
+    </div>
+
+    <div class="card" id="adsLeadsCard">
+      <div class="card-head">
+        <h3>Recent Leads</h3>
+        <div class="spacer"></div>
+        <span class="card-sub" id="adsLeadsSub"></span>
+      </div>
+      <div class="tscroll" id="adsLeadsTable"></div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="dfoot">
+  <div class="wrap dfoot-in">
+    <span>Data: Google Ads (via GA4) · Meta Ads · Google Analytics · Netlify forms — fetched live on load</span>
+    <span><a href="https://grunionrugby.com" target="_blank" rel="noopener">grunionrugby.com ↗</a></span>
+  </div>
+</footer>
+
+<script src="/dashboard/dashboard-core.js"></script>
+<script>
+'use strict';
+/* Club Dashboard — Ad Campaigns page. Data: ads-stats (Google Ads via the GA4
+   link, Meta Marketing API, Netlify forms), joined by campaign name. Shared
+   pieces (gate, api, tiles, charts) live in /dashboard/dashboard-core.js. */
+const state = { adsDays: 30, ads: null };
+
+// ---------- ADS section -----------------------------------------------------
+// Data: ads-stats (Google Ads via the GA4 link, Meta Marketing API, Netlify
+// forms), joined by campaign name. Its own date range, independent of the
+// Web Traffic filter. Every total says what it covers.
+const ADS_SEEN_LS = 'grunionAdsSeen';
+const fmtMoney = (v) => (v == null || isNaN(v)) ? '—' : `$${Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const fmtMoney0 = (v) => (v == null || isNaN(v)) ? '—' : `$${Math.round(Number(v)).toLocaleString('en-US')}`;
+const parseIsoDay = (s) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || '')); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; };
+const dIso = (s) => dShort(parseIsoDay(s));
+const plural = (n, word) => `${fmtInt(n)} ${word}${n === 1 ? '' : 's'}`;
+
+function adsBadge(text, cls, title) {
+  const b = el('span', `badge ${cls}`, text);
+  if (title) b.title = title;
+  return b;
+}
+// like buildTable, but a cell may be { text, badges:[{text,cls,title}], title, cls }
+function adsTable(container, caption, headers, rows, { empty, wide } = {}) {
+  clear(container);
+  if (!rows.length) { cardState(container, empty || 'Nothing in this range yet'); return; }
+  const table = el('table', wide ? 'dtable ads-wide' : 'dtable');
+  table.appendChild(el('caption', null, caption));
+  const thead = el('thead'); const trh = el('tr');
+  headers.forEach((h) => trh.appendChild(el('th', null, h)));
+  thead.appendChild(trh); table.appendChild(thead);
+  const tbody = el('tbody');
+  for (const r of rows) {
+    const tr = el('tr');
+    for (const cell of r) {
+      const td = el('td');
+      if (cell && typeof cell === 'object') {
+        if (cell.cls) td.className = cell.cls;
+        td.appendChild(document.createTextNode(cell.text == null ? '—' : String(cell.text)));
+        for (const b of cell.badges || []) td.appendChild(adsBadge(b.text, b.cls, b.title));
+        if (cell.title) td.title = cell.title;
+      } else td.textContent = cell == null ? '—' : String(cell);
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  container.appendChild(table);
+}
+const money = (v) => (v == null ? '—' : fmtMoney(v));
+const adsRangeLabel = (a) => (a.days === 'all' ? `since launch` : `last ${a.days} days`);
+function metaSplitLabel(c) {
+  const s = c.split || {};
+  const parts = [];
+  if (s.facebook?.spend) parts.push(`Facebook ${fmtMoney0(s.facebook.spend)}`);
+  if (s.instagram?.spend) parts.push(`Instagram ${fmtMoney0(s.instagram.spend)}`);
+  const other = Object.entries(s).filter(([k]) => !['facebook', 'instagram'].includes(k)).reduce((a, [, v]) => a + (v.spend || 0), 0);
+  if (other) parts.push(`other ${fmtMoney0(other)}`);
+  return parts.length ? parts.join(' · ') : 'Facebook / Instagram';
+}
+
+function renderAds() {
+  const a = state.ads;
+  const tiles = clear($('adsTiles'));
+  const warns = clear($('adsWarnings'));
+  if (!a || a.error || !a.totals) {
+    const msg = a?.error || 'no response';
+    cardState(tiles, [`Ads tracker unavailable: ${msg}`]).style.gridColumn = '1/-1';
+    ['adsPlatformTable', 'adsCampaignTable', 'adsLeadsTable', 'adsSpendChart', 'adsLeadsChart'].forEach((id) => cardState($(id), 'Unavailable'));
+    ['adsSpendLegend', 'adsLeadsLegend', 'adsSpendChartTable', 'adsLeadsChartTable'].forEach((id) => clear($(id)));
+    ['adsPlatformSub', 'adsCampaignSub', 'adsLeadsSub', 'adsNote'].forEach((id) => { $(id).textContent = ''; });
+    return;
+  }
+  const label = adsRangeLabel(a);
+  $('adsNote').textContent = `${dIso(a.range.since)} to ${dIso(a.range.until)}${a.cachedAt ? ` · figures as of ${relTime(a.cachedAt)}` : ''}`;
+
+  // warnings — the tracker's own checks (untagged ads, spend with no leads, spam folder, missing links)
+  for (const w of a.warnings || []) warns.appendChild(el('div', `ads-warn${w.level === 'info' ? ' info' : ''}`, w.text));
+
+  // tiles — each one says what it covers
+  const t = a.totals;
+  tiles.appendChild(tile({ label: `Ad spend · ${label}`, value: money(t.spend), sub: `Google ${money(t.googleSpend)} · Meta ${money(t.metaSpend)}` }));
+  const parts = [`${fmtInt(t.siteLeadsFromAds.total)} site form + ${fmtInt(t.instantLeads)} Instant Form`];
+  const notCounted = [];
+  if (t.siteLeadsUntaggedSocial.total) notCounted.push(`${t.siteLeadsUntaggedSocial.total} untagged social`);
+  const otherLeads = t.siteLeadsAll.total - t.siteLeadsFromAds.total - t.siteLeadsUntaggedSocial.total;
+  if (otherLeads > 0) notCounted.push(`${otherLeads} not from an ad`);
+  tiles.appendChild(tile({ label: `Leads from ads · ${label}`, value: fmtInt(t.leads), sub: parts.join(' · ') + (notCounted.length ? ` · not counted: ${notCounted.join(', ')}` : '') }));
+  tiles.appendChild(tile({ label: 'Cost per lead', value: money(t.cpl), sub: t.cpl == null ? 'needs a lead from an ad first' : 'ad spend ÷ leads from ads' }));
+  tiles.appendChild(tile({ label: `Ad clicks · ${label}`, value: fmtInt(t.clicks), sub: `${t.cpc == null ? 'no spend yet' : `${money(t.cpc)} per click`} · ${fmtNum(t.impressions)} impressions` }));
+  tiles.appendChild(tile({ label: `Text / email taps · ${label}`, value: fmtInt(t.taps), sub: `from ad visits · ${fmtInt(t.tapsAllVisitors)} from all visitors` }));
+  const camps = a.campaigns || [];
+  tiles.appendChild(tile({ label: 'Campaigns', value: fmtInt(camps.length), sub: `${camps.filter((c) => c.status === 'Active').length} active · ${camps.filter((c) => c.isNew).length} started in the last 14 days` }));
+
+  // by platform
+  adsTable($('adsPlatformTable'), `By platform · ${label}`,
+    ['Platform', 'Spend', 'Impressions', 'Clicks', 'CTR', 'CPC', 'Site visits', 'Engaged', 'Site leads', 'Instant Form', 'Leads', 'Cost / lead', 'Click → lead', 'Taps'],
+    (a.platforms || []).map((p) => [
+      { text: p.label, cls: 'ads-name', title: p.note || p.label }, money(p.spend), fmtNum(p.impressions), fmtInt(p.clicks), fmtPct(p.ctr), money(p.cpc),
+      fmtInt(p.sessions), fmtPct(p.engagementRate), fmtInt(p.siteLeads), fmtInt(p.instantLeads), fmtInt(p.leads),
+      money(p.cpl), fmtPct(p.clickToLead), fmtInt(p.taps),
+    ]),
+    { empty: 'No ad activity in this range yet', wide: true });
+  $('adsPlatformSub').textContent = 'lowest cost per lead wins · untagged social and non-ad leads are listed so the totals add up';
+
+  // by campaign, with badges and "new since your last visit"
+  let seen = [];
+  try { seen = JSON.parse(localStorage.getItem(ADS_SEEN_LS) || '[]'); } catch { seen = []; }
+  if (!Array.isArray(seen)) seen = [];
+  const seenSet = new Set(seen);
+  const firstVisit = seen.length === 0;
+  const badgesFor = (c) => {
+    const out = [];
+    if (c.flags.includes('new')) out.push({ text: 'New', cls: 'new', title: `First activity ${dIso(c.firstSeen)}` });
+    if (!firstVisit && !seenSet.has(c.key)) out.push({ text: 'New since your last visit', cls: 'info' });
+    if (c.flags.includes('untagged')) out.push({ text: 'Untagged', cls: 'warn', title: 'Meta reports clicks but no tagged visits reached the site. Add the URL parameters line to this campaign’s ads (DASHBOARD-SETUP.md).' });
+    if (c.flags.includes('no_leads')) out.push({ text: 'No leads', cls: 'warn', title: `${money(c.spend)} spent, no leads yet` });
+    return out;
+  };
+  adsTable($('adsCampaignTable'), `By campaign · ${label}`,
+    ['Campaign', 'Platform', 'Goal', 'Status', 'Started', 'Spend', 'Impressions', 'Clicks', 'CTR', 'CPC', 'Site visits', 'Engaged', 'Site leads', 'Instant Form', 'Leads', 'Cost / lead', 'Taps'],
+    camps.map((c) => [
+      { text: c.name, badges: badgesFor(c), cls: 'ads-name', title: [c.platformLabel, c.kind, c.dailyBudget ? `${fmtMoney0(c.dailyBudget)}/day budget` : null].filter(Boolean).join(' · ') },
+      { text: c.platform === 'meta' ? metaSplitLabel(c) : c.platformLabel, cls: 'ads-plat' },
+      c.goal, c.status,
+      { text: c.firstSeen ? dIso(c.firstSeen) : '—', title: c.daysRunning ? `${plural(c.daysRunning, 'day')} · last activity ${c.lastSeen ? dIso(c.lastSeen) : '—'}` : 'No activity yet' },
+      money(c.spend), fmtNum(c.impressions), fmtInt(c.clicks), fmtPct(c.ctr), money(c.cpc),
+      fmtInt(c.sessions), fmtPct(c.engagementRate),
+      { text: fmtInt(c.siteLeads.total), title: `${plural(c.siteLeads.play, 'player sign-up')} · ${plural(c.siteLeads.coach, 'coach application')}` },
+      fmtInt(c.instantLeads), fmtInt(c.leads), money(c.cpl),
+      { text: fmtInt(c.taps.text + c.taps.email), title: `${c.taps.text} text · ${c.taps.email} email` },
+    ]),
+    { empty: 'No campaigns have run in this range. New ones appear here on their own once they spend.', wide: true });
+  $('adsCampaignSub').textContent = 'found automatically on both platforms · sorted by spend · hover a name for its budget';
+  try { localStorage.setItem(ADS_SEEN_LS, JSON.stringify([...new Set([...seen, ...camps.map((c) => c.key)])])); } catch { /* private mode */ }
+
+  // daily charts
+  const days = a.daily || [];
+  const xDates = days.map((d) => parseIsoDay(d.date));
+  const xLabels = xDates.map(dShort);
+  const xTip = xDates.map((d) => (d ? d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '—'));
+  const spendSeries = [
+    { name: 'Google spend', color: css('--s1'), values: days.map((d) => d.googleSpend) },
+    { name: 'Meta spend', color: css('--s2'), values: days.map((d) => d.metaSpend) },
+  ];
+  legend($('adsSpendLegend'), spendSeries);
+  if (days.length && days.some((d) => d.googleSpend || d.metaSpend)) {
+    lineChart($('adsSpendChart'), { xLabels, xTip, series: spendSeries, yFmt: fmtMoney0, ariaLabel: 'Daily ad spend by platform. Use arrow keys to read values; the Table button shows the same data.' });
+    buildTable($('adsSpendChartTable'), 'Daily ad spend', ['Date', 'Google', 'Meta'], days.map((d, i) => [xLabels[i], fmtMoney(d.googleSpend), fmtMoney(d.metaSpend)]));
+  } else { cardState($('adsSpendChart'), 'No spend recorded in this range yet'); clear($('adsSpendChartTable')); }
+  const leadSeries = [
+    { name: 'Site leads (any source)', color: css('--s3'), values: days.map((d) => d.siteLeads) },
+    { name: 'Meta Instant Form leads', color: css('--s2'), values: days.map((d) => d.instantLeads) },
+  ];
+  legend($('adsLeadsLegend'), leadSeries);
+  if (days.length && days.some((d) => d.siteLeads || d.instantLeads)) {
+    lineChart($('adsLeadsChart'), { xLabels, xTip, series: leadSeries, yFmt: fmtInt, ariaLabel: 'Daily leads. Use arrow keys to read values; the Table button shows the same data.' });
+    buildTable($('adsLeadsChartTable'), 'Daily leads', ['Date', 'Site leads', 'Instant Form'], days.map((d, i) => [xLabels[i], fmtInt(d.siteLeads), fmtInt(d.instantLeads)]));
+  } else { cardState($('adsLeadsChart'), 'No leads in this range yet'); clear($('adsLeadsChartTable')); }
+
+  // recent leads
+  const leads = a.recentLeads || [];
+  adsTable($('adsLeadsTable'), 'Recent site leads',
+    ['When', 'Form', 'Name', 'Came from', 'Campaign', 'Ad / placement'],
+    leads.map((l) => [
+      { text: relTime(l.at), title: l.at ? new Date(l.at).toLocaleString('en-US') : '' },
+      l.form === 'coach' ? 'Coach application' : 'Player sign-up', l.name || '—', l.platformLabel,
+      l.campaign ? l.campaign : { text: '—', cls: 'ads-dim', title: l.tagged ? 'Tagged, but no campaign name' : 'No campaign tags on this visit' },
+      [l.ad, l.term].filter(Boolean).join(' · ') || { text: '—', cls: 'ads-dim' },
+    ]),
+    { empty: 'No site sign-ups or applications yet' });
+  $('adsLeadsSub').textContent = `last ${leads.length} site sign-ups and applications · Instant Form leads live in Meta’s Leads Center`;
+}
+function setAdsStale(on) {
+  ['adsPlatformCard', 'adsCampaignCard', 'adsSpendCard', 'adsLeadsDailyCard', 'adsLeadsCard'].forEach((id) => $(id).classList.toggle('stale', on));
+  $('adsTiles').classList.toggle('stale', on);
+}
+async function loadAds(fresh) {
+  setAdsStale(true);
+  const params = { days: state.adsDays };
+  if (fresh) params.fresh = '1';
+  const a = await api('ads-stats', params);
+  setAdsStale(false);
+  if (a?.error === 'unauthorized') return;
+  state.ads = a;
+  try { renderAds(); } catch (e) { console.error('[dash] ads render', e); }
+}
+
+// ---------- loading + wiring ------------------------------------------------
+async function loadAll(fresh) {
+  $('updatedAt').textContent = 'Loading…';
+  await loadAds(!!fresh);
+  $('updatedAt').textContent =
+    'Updated ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+$('adsFilter').querySelectorAll('[data-adays]').forEach((btn) =>
+  btn.addEventListener('click', () => {
+    const d = btn.dataset.adays === 'all' ? 'all' : +btn.dataset.adays;
+    if (d === state.adsDays) return;
+    state.adsDays = d;
+    $('adsFilter').querySelectorAll('[data-adays]').forEach((b) =>
+      b.setAttribute('aria-pressed', String(b === btn)));
+    loadAds();
+  }));
+initViewToggle('adsSpendCard', 'adsSpendChart', 'adsSpendChartTable');
+initViewToggle('adsLeadsDailyCard', 'adsLeadsChart', 'adsLeadsChartTable');
+initDashboardShell(loadAll);
+</script>
+
+</body>
+</html>

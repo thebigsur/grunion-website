@@ -1,0 +1,230 @@
+/* ============================================================================
+   Grunion RFC Club Dashboard — shared styles for /dashboard/ (Overview) and
+   /dashboard/ads/ (Ad Campaigns). Both pages link this file; no build step.
+============================================================================ */
+/* ============================ TOKENS ============================ */
+:root{
+  --page:#071c2c;            /* ocean-950 */
+  --card:#0d2c44;            /* ocean-800 — chart surface (palette validated against this) */
+  --card-2:#11324d;
+  --ink1:#ffffff;
+  --ink2:#c9d2da;
+  --ink3:#9aa1a8;            /* gray-101 — muted / axis */
+  --line:rgba(255,255,255,.09);
+  --grid:rgba(255,255,255,.08);
+  --baseline:rgba(255,255,255,.18);
+  --gold:#c2922e; --gold-soft:#d8b15f;
+  /* categorical series — Grunion ramp stepped for the dark surface.
+     Validated (dataviz six checks, dark, surface #0d2c44):
+     band PASS · chroma PASS · CVD ΔE 13.7 PASS · normal ΔE 15.6 PASS · contrast ≥3:1 PASS */
+  --s1:#b8892b;  /* gold  — slot 1 */
+  --s2:#5b9bd0;  /* blue  — slot 2 */
+  --s3:#3fa371;  /* green — slot 3 */
+  --up:#63c68b;  /* delta good  (4.5:1+ on card) */
+  --down:#e2906d;/* delta bad   (4.5:1+ on card) */
+  --font-display:"Saira Condensed","Arial Narrow",sans-serif;
+  --font-body:"Libre Franklin",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,monospace;
+  --wrap:1240px;
+  --gutter:clamp(18px,4vw,56px);
+}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0;background:var(--page);color:var(--ink1);font-family:var(--font-body);
+  font-size:15.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+img{max-width:100%;display:block}
+a{color:var(--gold-soft)}
+h1,h2,h3{margin:0;font-family:var(--font-display);font-weight:800;line-height:.95;
+  letter-spacing:.005em;text-transform:uppercase}
+p{margin:0}
+button{font-family:inherit;cursor:pointer;color:inherit}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.wrap{max-width:var(--wrap);margin:0 auto;padding-inline:var(--gutter)}
+.kicker{font-family:var(--font-mono);font-size:.68rem;font-weight:500;letter-spacing:.26em;
+  text-transform:uppercase;color:var(--gold-soft);display:inline-flex;align-items:center;gap:.7em}
+.kicker::before{content:"";width:24px;height:2px;background:var(--gold);display:inline-block}
+.mono{font-family:var(--font-mono)}
+
+/* jersey stripe, as on the main site */
+.rule101{height:5px;border:0;margin:0;
+  background:linear-gradient(90deg,var(--s2) 0 33.33%,var(--ink3) 33.33% 66.66%,var(--s3) 66.66% 100%)}
+
+/* ============================ HEADER ============================ */
+.dhead{border-bottom:1px solid var(--line);background:rgba(7,28,44,.85);backdrop-filter:blur(6px);
+  position:sticky;top:0;z-index:40}
+.dhead-in{display:flex;align-items:center;gap:16px;padding-block:14px}
+.dhead .crest{height:52px;width:auto;filter:drop-shadow(0 1px 5px rgba(0,0,0,.45))}
+.dhead .t b{font-family:var(--font-display);font-weight:800;font-size:1.7rem;
+  text-transform:uppercase;letter-spacing:.02em;line-height:1;display:block}
+.dhead .t i{font-family:var(--font-mono);font-style:normal;font-size:.6rem;letter-spacing:.18em;
+  color:var(--ink3);text-transform:uppercase;display:block;margin-top:3px}
+.dhead-right{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.updated{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+.hbtn{background:transparent;border:1px solid var(--line);border-radius:2px;padding:8px 14px;
+  font-family:var(--font-mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2)}
+.hbtn:hover{border-color:var(--gold-soft);color:#fff}
+
+/* page nav in the header — Overview / Ad Campaigns */
+.dnav{display:inline-flex;border:1px solid var(--line);border-radius:2px;overflow:hidden}
+.dnav a{padding:8px 14px;font-family:var(--font-mono);font-size:.68rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink2);text-decoration:none;border-left:1px solid var(--line)}
+.dnav a:first-child{border-left:0}
+.dnav a:hover{color:#fff;background:rgba(255,255,255,.05)}
+.dnav a[aria-current="page"]{background:var(--gold);color:var(--page);font-weight:600}
+
+/* ============================ SECTIONS ============================ */
+.section{padding-block:clamp(30px,4.5vw,54px)}
+.sec-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;
+  gap:12px 24px;margin-bottom:20px}
+.sec-head h2{font-size:clamp(1.9rem,4.4vw,3rem);margin-top:10px}
+.sec-note{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink3)}
+.section + .section{border-top:1px solid var(--line)}
+
+/* filter row — one row, scopes everything below it in the section */
+.filter-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;margin:2px 0 20px}
+.seg{display:inline-flex;border:1px solid var(--baseline);border-radius:2px;overflow:hidden}
+.seg button{background:transparent;border:0;border-left:1px solid var(--baseline);
+  padding:9px 16px;font-family:var(--font-mono);font-size:.7rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink3)}
+.seg button:first-child{border-left:0}
+.seg button[aria-pressed="true"]{background:var(--gold);color:var(--page);font-weight:600}
+.seg button:not([aria-pressed="true"]):hover{color:#fff;background:rgba(255,255,255,.05)}
+.filter-note{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink3)}
+
+/* ============================ TILES ============================ */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:12px;margin-bottom:14px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:16px 18px;min-width:0}
+.tile .t-lab{font-family:var(--font-mono);font-size:.64rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink3)}
+.tile .t-val{font-weight:600;font-size:1.9rem;line-height:1.1;margin-top:8px;color:var(--ink1);
+  display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.tile .t-val small{font-weight:500;font-size:.95rem;color:var(--ink3)}
+.delta{font-family:var(--font-mono);font-size:.72rem;font-weight:600;letter-spacing:.02em;white-space:nowrap}
+.delta.up{color:var(--up)} .delta.down{color:var(--down)} .delta.flat{color:var(--ink3)}
+.tile .t-sub{font-size:.8rem;color:var(--ink2);margin-top:7px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.tile .t-sub .mono{font-size:.72rem;color:var(--ink3)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:baseline}
+
+/* ============================ CARDS & GRIDS ============================ */
+.card{background:var(--card);border:1px solid var(--line);border-radius:4px;
+  padding:18px 20px 16px;min-width:0;position:relative}
+.card + .card,.grid2 + .card,.card + .grid2{margin-top:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:880px){.grid2{grid-template-columns:1fr}}
+.card-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-bottom:6px}
+.card-head h3{font-size:1.22rem;letter-spacing:.02em;color:var(--ink1)}
+.card-head .spacer{flex:1}
+.card-sub{font-family:var(--font-mono);font-size:.63rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink3);width:100%;margin-top:-2px}
+.card.stale > :not(.card-head){opacity:.5;transition:opacity .2s}
+.tiles.stale{opacity:.55;transition:opacity .2s}
+.card-state{padding:26px 4px;font-family:var(--font-mono);font-size:.76rem;
+  letter-spacing:.06em;color:var(--ink3);line-height:1.7}
+.card-state b{color:var(--gold-soft);font-weight:500}
+
+/* legend — always present for ≥2 series; line keys mirror the mark */
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;margin:2px 0 4px}
+.legend .lg{display:inline-flex;align-items:center;gap:8px;font-size:.78rem;color:var(--ink2)}
+.legend .lg i{width:16px;height:0;border-top:3px solid;border-radius:2px;display:inline-block}
+
+/* chart body */
+.chart-wrap{position:relative}
+.chart-wrap svg{display:block;width:100%;height:auto}
+.chart-wrap svg:focus-visible{outline:2px solid var(--gold);outline-offset:4px;border-radius:3px}
+/* tooltip: values lead, series names follow; line keys not boxes */
+.tip{position:absolute;pointer-events:none;background:#081f31;border:1px solid rgba(255,255,255,.16);
+  border-radius:3px;padding:9px 12px 8px;min-width:150px;box-shadow:0 10px 28px rgba(0,0,0,.45);
+  opacity:0;transition:opacity .08s;z-index:5}
+.tip.on{opacity:1}
+.tip .tp-x{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink3);margin-bottom:6px;white-space:nowrap}
+.tip .tp-row{display:flex;align-items:center;gap:8px;padding:2px 0;white-space:nowrap}
+.tip .tp-row i{width:12px;height:0;border-top:3px solid;border-radius:2px;flex:none}
+.tip .tp-row b{font-weight:600;font-size:.88rem;color:var(--ink1);font-variant-numeric:tabular-nums}
+.tip .tp-row span{font-size:.72rem;color:var(--ink3)}
+
+/* chart/table toggle + data tables */
+.tgl{display:inline-flex;border:1px solid var(--line);border-radius:2px;overflow:hidden}
+.tgl button{background:transparent;border:0;border-left:1px solid var(--line);padding:5px 10px;
+  font-family:var(--font-mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3)}
+.tgl button:first-child{border-left:0}
+.tgl button[aria-pressed="true"]{background:rgba(255,255,255,.09);color:#fff}
+.dtable{width:100%;border-collapse:collapse;margin-top:8px}
+.dtable caption{text-align:left;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink3);padding-bottom:8px}
+.dtable th{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink3);font-weight:500;text-align:right;padding:7px 10px;border-bottom:1px solid var(--baseline)}
+.dtable th:first-child{text-align:left;padding-left:2px}
+.dtable td{font-size:.84rem;color:var(--ink2);text-align:right;padding:7px 10px;
+  border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.dtable td:first-child{text-align:left;color:var(--ink1);padding-left:2px}
+.dtable td a{color:var(--gold-soft);text-decoration:none}
+.dtable td a:hover{text-decoration:underline}
+.dtable tr:last-child td{border-bottom:0}
+.tscroll{overflow-x:auto}
+.tscroll .dtable{min-width:560px}
+
+/* bar list — single-series bars (slot 1), value always visible beside the bar */
+.blist{display:grid;gap:9px;margin-top:10px}
+.brow{display:grid;grid-template-columns:minmax(90px,42%) 1fr auto;align-items:center;gap:12px;min-width:0}
+.brow .b-lab{font-size:.8rem;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brow .b-lab a{color:var(--ink2);text-decoration:none}
+.brow .b-lab a:hover{color:var(--gold-soft);text-decoration:underline}
+.brow .b-track{height:10px;background:rgba(255,255,255,.06);border-radius:0 4px 4px 0;overflow:hidden}
+.brow .b-bar{height:100%;background:var(--s1);border-radius:0 4px 4px 0;min-width:2px}
+.brow .b-val{font-family:var(--font-mono);font-size:.72rem;color:var(--ink2);font-variant-numeric:tabular-nums}
+.blist-empty{font-family:var(--font-mono);font-size:.72rem;color:var(--ink3);padding:10px 0}
+
+/* ============================ AUTH OVERLAY ============================ */
+.gatewall{position:fixed;inset:0;z-index:100;background:var(--page);display:grid;place-items:center;padding:20px}
+.gatewall[hidden]{display:none}
+.gate-card{width:min(400px,94vw);background:var(--card);border:1px solid var(--line);border-radius:6px;
+  padding:34px 32px;text-align:center}
+.gate-card .crest{height:84px;margin:0 auto 14px}
+.gate-card h1{font-size:2rem}
+.gate-card p{color:var(--ink2);font-size:.9rem;margin-top:10px}
+.gate-form{display:grid;gap:10px;margin-top:20px}
+.gate-form input{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.25);color:#fff;
+  padding:12px 15px;border-radius:2px;font-family:var(--font-mono);font-size:1rem;letter-spacing:.14em;text-align:center}
+.gate-form input:focus{border-color:var(--gold);outline:none}
+.gate-btn{background:var(--gold);color:var(--page);border:0;border-radius:2px;padding:12px 18px;
+  font-family:var(--font-display);font-weight:700;font-size:1.05rem;text-transform:uppercase;letter-spacing:.04em}
+.gate-btn:hover{background:var(--gold-soft)}
+.gate-err{color:var(--down);font-family:var(--font-mono);font-size:.72rem;letter-spacing:.06em;min-height:1.2em}
+.gate-note{font-family:var(--font-mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink3);margin-top:16px}
+
+/* ============================ ADS ============================ */
+.badge{display:inline-block;font-family:var(--font-mono);font-size:.56rem;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;padding:2px 6px;border-radius:2px;margin-left:7px;vertical-align:middle;white-space:nowrap}
+.badge.new{background:rgba(99,198,139,.16);color:var(--up)}
+.badge.warn{background:rgba(226,144,109,.18);color:var(--down)}
+.badge.info{background:rgba(91,155,208,.18);color:var(--s2)}
+.ads-warns{display:grid;gap:8px;margin:0 0 14px}
+.ads-warns:empty{display:none}
+.ads-warn{border:1px solid rgba(226,144,109,.35);border-left:3px solid var(--down);background:rgba(226,144,109,.08);
+  padding:10px 14px;font-size:.84rem;color:var(--ink2);border-radius:3px;line-height:1.5}
+.ads-warn.info{border-color:rgba(91,155,208,.35);border-left-color:var(--s2);background:rgba(91,155,208,.08)}
+.tscroll .dtable.ads-wide{min-width:1120px}
+.dtable td.ads-name{white-space:nowrap;max-width:340px;overflow:hidden;text-overflow:ellipsis}
+.dtable td.ads-plat{white-space:nowrap}
+.dtable td.ads-dim{color:var(--ink3)}
+/* ads tiles carry their scope in the sub-line, so it wraps instead of truncating */
+#adsTiles .tile .t-sub{white-space:normal;line-height:1.4}
+
+/* footer */
+.dfoot{border-top:1px solid var(--line);margin-top:26px}
+.dfoot-in{padding-block:22px;display:flex;flex-wrap:wrap;gap:8px 28px;
+  font-family:var(--font-mono);font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.dfoot a{color:var(--ink3)}
+.dfoot a:hover{color:var(--gold-soft)}
+
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0 0 0 0);white-space:nowrap;border:0}
+@media(max-width:560px){
+  .tile .t-val{font-size:1.55rem}
+  .dhead .t b{font-size:1.35rem}
+}
