@@ -117,26 +117,36 @@ const gaDate = (s) => (/^\d{8}$/.test(s) ? `${s.slice(0, 4)}-${s.slice(4, 6)}-${
 const validDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(String(s || ''));
 
 // Which platform a visit came from, judged from what the ad platforms put in
-// the URL (utm_source, gclid, fbclid) and, failing that, the referrer.
-// A Facebook/Instagram referral WITHOUT our utm tags is kept apart as
+// the URL (utm_source + utm_medium, gclid, fbclid) and, failing that, the
+// referrer. A source alone is not enough: the club's own Instagram bio link or
+// a newsletter can carry utm_source=instagram with utm_medium=social, and that
+// is organic, not an ad. Paid means a paid medium (our ad templates always set
+// utm_medium=paid_social / cpc) or a Google click id (gclid is only ever added
+// by Google Ads). A Facebook/Instagram visit without paid tags is kept apart as
 // "meta_untagged": it may be an untagged ad, or someone tapping the club's bio
 // link, so it must not be counted as a paid lead or pollute cost per lead.
-function classifyPlatform({ utm_source, utm_campaign, gclid, gbraid, wbraid, fbclid, referrer }) {
-  const s = lower(utm_source);
-  if (s === 'google' || gclid || gbraid || wbraid) return 'google';
-  if (s === 'fb' || s === 'facebook' || s === 'facebook.com') return 'facebook';
-  if (s === 'ig' || s === 'instagram' || s === 'instagram.com') return 'instagram';
-  if (s === 'msg' || s === 'messenger') return 'messenger';
-  if (s === 'an' || s === 'audience_network') return 'audience_network';
+const PAID_MEDIUM = /^(paid[-_ ]?social|paid[-_ ]?search|paid[-_ ]?ads?|paid|cpc|ppc|cpm|display)$/;
+const FB_SOURCES = new Set(['fb', 'facebook', 'facebook.com']);
+const IG_SOURCES = new Set(['ig', 'instagram', 'instagram.com']);
+function classifyPlatform({ utm_source, utm_medium, utm_campaign, gclid, gbraid, wbraid, fbclid, referrer }) {
+  const s = lower(utm_source), m = lower(utm_medium);
+  const paid = PAID_MEDIUM.test(m);
+  if (gclid || gbraid || wbraid || (s === 'google' && paid)) return 'google';
+  if (paid) {
+    if (FB_SOURCES.has(s)) return 'facebook';
+    if (IG_SOURCES.has(s)) return 'instagram';
+    if (s === 'msg' || s === 'messenger') return 'messenger';
+    if (s === 'an' || s === 'audience_network') return 'audience_network';
+  }
   const host = hostOf(referrer);
-  if (fbclid || /(^|\.)(facebook|instagram)\.com$|^fb\.me$/.test(host)) return 'meta_untagged';
-  if (/(^|\.)google\./.test(host) && !utm_campaign) return 'google_organic';
+  if (META_SOURCES.has(s) || fbclid || /(^|\.)(facebook|instagram)\.com$|^fb\.me$/.test(host)) return 'meta_untagged';
+  if ((s === 'google' || /(^|\.)google\./.test(host)) && !utm_campaign) return 'google_organic';
   return s ? `other:${s}` : 'other';
 }
 const isMetaPlatform = (p) => ['facebook', 'instagram', 'messenger', 'audience_network'].includes(p);
 const PLATFORM_LABEL = {
   google: 'Google Search', facebook: 'Facebook', instagram: 'Instagram', messenger: 'Messenger',
-  audience_network: 'Audience Network', meta_untagged: 'Facebook / Instagram (untagged)',
+  audience_network: 'Audience Network', meta_untagged: 'Facebook / Instagram (organic or untagged)',
   google_organic: 'Google (organic)', other: 'Not from an ad',
 };
 const platformLabel = (p) => PLATFORM_LABEL[p] || (String(p).startsWith('other:') ? `Other (${p.slice(6)})` : p);
@@ -144,8 +154,8 @@ const platformLabel = (p) => PLATFORM_LABEL[p] || (String(p).startsWith('other:'
 // GA4 session source/medium → platform, for sessions and events
 function gaPlatform(source, medium) {
   const s = lower(source), m = lower(medium);
-  if (s === 'google' && /^(cpc|ppc|paid|paidsearch|paid_search)$/.test(m)) return 'google';
-  if (META_SOURCES.has(s)) return classifyPlatform({ utm_source: s });
+  if (s === 'google' && PAID_MEDIUM.test(m)) return 'google';
+  if (META_SOURCES.has(s)) return classifyPlatform({ utm_source: s, utm_medium: m }); // paid medium → platform, else meta_untagged
   if (/(^|\.)(facebook|instagram)\.com$|^fb\.me$/.test(s)) return 'meta_untagged';
   return null; // not ad traffic
 }
@@ -551,7 +561,7 @@ function assemble({ ga, meta, nl, range, today, sinceAll, days }) {
     const ev = eventsFor((e) => gaPlatform(e.source, e.medium) === 'meta_untagged');
     const untagged = leadsFor((l) => l.platform === 'meta_untagged').total;
     // spend / impressions / clicks are null here on purpose: "not applicable", not zero
-    if (untagged || sess.sessions) platforms.push(platformRow('meta_untagged', 'Facebook / Instagram, untagged', { spend: null, impressions: null, clicks: null, sessions: sess.sessions, engaged: sess.engaged, siteLeads: untagged, instantLeads: 0, taps: ev.tap_text + ev.tap_email }));
+    if (untagged || sess.sessions) platforms.push(platformRow('meta_untagged', 'Facebook / Instagram, not paid', { spend: null, impressions: null, clicks: null, sessions: sess.sessions, engaged: sess.engaged, siteLeads: untagged, instantLeads: 0, taps: ev.tap_text + ev.tap_email }));
   }
   const other = leadsFor((l) => !['google', 'facebook', 'instagram', 'messenger', 'audience_network', 'meta_untagged'].includes(l.platform));
   if (other.total) platforms.push(platformRow('other', 'Not from an ad (direct, organic, other)', { spend: null, impressions: null, clicks: null, sessions: null, engaged: null, siteLeads: other.total, instantLeads: 0, taps: null }));
@@ -637,7 +647,7 @@ function row(c, today) {
   };
 }
 const PLATFORM_NOTES = {
-  meta_untagged: 'Visits and leads that came from Facebook or Instagram without campaign tags: an untagged ad, or the club\'s own bio link. Never counted as paid leads.',
+  meta_untagged: 'Visits and leads from Facebook or Instagram that carried no paid-ad tags: the club\'s own posts and bio link, a share, or an ad whose URL parameters are missing. Never counted as paid leads.',
   other: 'Site leads whose visit carried no ad tags at all: direct, organic search, word of mouth.',
 };
 function platformRow(key, label, p) {

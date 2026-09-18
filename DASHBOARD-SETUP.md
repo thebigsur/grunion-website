@@ -208,17 +208,38 @@ Page, the Instagram account and the ad account.
 2. **Create a system user:** business.facebook.com → **Settings** (Business
    settings) → **Users** → **System users** → **Add** → name
    `grunion-dashboard`, role **Employee** → Create.
-3. **Give it the ad account:** on that system user click **Assign assets** →
-   **Ad accounts** → tick the club's ad account → turn on **View performance**
-   (read only) → Save.
-4. **Generate the token:** still on the system user → **Generate new token** →
+3. **Give it the ad account and the app:** on that system user click
+   **Assign assets** → **Ad accounts** → tick the club's ad account → turn on
+   **Manage campaigns** → Save. Then **Assign assets** again → **Apps** → tick
+   `Grunion dashboard` → **Develop app** → Save (without this the token step
+   says "No permissions available"). The token's `ads_read` scope is what keeps
+   the dashboard read only, whatever the role says.
+4. **Generate the token:** still on the system user → **Generate token** →
    choose the `Grunion dashboard` app → token expiration **Never** →
    permissions: tick **ads_read** only → Generate. Copy it right away; Meta
    shows it once.
+4b. **Authorize the ad account for the app:** developers.facebook.com → the
+   app → **App settings → Advanced → Advertising accounts → Authorized ad
+   account IDs** → add the ad account id → Save changes. Needed while the app
+   stays in Development mode (it can stay there for good).
 5. Netlify → **Site configuration → Environment variables**: add
    `META_ADS_TOKEN` (the token) and `META_AD_ACCOUNT_ID` (Ads Manager → account
    dropdown → the number under the account name). Trigger a deploy.
 6. Paste both into the Grunion Project Keys doc.
+
+Do all of this logged in with a **Facebook** profile that has full control of
+the portfolio, not the Instagram login (the developer portal only accepts a
+Facebook login, and Business settings shows different things to each).
+
+**Gotcha, learned 17 Sep 2026:** an ad account that Meta auto-created for the
+Instagram login (its name is just its id number) is invisible to every app,
+even Meta's own Graph API Explorer: every call fails with
+`(#200) Ad account owner has NOT grant ads_management or ads_read permission`
+no matter what permissions are set. The fix is to create the ad account in
+Business settings → **Ad accounts → Add → Create a new ad account** while
+logged in as a Facebook profile, then point everything at the new one. The
+club's working account is **Grunion RFC Ads**, id `1792518825224191`; the
+auto-created `1987173712083863` is the dead one.
 
 If Meta insists on business verification before it lets you create a system
 user, say so and the function can be switched to a 60-day user token that it
@@ -250,7 +271,7 @@ but no tagged visits).
 | Instant Form | leads Meta collected inside Facebook / Instagram (Meta's own count) |
 | Leads | site leads + Instant Form leads. Cost / lead = spend ÷ leads |
 | Taps | taps on the text / email buttons from that campaign's visits (GA4 events), never counted as leads |
-| Facebook / Instagram (untagged) | visits and leads that came from Facebook or Instagram without campaign tags: an untagged ad, or the club's own bio link. Listed so totals add up, never counted as paid leads |
+| Facebook / Instagram, not paid | visits and leads from Facebook or Instagram that carried no paid-ad tags: the club's own posts and bio link (even with `utm_source=instagram&utm_medium=social`), a share, or an ad whose URL parameters are missing. Only a paid medium (`paid_social`, `cpc`) or a Google click id counts as an ad. Listed so totals add up, never counted as paid leads |
 | Not from an ad | site leads with no ad tags at all (direct, organic search, word of mouth) |
 
 Badges: **New** = first activity within 14 days · **New since your last visit**
