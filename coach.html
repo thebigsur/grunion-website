@@ -192,6 +192,16 @@
 
       <form class="lp-form" name="coach-application" method="POST" data-netlify="true" netlify-honeypot="bot-field" enctype="multipart/form-data" action="/coach-thanks">
         <input type="hidden" name="form-name" value="coach-application" />
+        <!-- Where this visit came from: filled by the attribution script at the bottom of the page; empty for direct visits. Feeds the club dashboard. -->
+        <input type="hidden" name="utm_source" value="" />
+        <input type="hidden" name="utm_medium" value="" />
+        <input type="hidden" name="utm_campaign" value="" />
+        <input type="hidden" name="utm_content" value="" />
+        <input type="hidden" name="utm_term" value="" />
+        <input type="hidden" name="gclid" value="" />
+        <input type="hidden" name="fbclid" value="" />
+        <input type="hidden" name="landing" value="" />
+        <input type="hidden" name="referrer" value="" />
         <p class="lp-hp" hidden aria-hidden="true"><label>Leave this empty: <input name="bot-field" tabindex="-1" autocomplete="off" /></label></p>
 
         <div class="lp-field">
@@ -279,6 +289,41 @@
   new IntersectionObserver(function(e){
     bar.classList.toggle('is-on', !e[0].isIntersecting);
   },{threshold:0}).observe(anchor);
+})();
+</script>
+
+<script>
+/* Ad attribution for the club dashboard. Remembers where this visitor came
+   from (utm tags, gclid, fbclid, referrer) for 30 days in this browser and
+   copies it into the form's hidden fields, so each sign-up can be credited to
+   the campaign that brought it. Nothing is sent anywhere except with the form
+   the visitor chooses to submit. Also reports text / email taps to GA4. */
+(function(){
+  var KEY='grcAttrib', DAYS=30, TAGS=['utm_source','utm_medium','utm_campaign','utm_content','utm_term','gclid','gbraid','wbraid','fbclid'];
+  var q=new URLSearchParams(location.search), rec=null, tagged=false, fresh={};
+  TAGS.forEach(function(k){ var v=q.get(k); if(v){ fresh[k]=String(v).slice(0,120); tagged=true; } });
+  var stored=null;
+  try{ stored=JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){}
+  if(stored && !(stored.t && Date.now()-stored.t < DAYS*864e5)) stored=null;
+  var refHost=''; try{ refHost=document.referrer?new URL(document.referrer).hostname:''; }catch(e){}
+  if(tagged || !stored){
+    rec={t:Date.now(),landing:location.pathname,referrer:refHost};
+    TAGS.forEach(function(k){ if(fresh[k]) rec[k]=fresh[k]; });
+    try{ localStorage.setItem(KEY,JSON.stringify(rec)); }catch(e){}
+  } else rec=stored;
+  var click=rec.gclid||rec.gbraid||rec.wbraid||'';
+  var fill={utm_source:rec.utm_source||'',utm_medium:rec.utm_medium||'',utm_campaign:rec.utm_campaign||'',
+    utm_content:rec.utm_content||'',utm_term:rec.utm_term||'',gclid:click?click.slice(0,24):'',
+    fbclid:rec.fbclid?String(rec.fbclid).slice(0,24):'',landing:rec.landing||'',referrer:rec.referrer||''};
+  Object.keys(fill).forEach(function(k){
+    var inputs=document.querySelectorAll('form input[type="hidden"][name="'+k+'"]');
+    for(var i=0;i<inputs.length;i++) inputs[i].value=fill[k];
+  });
+  document.addEventListener('click',function(ev){
+    var a=ev.target&&ev.target.closest?ev.target.closest('a[href]'):null; if(!a) return;
+    var h=a.getAttribute('href')||'', name=/^(sms|tel):/i.test(h)?'tap_text':/^mailto:/i.test(h)?'tap_email':null;
+    if(name && typeof gtag==='function') gtag('event',name,{page:document.body.getAttribute('data-page')||location.pathname});
+  },true);
 })();
 </script>
 

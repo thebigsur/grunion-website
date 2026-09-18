@@ -31,9 +31,11 @@ tradeoffs. Simplicity here is deliberate, not an accident.
 - assets/ — images and other media
 - dashboard/index.html — private club analytics dashboard (passcode-gated, unlisted;
   deliberately NOT in nav, sitemap, or robots.txt — noindex via meta + header)
-- netlify/functions/ — cm-stats.mjs, ga-stats.mjs, netlify-stats.mjs: serverless
-  data proxies for the dashboard (zero npm dependencies; API keys live only in
-  Netlify env vars — see DASHBOARD-SETUP.md)
+- netlify/functions/ — cm-stats.mjs, ga-stats.mjs, netlify-stats.mjs, ads-stats.mjs:
+  serverless data proxies for the dashboard (zero npm dependencies; API keys live
+  only in Netlify env vars — see DASHBOARD-SETUP.md). ads-stats.mjs is the ads
+  tracker: Google Ads via the GA4 link + the Meta Marketing API + our own form
+  leads, joined by campaign name (DASHBOARD-SETUP.md step 6).
 - netlify/functions/board/ — the Sponsor Board (jersey-tile email campaign
   metrics from Instantly, read-only). board.mjs serves BOTH the page and its
   JSON feed at /board/<BOARD_SLUG>/ ; page.mjs is the page markup/CSS/JS as a
@@ -81,6 +83,11 @@ tradeoffs. Simplicity here is deliberate, not an accident.
   LANDING PAGES banner, namespaced .lp-* and .co-*; the two rules that touch
   `body`/`html` are scoped to `[data-page^="lp-"]` so they can't reach the rest
   of the site.
+- The landing-page forms carry hidden utm_* / gclid / fbclid / landing / referrer
+  inputs, filled by the attribution script at the bottom of play.html and
+  coach.html; the -thanks pages fire gtag lead_play / lead_coach and the landing
+  pages fire tap_text / tap_email. The dashboard's Ad Campaigns section and the
+  Google Ads conversion import depend on all of it. Don't remove or rename them.
 - /coach and both -thanks pages are noindex (meta tag + X-Robots-Tag in
   netlify.toml); /play is indexable and IS in sitemap.xml on purpose — it is the
   site's best organic answer for "rugby santa barbara". When the coach seat is
