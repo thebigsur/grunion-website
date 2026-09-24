@@ -53,7 +53,19 @@
     <p class="lp-sub">Come play <b>Tuesday &amp; Thursday</b>. No tryout. No sign-up window. No speech. Beginners walk on every single season, bring your boots and we'll handle the rest!</p>
 
     <div class="lp-facts">
-      <div class="lp-fact">
+      <!-- Date switch (script at the bottom): the first data-when="training" card whose dates cover
+           today shows, the rest stay hidden. The undated card is the everyday one. -->
+      <div class="lp-fact" data-when="training" data-until="2026-11-03" hidden>
+        <span class="f-k">Pre-season starts</span>
+        <span class="f-v">Tue Nov 3</span>
+        <span class="f-n">Then Tue &amp; Thu · 7–9PM</span>
+      </div>
+      <div class="lp-fact" data-when="training" data-from="2026-12-11" data-until="2027-01-04" hidden>
+        <span class="f-k">Holiday break</span>
+        <span class="f-v">Back Tue Jan 5</span>
+        <span class="f-n">Then Tue &amp; Thu · 7–9PM</span>
+      </div>
+      <div class="lp-fact" data-when="training">
         <span class="f-k">Training</span>
         <span class="f-v">Tue &amp; Thu · 7–9PM</span>
         <span class="f-n">Every week of the season</span>
@@ -69,6 +81,7 @@
         <span class="f-n">Never played? Come anyway</span>
       </div>
     </div>
+    <p class="lp-also">Women's rugby? <a href="https://sbwomensrugby.com" target="_blank" rel="noopener">Meet the Mermaids&nbsp;↗</a></p>
 
     <div class="lp-cta" id="hero-cta">
       <a class="btn btn-gold btn-xl" href="sms:+18056186510">Text Jordan · (805) 618-6510</a>
@@ -182,9 +195,9 @@
         <div class="lp-card-body">
           <div class="lp-keys">
             <div class="lp-key"><span class="k">Bring</span><span class="v"><b>Boots, water, mouthguard</b><br />Boots if you have them, trainers if you don't. No mouthguard? We'll sort you out.</span></div>
-            <div class="lp-key"><span class="k">The week</span><span class="v"><b>Tue &amp; Thu, 7–9pm</b><br />Practice at Elings. Saturdays are match day, January through April.</span></div>
+            <div class="lp-key"><span class="k">The week</span><span class="v"><b>Tue &amp; Thu, 7–9pm<span data-when="week" data-until="2026-11-03" hidden> from Nov 3</span><span data-when="week" data-from="2026-12-11" data-until="2027-01-04" hidden> from Jan 5</span></b><br />Practice at Elings. Saturdays are match day, January through April.</span></div>
             <div class="lp-key"><span class="k">After</span><span class="v"><b>Baja Sharkeez</b><br />416 State St. The third half is not optional in spirit, only in practice.</span></div>
-            <div class="lp-key"><span class="k">First night</span><span class="v">Show up ten minutes early, find Jordan, and stand in the group. Nobody is going to make you introduce yourself.</span></div>
+            <div class="lp-key"><span class="k">First night</span><span class="v"><span data-when="first" data-until="2026-11-03" hidden><b>Tuesday, November 3</b><br /></span><span data-when="first" data-from="2026-12-11" data-until="2027-01-04" hidden><b>Tuesday, January 5</b><br /></span>Show up ten minutes early, find Jordan, and stand in the group. Nobody is going to make you introduce yourself.</span></div>
           </div>
         </div>
       </div>
@@ -193,6 +206,30 @@
   </div>
 </section>
 </main>
+
+<script>
+/* Date switch. Elements marked data-when="name" are alternate versions of the same line. In each
+   group the first version whose data-from / data-until dates (YYYY-MM-DD, both days included, the
+   reader's local date) cover today is shown and the others stay hidden. A version with no dates is
+   the everyday one: it shows whenever no dated version applies, and it is what shows with JS off.
+   To preview another day, add ?asof=YYYY-MM-DD to the URL. Season dates: see CLAUDE.md. */
+(function(){
+  var d=new Date(), m=/[?&]asof=(\d{4}-\d{2}-\d{2})/.exec(location.search);
+  var today=m?m[1]:d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+  var groups={}, els=document.querySelectorAll('[data-when]');
+  for(var i=0;i<els.length;i++){ var k=els[i].getAttribute('data-when'); (groups[k]=groups[k]||[]).push(els[i]); }
+  Object.keys(groups).forEach(function(k){
+    var pick=null, plain=null;
+    groups[k].forEach(function(el){
+      var from=el.getAttribute('data-from'), until=el.getAttribute('data-until');
+      if(!from && !until){ if(!plain) plain=el; return; }
+      if(!pick && (!from || from<=today) && (!until || today<=until)) pick=el;
+    });
+    pick=pick||plain;
+    groups[k].forEach(function(el){ el.hidden=(el!==pick); });
+  });
+})();
+</script>
 
 <!-- sticky mobile call bar -->
 <div class="lp-sticky"><a class="btn btn-gold" href="sms:+18056186510">Text Jordan · (805) 618-6510</a></div>

@@ -95,10 +95,24 @@ tradeoffs. Simplicity here is deliberate, not an accident.
   coach.html; the -thanks pages fire gtag lead_play / lead_coach and the landing
   pages fire tap_text / tap_email. The dashboard's Ad Campaigns page and the
   Google Ads conversion import depend on all of it. Don't remove or rename them.
-- /coach and both -thanks pages are noindex (meta tag + X-Robots-Tag in
-  netlify.toml); /play is indexable and IS in sitemap.xml on purpose — it is the
-  site's best organic answer for "rugby santa barbara". When the coach seat is
-  filled, take /coach down or leave it noindex; don't add it to the sitemap.
+- Both -thanks pages are noindex (meta tag + X-Robots-Tag in netlify.toml).
+  /play is indexable and IS in sitemap.xml on purpose — it is the site's best
+  organic answer for "rugby santa barbara". Since 23 Sep 2026 /coach is ALSO
+  indexable and in sitemap.xml, with JobPosting structured data in its <head>
+  (validThrough 2027-08-31) so it can show in Google's job listings. When the
+  coach seat is filled, the same day: pause the coach ads, then either take
+  /coach down, or delete the JobPosting block, put back
+  <meta name="robots" content="noindex" /> and the /coach + /coach.html
+  X-Robots-Tag blocks in netlify.toml, and remove /coach from sitemap.xml.
+- /play and /play-thanks have a date switch: elements with data-when="<group>"
+  plus data-from / data-until (YYYY-MM-DD, both days included, the reader's
+  local date) are alternate versions of one line. The inline script after
+  </main> shows the first version whose dates cover today and hides the rest;
+  the undated version is the everyday one and the no-JS fallback. Add
+  ?asof=YYYY-MM-DD to the URL to preview a day. 2026-27 dates: pre-season
+  countdown through Tue 3 Nov 2026 ("Pre-season starts Tue Nov 3"), holiday
+  break 11 Dec to 4 Jan ("Back Tue Jan 5"). Change them each season, and keep
+  /coach's pre-season months (November–December) in step.
 - Header/footer markup is duplicated across the modern pages by design. A shared
   change must be applied to index, history, MERchives, the-78-club, fossils, and 404.
 - Netlify's pretty-URL setting lowercases paths: the MERchives page is canonically

@@ -156,21 +156,14 @@
     X-Robots-Tag = "noindex, nofollow, noarchive"
     Cache-Control = "no-store"
 
-# The coach posting is a temporary hire and the thank-you pages are dead ends —
-# keep them out of search. Netlify matches header rules against the path the
-# visitor actually requested, so each page is listed in BOTH forms: the pretty
-# extensionless path (what the links use) and the .html path.
-# /play is NOT listed here on purpose.
-[[headers]]
-  for = "/coach.html"
-  [headers.values]
-    X-Robots-Tag = "noindex"
-
-[[headers]]
-  for = "/coach"
-  [headers.values]
-    X-Robots-Tag = "noindex"
-
+# The thank-you pages are dead ends, so keep them out of search. Netlify matches
+# header rules against the path the visitor actually requested, so each page is
+# listed in BOTH forms: the pretty extensionless path (what the links use) and
+# the .html path. /play is NOT listed here on purpose. Since 23 Sep 2026 /coach
+# isn't either: it is open to search with JobPosting markup (validThrough
+# 2027-08-31) so it can show in Google's job listings. When the coach seat is
+# filled, add a "/coach" and a "/coach.html" block back here with
+# X-Robots-Tag = "noindex" (or take the page down) and see CLAUDE.md.
 [[headers]]
   for = "/play-thanks.html"
   [headers.values]

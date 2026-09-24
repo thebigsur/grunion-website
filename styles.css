@@ -945,3 +945,12 @@ html:has(body[data-page^="lp-"]){scroll-padding-top:22px}
 .lp-aside{margin-top:30px;padding-top:22px;border-top:1px solid rgba(255,255,255,.18);
   max-width:60ch;font-size:1rem;line-height:1.6;color:rgba(255,255,255,.7)}
 .lp-aside b{color:var(--gold-soft)}
+
+/* ---------- date switch + one quiet link (Sep 2026) ---------- */
+/* Dated versions of a line carry the hidden attribute until the date-switch
+   script picks one; keep them hidden even where a rule above sets display. */
+[data-page^="lp-"] [hidden]{display:none!important}
+/* one quiet line under the fact strip: the Mermaids link on /play */
+.lp-also{margin-top:14px;font-size:.9rem;line-height:1.5;color:rgba(255,255,255,.8)}
+.lp-also a{color:var(--gold-soft);text-decoration:none;border-bottom:1px solid rgba(216,177,95,.45)}
+.lp-also a:hover{color:#fff;border-color:#fff}

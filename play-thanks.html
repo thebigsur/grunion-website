@@ -51,10 +51,21 @@
   <div class="wrap lp-hero-inner">
     <span class="eyebrow">You're on the list</span>
     <h1>See you at<span class="alt">practice!</span></h1>
-    <p class="lp-sub">Welcome! <b>Jordan will text you before training</b> to check-in and see if you have any questions or need a ride. If you don't hear from him by Monday night, text him yourself and he'll sort it.</p>
+    <p class="lp-sub">Welcome! <span data-when="start" data-until="2026-11-03" hidden>Pre-season starts Tuesday, November 3. </span><span data-when="start" data-from="2026-12-11" data-until="2027-01-04" hidden>Training is back Tuesday, January 5. </span><b>Jordan will text you before training</b> to check-in and see if you have any questions or need a ride. If you don't hear from him by Monday night, text him yourself and he'll sort it.</p>
 
     <div class="lp-facts">
-      <div class="lp-fact">
+      <!-- Date switch (script at the bottom): same dates as /play. -->
+      <div class="lp-fact" data-when="training" data-until="2026-11-03" hidden>
+        <span class="f-k">Pre-season starts</span>
+        <span class="f-v">Tue Nov 3</span>
+        <span class="f-n">Get there ten minutes early</span>
+      </div>
+      <div class="lp-fact" data-when="training" data-from="2026-12-11" data-until="2027-01-04" hidden>
+        <span class="f-k">Holiday break</span>
+        <span class="f-v">Back Tue Jan 5</span>
+        <span class="f-n">Get there ten minutes early</span>
+      </div>
+      <div class="lp-fact" data-when="training">
         <span class="f-k">Training</span>
         <span class="f-v">Tue &amp; Thu · 7–9PM</span>
         <span class="f-n">Get there ten minutes early</span>
@@ -80,6 +91,30 @@
   </div>
 </section>
 </main>
+
+<script>
+/* Date switch. Elements marked data-when="name" are alternate versions of the same line. In each
+   group the first version whose data-from / data-until dates (YYYY-MM-DD, both days included, the
+   reader's local date) cover today is shown and the others stay hidden. A version with no dates is
+   the everyday one: it shows whenever no dated version applies, and it is what shows with JS off.
+   To preview another day, add ?asof=YYYY-MM-DD to the URL. Season dates: see CLAUDE.md. */
+(function(){
+  var d=new Date(), m=/[?&]asof=(\d{4}-\d{2}-\d{2})/.exec(location.search);
+  var today=m?m[1]:d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+  var groups={}, els=document.querySelectorAll('[data-when]');
+  for(var i=0;i<els.length;i++){ var k=els[i].getAttribute('data-when'); (groups[k]=groups[k]||[]).push(els[i]); }
+  Object.keys(groups).forEach(function(k){
+    var pick=null, plain=null;
+    groups[k].forEach(function(el){
+      var from=el.getAttribute('data-from'), until=el.getAttribute('data-until');
+      if(!from && !until){ if(!plain) plain=el; return; }
+      if(!pick && (!from || from<=today) && (!until || today<=until)) pick=el;
+    });
+    pick=pick||plain;
+    groups[k].forEach(function(el){ el.hidden=(el!==pick); });
+  });
+})();
+</script>
 
 <div class="lp-sticky"><a class="btn btn-gold" href="sms:+18056186510">Text Jordan · (805) 618-6510</a></div>
 
