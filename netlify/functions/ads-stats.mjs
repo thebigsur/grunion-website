@@ -16,6 +16,12 @@
 //      - campaign list with status and start date, spend / impressions / link
 //        clicks and Meta's own lead counts (Instant Forms, Pixel), split by
 //        publisher platform (facebook / instagram / …).
+//      - messages: Meta's "messaging conversations started" (a DM thread
+//        opened from an ad after 7+ days of quiet) and "new messaging
+//        contacts", per campaign / platform / day. Kept apart from leads, with
+//        their own cost per message; campaigns whose ad sets send people to
+//        Instagram Direct / Messenger / WhatsApp count as message campaigns
+//        and their spend is left out of cost per lead.
 //   3. Netlify Forms (the dashboard's existing token)
 //      - play-signup + coach-application submissions, read with the hidden
 //        utm_* / gclid / fbclid / referrer fields the landing pages stamp on
@@ -50,8 +56,29 @@ const DEFAULT_START = '2026-09-01';         // first day of the 2027 campaigns
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const NEW_DAYS = 14;                        // "NEW" badge window
 const ACTIVE_DAYS = 3;                      // Google: spent in the last N days = active
-const NO_LEADS_FLOOR = 50;                  // $ spent with zero leads → flag
+const NO_LEADS_FLOOR = 50;                  // $ spent with zero leads (or, for a message campaign, zero messages) → flag
 const UNTAGGED_MIN_CLICKS = 10;             // Meta clicks before "untagged" is called
+// Meta's action types for messages from click-to-message ads (Instagram Direct,
+// Messenger, WhatsApp). "Started" is Meta's headline result for a messages goal.
+const MSG_STARTED = ['onsite_conversion.messaging_conversation_started_7d', 'messaging_conversation_started_7d'];
+const MSG_NEW_CONTACTS = ['onsite_conversion.messaging_first_reply', 'messaging_first_reply'];
+// an ad set that sends people into a chat: optimisation goal or destination says so.
+// Lead ads that collect the form inside Messenger / Instagram Direct
+// (LEAD_FROM_MESSENGER, LEAD_FROM_IG_DIRECT, lead goals) are lead campaigns, not
+// message campaigns: their results are Instant Form-style leads.
+const MSG_GOALS = /^(CONVERSATIONS|REPLIES|MESSAGING_[A-Z_]+)$/;
+const MSG_DESTINATIONS = /MESSENGER|INSTAGRAM_DIRECT|WHATSAPP|MESSAGING/;
+const LEAD_GOALS = /LEAD/;
+const LEAD_DESTINATIONS = /^LEAD_FROM_/;
+// every effective_status the ad-set edge accepts (Marketing API reference), so
+// nothing is filtered out: in-review, archived and deleted ad sets all count
+const ADSET_STATUSES = ['ACTIVE', 'PAUSED', 'DELETED', 'PENDING_REVIEW', 'DISAPPROVED', 'PREAPPROVED', 'PENDING_BILLING_INFO', 'CAMPAIGN_PAUSED', 'ARCHIVED', 'ADSET_PAUSED', 'IN_PROCESS', 'WITH_ISSUES'];
+function isChatAdset(s) {
+  const goal = String(s?.optimization_goal || '').toUpperCase();
+  const dest = String(s?.destination_type || '').toUpperCase();
+  if (LEAD_GOALS.test(goal) || LEAD_DESTINATIONS.test(dest)) return false;
+  return MSG_GOALS.test(goal) || MSG_DESTINATIONS.test(dest);
+}
 const LEAD_FORMS = { 'play-signup': 'play', 'coach-application': 'coach' };
 const LEAD_EVENTS = ['lead_play', 'lead_coach', 'tap_text', 'tap_email'];
 const META_SOURCES = new Set(['fb', 'ig', 'msg', 'an', 'facebook', 'instagram', 'meta', 'messenger', 'audience_network']);
@@ -282,17 +309,33 @@ async function fetchMeta(range, sinceAll) {
   const timeRange = (since) => ({ since, until: range.until });
   const insightFields = 'campaign_id,campaign_name,spend,impressions,reach,clicks,inline_link_clicks,actions';
 
-  const [camps, ins, split, daily] = await Promise.all([
+  // The ad-set list only answers "does this campaign send people into a chat?".
+  // It is allowed to fail on its own: the rest of the Meta figures still report,
+  // and campaigns are then judged by objective + messages alone (see isMessaging).
+  // Archived and deleted ad sets are asked for too, so a finished message
+  // campaign whose spend is still in range keeps its label.
+  let adsetsError = null;
+  const [camps, ins, split, daily, adsets] = await Promise.all([
     call('campaigns', { fields: 'id,name,status,effective_status,objective,created_time,start_time,stop_time,daily_budget,lifetime_budget', limit: '200' }),
     call('insights', { level: 'campaign', fields: insightFields, time_range: timeRange(range.since), limit: '200' }),
     call('insights', { level: 'campaign', fields: insightFields, breakdowns: 'publisher_platform', time_range: timeRange(range.since), limit: '500' }),
     call('insights', { level: 'campaign', fields: 'campaign_id,campaign_name,spend,inline_link_clicks,impressions,actions', time_increment: '1', time_range: timeRange(sinceAll), limit: '500' }),
+    call('adsets', { fields: 'campaign_id,optimization_goal,destination_type', effective_status: ADSET_STATUSES, limit: '200' }, 3)
+      .then((rows) => (Array.isArray(rows) ? rows : Promise.reject(new Error('unexpected ad-set list'))))
+      .catch((e) => { adsetsError = String(e.message || e); return null; }),
   ]);
+  const chatCampaignIds = new Set();
+  for (const s of adsets || []) if (isChatAdset(s)) chatCampaignIds.add(String(s.campaign_id));
 
   const actionsOf = (row) => {
     const map = {};
     for (const a of row.actions || []) map[a.action_type] = num(a.value);
     return map;
+  };
+  const firstOf = (a, keys) => { for (const k of keys) if (a[k] != null) return a[k]; return 0; };
+  const messageCounts = (row) => {
+    const a = actionsOf(row);
+    return { started: firstOf(a, MSG_STARTED), newContacts: firstOf(a, MSG_NEW_CONTACTS) };
   };
   const leadCounts = (row) => {
     const a = actionsOf(row);
@@ -305,12 +348,13 @@ async function fetchMeta(range, sinceAll) {
     id: row.campaign_id, name: row.campaign_name,
     spend: num(row.spend), impressions: num(row.impressions), reach: num(row.reach),
     clicks: num(row.inline_link_clicks), allClicks: num(row.clicks),
-    leads: leadCounts(row),
+    leads: leadCounts(row), messages: messageCounts(row),
   });
   return {
-    configured: true, ok: true, error: null,
+    configured: true, ok: true, error: null, adsetsError, chatCampaignIds: [...chatCampaignIds],
     campaigns: camps.map((c) => ({
       id: c.id, name: c.name, status: c.status, effectiveStatus: c.effective_status, objective: c.objective,
+      chatAdsets: chatCampaignIds.has(String(c.id)),
       created: c.created_time ? ptDate(new Date(c.created_time)) : null,
       start: c.start_time ? ptDate(new Date(c.start_time)) : null,
       stop: c.stop_time ? ptDate(new Date(c.stop_time)) : null,
@@ -472,28 +516,56 @@ function assemble({ ga, meta, nl, range, today, sinceAll, days }) {
   }
   if (ga.adsError) warnings.push({ level: 'warn', text: `Google Ads figures unavailable from GA4: ${ga.adsError}` });
 
+  // ---- which Meta campaigns are message campaigns ---------------------------
+  // A message campaign sends people into a chat (Instagram Direct, Messenger,
+  // WhatsApp): one of its ad sets says so, or its objective is the old MESSAGES
+  // one. Only if the ad-set list could not be read does an Engagement campaign
+  // that has produced messages since launch count as one too. Its spend is
+  // judged by cost per message and left out of cost per lead. Decided by
+  // campaign id, because two boosts of the same post share a name.
+  const metaIns = meta.ok ? (meta.insights || []) : [];
+  const msgIds = new Set(meta.ok ? (meta.chatCampaignIds || []).map(String) : []);
+  if (meta.ok) {
+    const msgSinceLaunch = new Map();
+    for (const d of (meta.daily || [])) msgSinceLaunch.set(String(d.id), (msgSinceLaunch.get(String(d.id)) || 0) + (d.messages?.started || 0));
+    for (const c of (meta.campaigns || [])) {
+      const obj = String(c.objective || '').toUpperCase();
+      if (obj === 'MESSAGES' || (meta.adsetsError && /ENGAGEMENT/.test(obj) && (msgSinceLaunch.get(String(c.id)) || 0) > 0)) msgIds.add(String(c.id));
+    }
+  }
+  const isMsgId = (id) => id != null && msgIds.has(String(id));
+  // names are only needed to match our own form leads, which carry utm_campaign = the campaign name
+  const msgNames = new Set([...(meta.ok ? meta.campaigns || [] : []), ...metaIns].filter((c) => isMsgId(c.id)).map((c) => c.name));
+  if (meta.ok && meta.adsetsError) warnings.push({ level: 'info', text: `Meta's ad-set list could not be read (${meta.adsetsError}), so message campaigns are recognised by their objective and messages only.` });
+
   // ---- Meta campaigns -------------------------------------------------------
   if (meta.ok) {
-    const insByName = new Map((meta.insights || []).map((i) => [i.name, i]));
-    const dailyByName = new Map();
+    // Meta's own rows are joined by campaign id (two boosts of one post share a
+    // name); only our visits and form leads are matched by name, via utm_campaign.
+    const keyOf = (x) => (x.id != null && x.id !== '' ? `id:${x.id}` : `name:${x.name}`);
+    const insByKey = new Map((meta.insights || []).map((i) => [keyOf(i), i]));
+    const dailyByKey = new Map();
     for (const d of (meta.daily || [])) {
-      const arr = dailyByName.get(d.name) || [];
-      arr.push(d); dailyByName.set(d.name, arr);
+      const arr = dailyByKey.get(keyOf(d)) || [];
+      arr.push(d); dailyByKey.set(keyOf(d), arr);
     }
-    const splitByName = new Map();
+    const splitByKey = new Map();
     for (const s of (meta.split || [])) {
-      const m = splitByName.get(s.name) || {};
-      m[s.platform] = s; splitByName.set(s.name, m);
+      const m = splitByKey.get(keyOf(s)) || {};
+      m[s.platform] = s; splitByKey.set(keyOf(s), m);
     }
     const seen = new Set();
     const metaList = (meta.campaigns || []).slice();
-    for (const i of (meta.insights || [])) if (!metaList.some((c) => c.name === i.name)) metaList.push({ id: i.id, name: i.name, effectiveStatus: null });
+    const listed = new Set(metaList.map(keyOf));
+    for (const i of (meta.insights || [])) if (!listed.has(keyOf(i))) { metaList.push({ id: i.id, name: i.name, effectiveStatus: null }); listed.add(keyOf(i)); }
     for (const c of metaList) {
-      if (seen.has(c.name)) continue; seen.add(c.name);
+      const k = keyOf(c);
+      if (seen.has(k)) continue; seen.add(k);
       const st = String(c.effectiveStatus || c.status || '').toUpperCase();
       if (st === 'ARCHIVED' || st === 'DELETED') continue;
-      const ins = insByName.get(c.name) || { spend: 0, impressions: 0, reach: 0, clicks: 0, allClicks: 0, leads: { instant: 0, pixel: 0, total: 0 } };
-      const dl = (dailyByName.get(c.name) || []).filter((d) => d.spend > 0 || d.impressions > 0);
+      const ins = insByKey.get(k) || { spend: 0, impressions: 0, reach: 0, clicks: 0, allClicks: 0, leads: { instant: 0, pixel: 0, total: 0 }, messages: { started: 0, newContacts: 0 } };
+      const messaging = isMsgId(c.id);
+      const dl = (dailyByKey.get(k) || []).filter((d) => d.spend > 0 || d.impressions > 0);
       const first = dl.length ? dl.reduce((m, d) => (d.date < m ? d.date : m), dl[0].date) : (c.start || c.created || null);
       const last = dl.length ? dl.reduce((m, d) => (d.date > m ? d.date : m), dl[0].date) : null;
       const recentlyMade = !!(c.created && daysBetween(c.created, today) <= 30);
@@ -505,21 +577,23 @@ function assemble({ ga, meta, nl, range, today, sinceAll, days }) {
       const sess = sessionsFor((t) => isMetaRow(t) && t.campaign === c.name);
       const ev = eventsFor((e) => isMetaRow(e) && e.campaign === c.name);
       const leads = leadsFor((l) => isMetaPlatform(l.platform) && l.campaign === c.name);
-      const sp = splitByName.get(c.name) || {};
+      const sp = splitByKey.get(k) || {};
       const status = c.stop && c.stop < today && st !== 'ACTIVE' ? 'Ended'
         : ({ ACTIVE: 'Active', PAUSED: 'Paused', CAMPAIGN_PAUSED: 'Paused', ADSET_PAUSED: 'Paused (ad set)', IN_PROCESS: 'Starting', PENDING_REVIEW: 'In review', WITH_ISSUES: 'Has issues', DISAPPROVED: 'Disapproved', PREAPPROVED: 'Approved' }[st] || (st ? st.toLowerCase() : 'Unknown'));
       const flags = [];
-      if (ins.clicks >= UNTAGGED_MIN_CLICKS && sess.sessions === 0 && ins.leads.instant === 0) flags.push('untagged');
+      // "untagged" is about website-bound ads; a message ad has no site visit to tag
+      if (!messaging && ins.clicks >= UNTAGGED_MIN_CLICKS && sess.sessions === 0 && ins.leads.instant === 0) flags.push('untagged');
       campaigns.push(row({
-        key: `meta:${c.name}`, platform: 'meta', platformLabel: 'Facebook / Instagram', name: c.name, id: c.id || null,
+        key: `meta:${c.id || c.name}`, platform: 'meta', platformLabel: 'Facebook / Instagram', name: c.name, id: c.id || null,
         kind: c.objective ? String(c.objective).replace(/^OUTCOME_/, '').toLowerCase() : null, status, statusRaw: st || null,
         firstSeen: first, lastSeen: last,
         spend: ins.spend, impressions: ins.impressions, reach: ins.reach || null, clicks: ins.clicks, allClicks: ins.allClicks,
         sessions: sess.sessions, engaged: sess.engaged,
         siteLeads: leads, instantLeads: ins.leads.instant, pixelLeads: ins.leads.pixel, taps: { text: ev.tap_text, email: ev.tap_email },
         gaLeads: { play: ev.lead_play, coach: ev.lead_coach },
-        split: Object.fromEntries(Object.entries(sp).map(([k, v]) => [k, { spend: round(v.spend), impressions: v.impressions, clicks: v.clicks, instantLeads: v.leads.instant }])),
-        dailyBudget: c.dailyBudget ?? null, extraFlags: flags,
+        messages: ins.messages.started, newContacts: ins.messages.newContacts, messaging,
+        split: Object.fromEntries(Object.entries(sp).map(([k, v]) => [k, { spend: round(v.spend), impressions: v.impressions, clicks: v.clicks, instantLeads: v.leads.instant, messages: v.messages.started }])),
+        dailyBudget: c.dailyBudget ?? null, lifetimeBudget: c.lifetimeBudget ?? null, extraFlags: flags,
       }, today));
     }
   }
@@ -533,24 +607,33 @@ function assemble({ ga, meta, nl, range, today, sinceAll, days }) {
     sessions: gSum('sessions'), engaged: gSum('engaged'),
     siteLeads: leadsFor((l) => l.platform === 'google').total, instantLeads: 0,
     taps: gRows.reduce((a, c) => a + c.taps.text + c.taps.email, 0),
+    messages: null, messageSpend: 0, messagesFromMsgCampaigns: 0, msgLeads: 0, // Meta messages only
   }));
+  const msgByPlatform = {}; // platform → messages started (every Meta campaign)
   if (meta.ok) {
     const byPlat = {};
+    const blank = () => ({ spend: 0, impressions: 0, clicks: 0, instantLeads: 0, messages: 0, messageSpend: 0, messagesFromMsgCampaigns: 0, msgInstantLeads: 0 });
     for (const s of (meta.split || [])) {
-      const p = byPlat[s.platform] || (byPlat[s.platform] = { spend: 0, impressions: 0, clicks: 0, instantLeads: 0 });
+      const p = byPlat[s.platform] || (byPlat[s.platform] = blank());
       p.spend += s.spend; p.impressions += s.impressions; p.clicks += s.clicks; p.instantLeads += s.leads.instant;
+      p.messages += s.messages.started;
+      if (isMsgId(s.id)) { p.messageSpend += s.spend; p.messagesFromMsgCampaigns += s.messages.started; p.msgInstantLeads += s.leads.instant; }
+      if (s.messages.started) msgByPlatform[s.platform] = (msgByPlatform[s.platform] || 0) + s.messages.started;
     }
     const order = ['facebook', 'instagram', 'messenger', 'audience_network', 'unknown'];
     const keys = Object.keys(byPlat).sort((a, b) => (order.indexOf(a) + 100) % 100 - (order.indexOf(b) + 100) % 100);
     for (const k of ['facebook', 'instagram']) if (!keys.includes(k)) keys.push(k);
     for (const k of keys) {
-      const p = byPlat[k] || { spend: 0, impressions: 0, clicks: 0, instantLeads: 0 };
+      const p = byPlat[k] || blank();
       const plat = k === 'audience_network' ? 'audience_network' : k;
       const sess = sessionsFor((t) => gaPlatform(t.source, t.medium) === plat);
       const ev = eventsFor((e) => gaPlatform(e.source, e.medium) === plat);
       platforms.push(platformRow(plat, platformLabel(plat), {
         spend: p.spend, impressions: p.impressions, clicks: p.clicks, sessions: sess.sessions, engaged: sess.engaged,
         siteLeads: leadsFor((l) => l.platform === plat).total, instantLeads: p.instantLeads, taps: ev.tap_text + ev.tap_email,
+        messages: p.messages, messageSpend: p.messageSpend, messagesFromMsgCampaigns: p.messagesFromMsgCampaigns,
+        // leads that message campaigns brought in leave cost per lead along with their spend
+        msgLeads: p.msgInstantLeads + leadsFor((l) => l.platform === plat && msgNames.has(l.campaign)).total,
       }));
     }
   }
@@ -561,10 +644,10 @@ function assemble({ ga, meta, nl, range, today, sinceAll, days }) {
     const ev = eventsFor((e) => gaPlatform(e.source, e.medium) === 'meta_untagged');
     const untagged = leadsFor((l) => l.platform === 'meta_untagged').total;
     // spend / impressions / clicks are null here on purpose: "not applicable", not zero
-    if (untagged || sess.sessions) platforms.push(platformRow('meta_untagged', 'Facebook / Instagram, not paid', { spend: null, impressions: null, clicks: null, sessions: sess.sessions, engaged: sess.engaged, siteLeads: untagged, instantLeads: 0, taps: ev.tap_text + ev.tap_email }));
+    if (untagged || sess.sessions) platforms.push(platformRow('meta_untagged', 'Facebook / Instagram, not paid', { spend: null, impressions: null, clicks: null, sessions: sess.sessions, engaged: sess.engaged, siteLeads: untagged, instantLeads: 0, taps: ev.tap_text + ev.tap_email, messages: null }));
   }
   const other = leadsFor((l) => !['google', 'facebook', 'instagram', 'messenger', 'audience_network', 'meta_untagged'].includes(l.platform));
-  if (other.total) platforms.push(platformRow('other', 'Not from an ad (direct, organic, other)', { spend: null, impressions: null, clicks: null, sessions: null, engaged: null, siteLeads: other.total, instantLeads: 0, taps: null }));
+  if (other.total) platforms.push(platformRow('other', 'Not from an ad (direct, organic, other)', { spend: null, impressions: null, clicks: null, sessions: null, engaged: null, siteLeads: other.total, instantLeads: 0, taps: null, messages: null }));
 
   // ---- totals ----------------------------------------------------------------
   const sum = (arr, f) => arr.reduce((a, x) => a + (f(x) || 0), 0);
@@ -581,18 +664,36 @@ function assemble({ ga, meta, nl, range, today, sinceAll, days }) {
   const tapsAds = sum(campaigns, (c) => c.taps.text + c.taps.email);
   const tapsAll = eventsFor(() => true);
   const leads = adLeads.total + instantLeads;
+  // messages: every Meta campaign's count is shown; cost per message divides the
+  // spend of message campaigns by the messages those campaigns brought in
+  const messages = sum(metaIns, (i) => i.messages?.started);
+  const newContacts = sum(metaIns, (i) => i.messages?.newContacts);
+  const msgIns = metaIns.filter((i) => isMsgId(i.id));
+  const messageSpend = sum(msgIns, (i) => i.spend);
+  const messagesFromMsgCampaigns = sum(msgIns, (i) => i.messages?.started);
+  // cost per lead = what lead campaigns spent ÷ the leads they brought in; any
+  // lead a message campaign happened to bring in leaves with its spend
+  const leadSpend = Math.max(0, spend - messageSpend);
+  const leadsFromMsgCampaigns = sum(msgIns, (i) => i.leads.instant) + leadsFor((l) => isMetaPlatform(l.platform) && msgNames.has(l.campaign)).total;
+  const cplLeads = Math.max(0, leads - leadsFromMsgCampaigns);
+  const msgCamps = campaigns.filter((c) => c.messaging);
   const totals = {
     spend: round(spend), googleSpend: round(googleSpend), metaSpend: round(metaSpend),
     impressions, clicks, cpc: round(safeDiv(spend, clicks)),
     leads, siteLeadsFromAds: adLeads, siteLeadsUntaggedSocial: untaggedSocialLeads, siteLeadsAll: allSiteLeads, instantLeads, pixelLeads,
-    cpl: round(safeDiv(spend, leads)), clickToLead: pct(leads, clicks),
+    leadSpend: round(leadSpend), cplLeads, leadsFromMsgCampaigns, cpl: round(safeDiv(leadSpend, cplLeads)), clickToLead: pct(leads, clicks),
     taps: tapsAds, tapsAllVisitors: tapsAll.tap_text + tapsAll.tap_email,
     sessions: sum(campaigns, (c) => c.sessions),
+    messages, newContacts, messagesByPlatform: msgByPlatform, messagesFromMsgCampaigns,
+    messageSpend: round(messageSpend), costPerMessage: round(safeDiv(messageSpend, messagesFromMsgCampaigns)),
+    messageCampaigns: msgCamps.length, messageCampaignsActive: msgCamps.filter((c) => c.status === 'Active').length,
   };
 
   // ---- flags + warnings -----------------------------------------------------
   for (const c of campaigns) {
-    if (c.spend >= NO_LEADS_FLOOR && c.leads === 0) c.flags.push('no_leads');
+    // a message campaign is judged on messages, everything else on leads
+    if (c.messaging) { if (c.spend >= NO_LEADS_FLOOR && c.messages === 0 && c.leads === 0) c.flags.push('no_messages'); }
+    else if (c.spend >= NO_LEADS_FLOOR && c.leads === 0) c.flags.push('no_leads');
     if (c.isNew) c.flags.push('new');
   }
   campaigns.sort((a, b) => (b.spend - a.spend) || (b.lastSeen || '').localeCompare(a.lastSeen || ''));
@@ -619,6 +720,7 @@ function assemble({ ga, meta, nl, range, today, sinceAll, days }) {
       metaSpend: round(sum(mD, (x) => x.spend)),
       siteLeads: leadsIn.filter((l) => l.day === d).length,
       instantLeads: sum(mD, (x) => x.leads.instant),
+      messages: sum(mD, (x) => x.messages?.started),
     });
   }
 
@@ -632,6 +734,7 @@ function assemble({ ga, meta, nl, range, today, sinceAll, days }) {
 
 function row(c, today) {
   const leads = c.siteLeads.total + c.instantLeads;
+  const messages = c.messages || 0;
   const goal = /coach/i.test(c.name) ? 'Coach' : (c.siteLeads.coach > c.siteLeads.play ? 'Coach' : 'Players');
   return {
     key: c.key, platform: c.platform, platformLabel: c.platformLabel, name: c.name, id: c.id, kind: c.kind, goal,
@@ -642,8 +745,10 @@ function row(c, today) {
     ctr: pct(c.clicks, c.impressions, 2), cpc: round(safeDiv(c.spend, c.clicks)),
     sessions: c.sessions, engaged: c.engaged, engagementRate: pct(c.engaged, c.sessions),
     siteLeads: c.siteLeads, instantLeads: c.instantLeads, pixelLeads: c.pixelLeads, gaLeads: c.gaLeads, leads,
-    cpl: round(safeDiv(c.spend, leads)), clickToLead: pct(leads, c.clicks),
-    taps: c.taps, split: c.split, dailyBudget: c.dailyBudget, flags: (c.extraFlags || []).slice(),
+    cpl: c.messaging ? null : round(safeDiv(c.spend, leads)), clickToLead: pct(leads, c.clicks),
+    messaging: !!c.messaging, messages, newContacts: c.newContacts || 0,
+    costPerMessage: c.messaging ? round(safeDiv(c.spend, messages)) : null,
+    taps: c.taps, split: c.split, dailyBudget: c.dailyBudget, lifetimeBudget: c.lifetimeBudget ?? null, flags: (c.extraFlags || []).slice(),
   };
 }
 const PLATFORM_NOTES = {
@@ -653,12 +758,17 @@ const PLATFORM_NOTES = {
 function platformRow(key, label, p) {
   const leads = p.siteLeads + p.instantLeads;
   const na = p.spend == null; // rows with no ad spend behind them: nothing to divide by
+  const messageSpend = na ? null : (p.messageSpend || 0);
   return {
     key, label, note: PLATFORM_NOTES[key] || null, spend: round(p.spend), impressions: p.impressions, clicks: p.clicks,
     ctr: na ? null : pct(p.clicks, p.impressions, 2), cpc: na ? null : round(safeDiv(p.spend, p.clicks)),
     sessions: p.sessions, engaged: p.engaged, engagementRate: p.sessions == null ? null : pct(p.engaged, p.sessions),
     siteLeads: p.siteLeads, instantLeads: p.instantLeads, leads,
-    cpl: na ? null : round(safeDiv(p.spend, leads)), clickToLead: na ? null : pct(leads, p.clicks), taps: p.taps,
+    // spend on message campaigns (and any lead they brought in) is judged by
+    // cost per message, not cost per lead
+    cpl: na ? null : round(safeDiv(Math.max(0, p.spend - messageSpend), Math.max(0, leads - (p.msgLeads || 0)))), clickToLead: na ? null : pct(leads, p.clicks), taps: p.taps,
+    messages: p.messages ?? null, messageSpend: round(messageSpend), messagesFromMsgCampaigns: na ? null : (p.messagesFromMsgCampaigns || 0), msgLeads: na ? null : (p.msgLeads || 0),
+    costPerMessage: na ? null : round(safeDiv(messageSpend, p.messagesFromMsgCampaigns || 0)),
   };
 }
 

@@ -214,6 +214,10 @@ button{font-family:inherit;cursor:pointer;color:inherit}
 .dtable td.ads-dim{color:var(--ink3)}
 /* ads tiles carry their scope in the sub-line, so it wraps instead of truncating */
 #adsTiles .tile .t-sub{white-space:normal;line-height:1.4}
+/* Messages card: its stat tiles sit on the card, one step lighter than it */
+.msg-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:10px 0 4px}
+.msg-stats .tile{background:var(--card-2)}
+.msg-stats .tile .t-sub{white-space:normal;line-height:1.4}
 
 /* footer */
 .dfoot{border-top:1px solid var(--line);margin-top:26px}

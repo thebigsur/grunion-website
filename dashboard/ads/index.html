@@ -77,6 +77,16 @@
     <div class="ads-warns" id="adsWarnings"></div>
     <div class="tiles" id="adsTiles"></div>
 
+    <div class="card" id="adsMsgCard">
+      <div class="card-head">
+        <h3>Messages</h3>
+        <div class="spacer"></div>
+        <span class="card-sub" id="adsMsgSub"></span>
+      </div>
+      <div class="msg-stats" id="adsMsgTiles"></div>
+      <div class="tscroll" id="adsMsgTable"></div>
+    </div>
+
     <div class="card" id="adsPlatformCard">
       <div class="card-head">
         <h3>By Platform</h3>
@@ -207,6 +217,18 @@ function metaSplitLabel(c) {
   if (other) parts.push(`other ${fmtMoney0(other)}`);
   return parts.length ? parts.join(' · ') : 'Facebook / Instagram';
 }
+// where the messages came from, e.g. "Instagram 6 · Facebook 2"
+const PLAT_NAMES = { instagram: 'Instagram', facebook: 'Facebook', messenger: 'Messenger', audience_network: 'Audience Network' };
+function msgPlatformLabel(byPlatform) {
+  const entries = Object.entries(byPlatform || {}).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]);
+  return entries.map(([k, n]) => `${PLAT_NAMES[k] || k} ${fmtInt(n)}`).join(' · ');
+}
+const campaignMsgSplit = (c) => Object.fromEntries(Object.entries(c.split || {}).map(([k, v]) => [k, v.messages || 0]));
+function budgetLabel(c) {
+  if (c.dailyBudget) return `${fmtMoney0(c.dailyBudget)}/day budget`;
+  if (c.lifetimeBudget) return `${fmtMoney0(c.lifetimeBudget)} lifetime budget`;
+  return null;
+}
 
 function renderAds() {
   const a = state.ads;
@@ -215,9 +237,9 @@ function renderAds() {
   if (!a || a.error || !a.totals) {
     const msg = a?.error || 'no response';
     cardState(tiles, [`Ads tracker unavailable: ${msg}`]).style.gridColumn = '1/-1';
-    ['adsPlatformTable', 'adsCampaignTable', 'adsLeadsTable', 'adsSpendChart', 'adsLeadsChart'].forEach((id) => cardState($(id), 'Unavailable'));
-    ['adsSpendLegend', 'adsLeadsLegend', 'adsSpendChartTable', 'adsLeadsChartTable'].forEach((id) => clear($(id)));
-    ['adsPlatformSub', 'adsCampaignSub', 'adsLeadsSub', 'adsNote'].forEach((id) => { $(id).textContent = ''; });
+    ['adsMsgTable', 'adsPlatformTable', 'adsCampaignTable', 'adsLeadsTable', 'adsSpendChart', 'adsLeadsChart'].forEach((id) => cardState($(id), 'Unavailable'));
+    ['adsMsgTiles', 'adsSpendLegend', 'adsLeadsLegend', 'adsSpendChartTable', 'adsLeadsChartTable'].forEach((id) => clear($(id)));
+    ['adsMsgSub', 'adsPlatformSub', 'adsCampaignSub', 'adsLeadsSub', 'adsNote'].forEach((id) => { $(id).textContent = ''; });
     return;
   }
   const label = adsRangeLabel(a);
@@ -235,24 +257,16 @@ function renderAds() {
   const otherLeads = t.siteLeadsAll.total - t.siteLeadsFromAds.total - t.siteLeadsUntaggedSocial.total;
   if (otherLeads > 0) notCounted.push(`${otherLeads} not from an ad`);
   tiles.appendChild(tile({ label: `Leads from ads · ${label}`, value: fmtInt(t.leads), sub: parts.join(' · ') + (notCounted.length ? ` · not counted: ${notCounted.join(', ')}` : '') }));
-  tiles.appendChild(tile({ label: 'Cost per lead', value: money(t.cpl), sub: t.cpl == null ? 'needs a lead from an ad first' : 'ad spend ÷ leads from ads' }));
+  const cplSub = t.cpl == null ? 'needs a lead from an ad first'
+    : t.messageSpend > 0 ? `${money(t.leadSpend)} ÷ ${plural(t.cplLeads ?? t.leads, 'lead')} · the ${money(t.messageSpend)} on message campaigns${t.leadsFromMsgCampaigns ? ` and their ${plural(t.leadsFromMsgCampaigns, 'lead')}` : ''} ${t.leadsFromMsgCampaigns ? 'are' : 'is'} left out`
+    : 'ad spend ÷ leads from ads';
+  tiles.appendChild(tile({ label: 'Cost per lead', value: money(t.cpl), sub: cplSub }));
   tiles.appendChild(tile({ label: `Ad clicks · ${label}`, value: fmtInt(t.clicks), sub: `${t.cpc == null ? 'no spend yet' : `${money(t.cpc)} per click`} · ${fmtNum(t.impressions)} impressions` }));
   tiles.appendChild(tile({ label: `Text / email taps · ${label}`, value: fmtInt(t.taps), sub: `from ad visits · ${fmtInt(t.tapsAllVisitors)} from all visitors` }));
   const camps = a.campaigns || [];
   tiles.appendChild(tile({ label: 'Campaigns', value: fmtInt(camps.length), sub: `${camps.filter((c) => c.status === 'Active').length} active · ${camps.filter((c) => c.isNew).length} started in the last 14 days` }));
 
-  // by platform
-  adsTable($('adsPlatformTable'), `By platform · ${label}`,
-    ['Platform', 'Spend', 'Impressions', 'Clicks', 'CTR', 'CPC', 'Site visits', 'Engaged', 'Site leads', 'Instant Form', 'Leads', 'Cost / lead', 'Click → lead', 'Taps'],
-    (a.platforms || []).map((p) => [
-      { text: p.label, cls: 'ads-name', title: p.note || p.label }, money(p.spend), fmtNum(p.impressions), fmtInt(p.clicks), fmtPct(p.ctr), money(p.cpc),
-      fmtInt(p.sessions), fmtPct(p.engagementRate), fmtInt(p.siteLeads), fmtInt(p.instantLeads), fmtInt(p.leads),
-      money(p.cpl), fmtPct(p.clickToLead), fmtInt(p.taps),
-    ]),
-    { empty: 'No ad activity in this range yet', wide: true });
-  $('adsPlatformSub').textContent = 'lowest cost per lead wins · untagged social and non-ad leads are listed so the totals add up';
-
-  // by campaign, with badges and "new since your last visit"
+  // campaign badges, shared by the messages card and the By Campaign table
   let seen = [];
   try { seen = JSON.parse(localStorage.getItem(ADS_SEEN_LS) || '[]'); } catch { seen = []; }
   if (!Array.isArray(seen)) seen = [];
@@ -264,20 +278,70 @@ function renderAds() {
     if (!firstVisit && !seenSet.has(c.key)) out.push({ text: 'New since your last visit', cls: 'info' });
     if (c.flags.includes('untagged')) out.push({ text: 'Untagged', cls: 'warn', title: 'Meta reports clicks but no tagged visits reached the site. Add the URL parameters line to this campaign’s ads (DASHBOARD-SETUP.md).' });
     if (c.flags.includes('no_leads')) out.push({ text: 'No leads', cls: 'warn', title: `${money(c.spend)} spent, no leads yet` });
+    if (c.flags.includes('no_messages')) out.push({ text: 'No messages', cls: 'warn', title: `${money(c.spend)} spent, no messages yet` });
     return out;
   };
+
+  // messages: Instagram / Facebook / Messenger DMs started from ads, Meta's own count
+  const mt = clear($('adsMsgTiles'));
+  const splitTxt = msgPlatformLabel(t.messagesByPlatform);
+  const stray = (t.messages || 0) - (t.messagesFromMsgCampaigns || 0);
+  mt.appendChild(tile({ label: `Messages from ads · ${label}`, value: fmtInt(t.messages),
+    sub: t.messages ? `${splitTxt}${stray > 0 ? ` · ${plural(stray, 'message')} from other campaigns` : ''}` : 'none yet' }));
+  mt.appendChild(tile({ label: 'Cost per message', value: money(t.costPerMessage),
+    sub: !(t.messageSpend > 0) ? 'needs a message campaign first'
+      : t.messagesFromMsgCampaigns ? `${money(t.messageSpend)} on message campaigns ÷ ${plural(t.messagesFromMsgCampaigns, 'message')}`
+      : `${money(t.messageSpend)} spent on message campaigns, no messages yet` }));
+  mt.appendChild(tile({ label: `New messaging contacts from ads · ${label}`, value: fmtInt(t.newContacts), sub: 'people messaging the club for the first time' }));
+  mt.appendChild(tile({ label: 'Message campaigns', value: fmtInt(t.messageCampaigns), sub: `${fmtInt(t.messageCampaignsActive)} active · ads that open a chat in Instagram Direct or Messenger` }));
+  // message campaigns first, then any other campaign that picked up a stray DM (so the total reconciles)
+  const msgCamps = camps.filter((c) => c.messaging || c.messages > 0)
+    .sort((x, y) => (Number(y.messaging) - Number(x.messaging)) || (y.messages - x.messages) || (y.spend - x.spend));
+  adsTable($('adsMsgTable'), `Campaigns with messages · ${label}`,
+    ['Campaign', 'Where', 'Status', 'Started', 'Spend', 'Impressions', 'Reach', 'Messages', 'New contacts', 'Cost / message'],
+    msgCamps.map((c) => [
+      { text: c.name, badges: badgesFor(c), cls: 'ads-name', title: [c.platformLabel, c.kind, budgetLabel(c)].filter(Boolean).join(' · ') },
+      { text: msgPlatformLabel(campaignMsgSplit(c)) || metaSplitLabel(c), cls: 'ads-plat' },
+      c.status,
+      { text: c.firstSeen ? dIso(c.firstSeen) : '—', title: c.daysRunning ? `${plural(c.daysRunning, 'day')} · last activity ${c.lastSeen ? dIso(c.lastSeen) : '—'}` : 'No activity yet' },
+      money(c.spend), fmtNum(c.impressions), fmtNum(c.reach), fmtInt(c.messages), fmtInt(c.newContacts),
+      c.messaging ? money(c.costPerMessage) : { text: '—', cls: 'ads-dim', title: 'Not a message campaign: its spend counts toward cost per lead' },
+    ]),
+    { empty: 'No message campaigns in this range. Ads with a messages goal show up here on their own once they run.' });
+  $('adsMsgSub').textContent = 'DMs started from ads on Instagram, Facebook and Messenger · Meta’s count (a chat opened after 7+ days of quiet) · kept apart from leads';
+
+  // by platform
+  adsTable($('adsPlatformTable'), `By platform · ${label}`,
+    ['Platform', 'Spend', 'Impressions', 'Clicks', 'CTR', 'CPC', 'Site visits', 'Engaged', 'Site leads', 'Instant Form', 'Leads', 'Cost / lead', 'Click → lead', 'Taps', 'Messages', 'Cost / message'],
+    (a.platforms || []).map((p) => [
+      { text: p.label, cls: 'ads-name', title: p.note || p.label }, money(p.spend), fmtNum(p.impressions), fmtInt(p.clicks), fmtPct(p.ctr), money(p.cpc),
+      fmtInt(p.sessions), fmtPct(p.engagementRate), fmtInt(p.siteLeads), fmtInt(p.instantLeads), fmtInt(p.leads),
+      p.messageSpend > 0 ? { text: money(p.cpl), title: `${money(p.messageSpend)} on message campaigns${p.msgLeads ? ` and their ${plural(p.msgLeads, 'lead')}` : ''} left out of cost per lead` } : money(p.cpl),
+      fmtPct(p.clickToLead), fmtInt(p.taps),
+      p.messages && p.messages !== p.messagesFromMsgCampaigns
+        ? { text: fmtInt(p.messages), title: `${fmtInt(p.messagesFromMsgCampaigns)} from message campaigns · ${fmtInt(p.messages - p.messagesFromMsgCampaigns)} from other campaigns (not in cost per message)` }
+        : fmtInt(p.messages),
+      p.messageSpend > 0 ? { text: money(p.costPerMessage), title: `${money(p.messageSpend)} on message campaigns ÷ ${plural(p.messagesFromMsgCampaigns || 0, 'message')}` } : money(p.costPerMessage),
+    ]),
+    { empty: 'No ad activity in this range yet', wide: true });
+  $('adsPlatformSub').textContent = 'lowest cost per lead wins · untagged social and non-ad leads are listed so the totals add up · message-campaign spend is priced per message, not per lead';
+
+  // by campaign (badges were worked out above, next to the messages card)
   adsTable($('adsCampaignTable'), `By campaign · ${label}`,
-    ['Campaign', 'Platform', 'Goal', 'Status', 'Started', 'Spend', 'Impressions', 'Clicks', 'CTR', 'CPC', 'Site visits', 'Engaged', 'Site leads', 'Instant Form', 'Leads', 'Cost / lead', 'Taps'],
+    ['Campaign', 'Platform', 'Goal', 'Status', 'Started', 'Spend', 'Impressions', 'Clicks', 'CTR', 'CPC', 'Site visits', 'Engaged', 'Site leads', 'Instant Form', 'Leads', 'Cost / lead', 'Taps', 'Messages', 'Cost / message'],
     camps.map((c) => [
-      { text: c.name, badges: badgesFor(c), cls: 'ads-name', title: [c.platformLabel, c.kind, c.dailyBudget ? `${fmtMoney0(c.dailyBudget)}/day budget` : null].filter(Boolean).join(' · ') },
+      { text: c.name, badges: badgesFor(c), cls: 'ads-name', title: [c.platformLabel, c.kind, budgetLabel(c)].filter(Boolean).join(' · ') },
       { text: c.platform === 'meta' ? metaSplitLabel(c) : c.platformLabel, cls: 'ads-plat' },
-      c.goal, c.status,
+      c.messaging ? { text: `${c.goal} · messages`, title: 'Message campaign: judged on messages and cost per message' } : c.goal, c.status,
       { text: c.firstSeen ? dIso(c.firstSeen) : '—', title: c.daysRunning ? `${plural(c.daysRunning, 'day')} · last activity ${c.lastSeen ? dIso(c.lastSeen) : '—'}` : 'No activity yet' },
       money(c.spend), fmtNum(c.impressions), fmtInt(c.clicks), fmtPct(c.ctr), money(c.cpc),
       fmtInt(c.sessions), fmtPct(c.engagementRate),
       { text: fmtInt(c.siteLeads.total), title: `${plural(c.siteLeads.play, 'player sign-up')} · ${plural(c.siteLeads.coach, 'coach application')}` },
-      fmtInt(c.instantLeads), fmtInt(c.leads), money(c.cpl),
+      fmtInt(c.instantLeads), fmtInt(c.leads),
+      c.messaging ? { text: '—', cls: 'ads-dim', title: 'Message campaign: see cost per message' } : money(c.cpl),
       { text: fmtInt(c.taps.text + c.taps.email), title: `${c.taps.text} text · ${c.taps.email} email` },
+      c.messages ? { text: fmtInt(c.messages), title: `${plural(c.newContacts, 'new contact')}${msgPlatformLabel(campaignMsgSplit(c)) ? ` · ${msgPlatformLabel(campaignMsgSplit(c))}` : ''}` } : fmtInt(c.messages),
+      c.messaging ? money(c.costPerMessage) : { text: '—', cls: 'ads-dim', title: 'Not a message campaign' },
     ]),
     { empty: 'No campaigns have run in this range. New ones appear here on their own once they spend.', wide: true });
   $('adsCampaignSub').textContent = 'found automatically on both platforms · sorted by spend · hover a name for its budget';
@@ -321,7 +385,7 @@ function renderAds() {
   $('adsLeadsSub').textContent = `last ${leads.length} site sign-ups and applications · Instant Form leads live in Meta’s Leads Center`;
 }
 function setAdsStale(on) {
-  ['adsPlatformCard', 'adsCampaignCard', 'adsSpendCard', 'adsLeadsDailyCard', 'adsLeadsCard'].forEach((id) => $(id).classList.toggle('stale', on));
+  ['adsMsgCard', 'adsPlatformCard', 'adsCampaignCard', 'adsSpendCard', 'adsLeadsDailyCard', 'adsLeadsCard'].forEach((id) => $(id).classList.toggle('stale', on));
   $('adsTiles').classList.toggle('stale', on);
 }
 async function loadAds(fresh) {

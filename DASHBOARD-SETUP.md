@@ -134,7 +134,7 @@ spends. There is no list of campaigns to keep up to date.
 | Source | What it gives | Needs |
 |---|---|---|
 | Google Analytics (the service account from step 4) | Google Ads cost, impressions and clicks per campaign, site visits and the lead / tap events for every campaign on every platform | the Google Ads account linked to GA4 (6a) |
-| Meta Marketing API | campaign list with status and start date, spend, impressions, link clicks, Instant Form leads, split Facebook vs Instagram | `META_ADS_TOKEN` + `META_AD_ACCOUNT_ID` (6d) |
+| Meta Marketing API | campaign list with status and start date, spend, impressions, link clicks, Instant Form leads, messages started from message ads, split Facebook vs Instagram. It reads the one ad account in `META_AD_ACCOUNT_ID` only: a boost or ad paid from any other ad account (for example one made in the Instagram app, which bills the Instagram-created account) never shows up | `META_ADS_TOKEN` + `META_AD_ACCOUNT_ID` (6d) |
 | Netlify Forms (the token from step 3) | the play-signup and coach-application submissions with the campaign tags the landing pages stamp on them | nothing new |
 
 ### Extra environment variables
@@ -269,14 +269,23 @@ but no tagged visits).
 | Site visits / Engaged | GA4 sessions from that campaign and the share that stayed 10 s+ or did something |
 | Site leads | play-signup + coach-application submissions whose visit carried that campaign's tags |
 | Instant Form | leads Meta collected inside Facebook / Instagram (Meta's own count) |
-| Leads | site leads + Instant Form leads. Cost / lead = spend ÷ leads |
+| Leads | site leads + Instant Form leads. Cost / lead = spend ÷ leads, leaving out message campaigns (their spend and any lead they brought in) |
+| Messages | Meta's "messaging conversations started": someone opened a chat (Instagram Direct, Messenger, WhatsApp) from an ad after 7+ days of quiet. Kept apart from leads |
+| Cost / message | spend on message campaigns ÷ the messages they brought in. A message campaign is one whose ad sets send people into a chat (a "Get more messages" boost, or an Engagement campaign with a message destination; lead ads that run their form inside Messenger or Instagram Direct stay lead campaigns). A stray message on any other campaign is counted in Messages but not in cost per message |
+| New contacts | Meta's "new messaging contacts": people messaging the club for the first time (in the Messages card and on hover) |
 | Taps | taps on the text / email buttons from that campaign's visits (GA4 events), never counted as leads |
 | Facebook / Instagram, not paid | visits and leads from Facebook or Instagram that carried no paid-ad tags: the club's own posts and bio link (even with `utm_source=instagram&utm_medium=social`), a share, or an ad whose URL parameters are missing. Only a paid medium (`paid_social`, `cpc`) or a Google click id counts as an ad. Listed so totals add up, never counted as paid leads |
 | Not from an ad | site leads with no ad tags at all (direct, organic search, word of mouth) |
 
 Badges: **New** = first activity within 14 days · **New since your last visit**
 = this browser had not seen the campaign before · **Untagged** = Meta clicks
-but no tagged visits · **No leads** = $50+ spent with zero leads.
+but no tagged visits (never shown on message campaigns, which have no site
+visit to tag) · **No leads** = $50+ spent with zero leads · **No messages** =
+a message campaign with $50+ spent and zero messages.
+
+The **Messages** card under the tiles totals messages, cost per message and
+new contacts for the range, split by platform, and lists every campaign
+with messages (message campaigns first).
 
 ### Troubleshooting
 
@@ -293,3 +302,7 @@ but no tagged visits · **No leads** = $50+ spent with zero leads.
   browser remembers tags for 30 days, so this is rare.
 - *Numbers look a few minutes old* → the function caches for 10 minutes; the
   dashboard's Refresh button forces a fresh pull.
+- *A boost doesn't show up at all* → it is being paid from another ad account.
+  Boosts made in the Instagram app bill the Instagram-created account, which
+  no app can read. Boost from Business Suite (or build in Ads Manager) with
+  the ad account set to Grunion RFC Ads.
