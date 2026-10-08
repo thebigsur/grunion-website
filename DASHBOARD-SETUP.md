@@ -239,7 +239,10 @@ Page, the Instagram account and the ad account.
 put it in The Grunion RFC portfolio, assign it to the `grunion-dashboard`
 system user (step 3, *View performance* is enough), and add its id under the
 app's Authorized ad account IDs (4b). It shows up on the next refresh; no
-deploy needed. The page lists the accounts it read under **By Campaign**.
+deploy needed. The page lists the accounts it read under **By Campaign**. If
+it doesn't appear there, Meta isn't listing it to the dashboard (this happens
+with an Instagram-created account): add its id to `META_AD_ACCOUNT_ID` and
+redeploy.
 
 Do all of this logged in with a **Facebook** profile that has full control of
 the portfolio, not the Instagram login (the developer portal only accepts a
@@ -256,10 +259,12 @@ logged in as a Facebook profile. That account is **Grunion RFC Ads**, id
 
 **Update, 8 Oct 2026:** the auto-created `1987173712083863` (which pays for the
 Instagram "Player Test" message ad) now belongs to The Grunion RFC portfolio,
-`grunion-dashboard` is assigned to it, and the app authorizes it, so the
-dashboard reads it alongside Grunion RFC Ads. If it ever answers with the
-(#200) error again, the Meta warning on the page will say so and name the
-account; Grunion RFC Ads keeps reporting either way.
+`grunion-dashboard` is assigned to it, and the app authorizes it. Meta still
+leaves it out of the accounts it lists for the system user, so it has to be
+named in `META_AD_ACCOUNT_ID` (`1792518825224191,1987173712083863`) for the
+dashboard to try it. If Meta still answers with the (#200) error, the page
+shows a warning naming the account and Meta's reason, and Grunion RFC Ads
+keeps reporting either way. The fallback is rebuilding the ad in Grunion RFC Ads.
 
 If Meta insists on business verification before it lets you create a system
 user, say so and the function can be switched to a 60-day user token that it

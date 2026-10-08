@@ -103,14 +103,15 @@ const MSG_GOALS = /^(CONVERSATIONS|REPLIES|MESSAGING_[A-Z_]+)$/;
 const MSG_DESTINATIONS = /MESSENGER|INSTAGRAM_DIRECT|WHATSAPP|MESSAGING/;
 const LEAD_GOALS = /LEAD/;
 const LEAD_DESTINATIONS = /^LEAD_FROM_/;
-// Every effective_status the ad-set edge accepts, so nothing is filtered out:
-// archived and deleted ad sets count too, and a finished message campaign whose
-// spend is still in range keeps its label. These seven are Meta's own list
-// (AdSet.EffectiveStatus in facebook-python-business-sdk). The Marketing API
-// reference page also lists PENDING_REVIEW, DISAPPROVED, PREAPPROVED,
-// PENDING_BILLING_INFO and ADSET_PAUSED, but those only exist for ads, and
-// sending them makes Meta reject the whole call with "(100) Invalid parameter".
-const ADSET_STATUSES = ['ACTIVE', 'PAUSED', 'DELETED', 'CAMPAIGN_PAUSED', 'ARCHIVED', 'IN_PROCESS', 'WITH_ISSUES'];
+// The ad-set statuses to ask for, so a paused or archived ad set still counts
+// and a finished message campaign whose spend is still in range keeps its
+// label. From Meta's own list (AdSet.EffectiveStatus in
+// facebook-python-business-sdk) minus DELETED: this edge refuses deleted
+// objects with "(100/1815001) Cannot Request for Deleted Objects" (seen live,
+// 8 Oct 2026). The Marketing API reference also lists PENDING_REVIEW,
+// DISAPPROVED, PREAPPROVED, PENDING_BILLING_INFO and ADSET_PAUSED, but those
+// only exist for ads, and sending them makes Meta reject the whole call.
+const ADSET_STATUSES = ['ACTIVE', 'PAUSED', 'CAMPAIGN_PAUSED', 'ARCHIVED', 'IN_PROCESS', 'WITH_ISSUES'];
 function isChatAdset(s) {
   const goal = String(s?.optimization_goal || '').toUpperCase();
   const dest = String(s?.destination_type || '').toUpperCase();
