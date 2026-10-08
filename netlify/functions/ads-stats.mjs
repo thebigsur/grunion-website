@@ -1,18 +1,28 @@
 // ============================================================================
-// Grunion RFC dashboard — paid ads tracker (Google Ads + Meta + our own forms)
+// Grunion RFC dashboard — ads tracker (Google Ads, Google Ad Grants, Meta, our own forms)
 // GET /.netlify/functions/ads-stats?days=30        (7 | 30 | 90 | all)   [&fresh=1]
 // Requires header  x-dashboard-key: <DASHBOARD_KEY env var>
 //
-// Joins three read-only sources by campaign name, so a new campaign on either
-// platform shows up the day it spends. Nothing to register, nothing to type.
-//   1. GA4 Data API (the dashboard's existing service account)
-//      - Google Ads cost / impressions / clicks per campaign. GA4 only has these
-//        once the Google Ads account is linked to the property (GA4 Admin →
-//        Product links → Google Ads links). Google's cost lands in GA4 about a
-//        day late, so a brand-new Google campaign shows visits before spend.
-//      - Sessions + the lead_play / lead_coach / tap_text / tap_email events
-//        the landing pages send, for every campaign on every platform.
-//   2. Meta Marketing API (Facebook + Instagram share one ad account)
+// Joins read-only sources by campaign name, so a new campaign on any platform
+// shows up the day it spends. Nothing to register, nothing to type.
+//   1. GA4 Data API (the dashboard's existing service account), two properties
+//      - grunionrugby.com (GA_PROPERTY_ID): Google Ads cost / impressions /
+//        clicks per campaign once a Google Ads account is linked to it (GA4
+//        Admin → Product links → Google Ads links), plus sessions and the
+//        lead_play / lead_coach / tap_text / tap_email events its landing
+//        pages send, for every campaign on every platform.
+//      - sbrfc.com (SBRFC_GA_PROPERTY_ID, default 557211956): the Google Ad
+//        Grants account (922-418-2497) is linked to this one, so the grant
+//        campaigns' cost / impressions / clicks come from here, with sessions
+//        and the player_signup / sponsor_inquiry / coach_signup / contact_click
+//        / youth_register_click / club_site_click events the sbrfc.com pages
+//        send (thebigsur/sbrfc-website, site.js).
+//      Google's cost lands in GA4 about a day late, so a brand-new Google
+//      campaign shows visits before spend.
+//   2. Meta Marketing API (Facebook + Instagram)
+//      - every ad account assigned to the dashboard's system user (listed
+//        from /me/adaccounts) plus any named in META_AD_ACCOUNT_ID. Each
+//        account is read on its own, so one that fails never hides the rest.
 //      - campaign list with status and start date, spend / impressions / link
 //        clicks and Meta's own lead counts (Instant Forms, Pixel), split by
 //        publisher platform (facebook / instagram / …).
@@ -22,25 +32,39 @@
 //        their own cost per message; campaigns whose ad sets send people to
 //        Instagram Direct / Messenger / WhatsApp count as message campaigns
 //        and their spend is left out of cost per lead.
-//   3. Netlify Forms (the dashboard's existing token)
-//      - play-signup + coach-application submissions, read with the hidden
-//        utm_* / gclid / fbclid / referrer fields the landing pages stamp on
-//        them. These are the ground-truth leads.
+//   3. Netlify Forms (the dashboard's existing token; both sites are in the
+//      Grunion Rugby Netlify team)
+//      - grunionrugby.com: play-signup + coach-application
+//      - sbrfc.com: mens-, womens-, youth-, general-interest, sponsor-inquiry,
+//        coach-signup
+//      read with the hidden utm_* / gclid / fbclid / referrer fields the pages
+//      stamp on them. These are the ground-truth leads.
+//
+// Ad Grants spend is Google's free grant credit, not cash. It is reported on
+// its own (the "grant" block, the grant platform row and the grant campaign
+// rows) and kept out of the spend, click, cost-per-lead and lead totals, which
+// stay real money only.
 //
 // Env vars (Site configuration → Environment variables, scope: Functions):
 //   DASHBOARD_KEY                        (required) shared dashboard passcode
 //   GA_CLIENT_EMAIL + GA_PRIVATE_KEY     (or GA_SERVICE_ACCOUNT_JSON) — as ga-stats
-//   GA_PROPERTY_ID                       numeric GA4 property id
+//   GA_PROPERTY_ID                       numeric GA4 property id of grunionrugby.com
+//   SBRFC_GA_PROPERTY_ID                 optional, default 557211956 (sbrfc.com);
+//                                        "off" leaves sbrfc.com out
 //   NETLIFY_API_TOKEN                    as netlify-stats (NETLIFY_SITE_ID, SITE_DOMAIN optional)
+//   SBRFC_NETLIFY_SITE_ID                optional; found by matching sbrfc.com
 //   META_ADS_TOKEN                       read-only system-user token with ads_read
-//   META_AD_ACCOUNT_ID                   the ad account id, with or without "act_"
+//   META_AD_ACCOUNT_ID                   optional: extra ad account id(s), comma-
+//                                        separated, with or without "act_". Accounts
+//                                        assigned to the system user are found on their own.
 //   META_API_VERSION                     optional, default v23.0
 //   ADS_START_DATE                       optional, YYYY-MM-DD; the "since launch"
 //                                        range starts here (default 2026-09-01)
 //
 // Zero npm dependencies (node built-ins only), read-only against every API,
 // answers are cached in memory for 10 minutes so committee refreshes never
-// touch Meta's development-tier rate limit (60 calls per 5 minutes).
+// touch Meta's development-tier rate limit (60 calls per 5 minutes; one
+// report is 1 + 5 calls per ad account).
 // ============================================================================
 
 import { createSign, timingSafeEqual } from 'node:crypto';
@@ -54,10 +78,19 @@ const META_GRAPH = 'https://graph.facebook.com';
 const TZ = 'America/Los_Angeles';          // the club's day boundary
 const DEFAULT_START = '2026-09-01';         // first day of the 2027 campaigns
 const CACHE_TTL_MS = 10 * 60 * 1000;
+const ACCOUNT_CACHE_MS = 30 * 60 * 1000;    // the list of Meta ad accounts is reused this long
 const NEW_DAYS = 14;                        // "NEW" badge window
 const ACTIVE_DAYS = 3;                      // Google: spent in the last N days = active
 const NO_LEADS_FLOOR = 50;                  // $ spent with zero leads (or, for a message campaign, zero messages) → flag
 const UNTAGGED_MIN_CLICKS = 10;             // Meta clicks before "untagged" is called
+// Google Ad Grants rules (Ad Grants policy compliance guide): the account must
+// keep a 5% click-through rate each calendar month (two months in a row below
+// it can deactivate the grant) and report at least one conversion a month.
+const GRANT_DAILY_CAP = 329;                // $10,000 a month is about $329 a day
+const GRANT_CTR_TARGET = 5;                 // %, per calendar month
+const GRANT_CTR_MIN_IMPRESSIONS = 500;      // too few impressions this month to call the CTR yet
+// sbrfc.com events Google Ads imports as conversions (Goals → Conversions)
+const GRANT_CONVERSION_EVENTS = ['player_signup', 'sponsor_inquiry', 'coach_signup', 'contact_click', 'youth_register_click'];
 // Meta's action types for messages from click-to-message ads (Instagram Direct,
 // Messenger, WhatsApp). "Started" is Meta's headline result for a messages goal.
 const MSG_STARTED = ['onsite_conversion.messaging_conversation_started_7d', 'messaging_conversation_started_7d'];
@@ -70,18 +103,50 @@ const MSG_GOALS = /^(CONVERSATIONS|REPLIES|MESSAGING_[A-Z_]+)$/;
 const MSG_DESTINATIONS = /MESSENGER|INSTAGRAM_DIRECT|WHATSAPP|MESSAGING/;
 const LEAD_GOALS = /LEAD/;
 const LEAD_DESTINATIONS = /^LEAD_FROM_/;
-// every effective_status the ad-set edge accepts (Marketing API reference), so
-// nothing is filtered out: in-review, archived and deleted ad sets all count
-const ADSET_STATUSES = ['ACTIVE', 'PAUSED', 'DELETED', 'PENDING_REVIEW', 'DISAPPROVED', 'PREAPPROVED', 'PENDING_BILLING_INFO', 'CAMPAIGN_PAUSED', 'ARCHIVED', 'ADSET_PAUSED', 'IN_PROCESS', 'WITH_ISSUES'];
+// Every effective_status the ad-set edge accepts, so nothing is filtered out:
+// archived and deleted ad sets count too, and a finished message campaign whose
+// spend is still in range keeps its label. These seven are Meta's own list
+// (AdSet.EffectiveStatus in facebook-python-business-sdk). The Marketing API
+// reference page also lists PENDING_REVIEW, DISAPPROVED, PREAPPROVED,
+// PENDING_BILLING_INFO and ADSET_PAUSED, but those only exist for ads, and
+// sending them makes Meta reject the whole call with "(100) Invalid parameter".
+const ADSET_STATUSES = ['ACTIVE', 'PAUSED', 'DELETED', 'CAMPAIGN_PAUSED', 'ARCHIVED', 'IN_PROCESS', 'WITH_ISSUES'];
 function isChatAdset(s) {
   const goal = String(s?.optimization_goal || '').toUpperCase();
   const dest = String(s?.destination_type || '').toUpperCase();
   if (LEAD_GOALS.test(goal) || LEAD_DESTINATIONS.test(dest)) return false;
   return MSG_GOALS.test(goal) || MSG_DESTINATIONS.test(dest);
 }
-const LEAD_FORMS = { 'play-signup': 'play', 'coach-application': 'coach' };
-const LEAD_EVENTS = ['lead_play', 'lead_coach', 'tap_text', 'tap_email'];
 const META_SOURCES = new Set(['fb', 'ig', 'msg', 'an', 'facebook', 'instagram', 'meta', 'messenger', 'audience_network']);
+
+// The two websites the ads send people to. Each has its own GA4 property and
+// its own Netlify forms; `google` says what a Google Ads visit counts as there.
+const SITES = {
+  grunion: {
+    key: 'grunion', label: 'grunionrugby.com',
+    domain: () => (process.env.SITE_DOMAIN || 'grunionrugby.com').toLowerCase(),
+    property: () => process.env.GA_PROPERTY_ID,
+    siteId: () => process.env.NETLIFY_SITE_ID,
+    strictDomain: false, // as before: falls back to a site named like "grunion"
+    forms: { 'play-signup': 'play', 'coach-application': 'coach' },
+    events: ['lead_play', 'lead_coach', 'tap_text', 'tap_email'],
+    google: 'google',
+  },
+  sbrfc: {
+    key: 'sbrfc', label: 'sbrfc.com',
+    domain: () => 'sbrfc.com',
+    property: () => process.env.SBRFC_GA_PROPERTY_ID || '557211956',
+    siteId: () => process.env.SBRFC_NETLIFY_SITE_ID,
+    strictDomain: true, // never read some other site's forms by mistake
+    forms: {
+      'mens-interest': 'play', 'womens-interest': 'play', 'youth-interest': 'play', 'general-interest': 'play',
+      'sponsor-inquiry': 'sponsor', 'coach-signup': 'coach',
+    },
+    events: ['player_signup', 'sponsor_inquiry', 'coach_signup', 'contact_click', 'youth_register_click', 'club_site_click'],
+    google: 'grant', // the Google Ads account linked to sbrfc.com is the Ad Grants account
+  },
+};
+const isOff = (v) => /^(off|none|false|0)$/i.test(String(v || '').trim());
 
 // ---------- shared plumbing (same shape as ga-stats / netlify-stats) --------
 const json = (data, status = 200) =>
@@ -127,6 +192,7 @@ const safeDiv = (a, b) => (b > 0 ? a / b : null);
 const pct = (a, b, d = 1) => (b > 0 ? round((a / b) * 100, d) : null); // 0 stays 0, "no basis" is null
 const lower = (s) => String(s || '').trim().toLowerCase();
 const hostOf = (url) => { try { return new URL(String(url)).hostname.toLowerCase(); } catch { return lower(url); } };
+const sum = (arr, f) => (arr || []).reduce((a, x) => a + (f(x) || 0), 0);
 
 // Dates are handled as YYYY-MM-DD strings in the club's timezone.
 const ptDate = (d = new Date()) => {
@@ -142,6 +208,7 @@ const addDays = (iso, n) => {
 const daysBetween = (a, b) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86400e3);
 const gaDate = (s) => (/^\d{8}$/.test(s) ? `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}` : s); // 20260917 → 2026-09-17
 const validDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(String(s || ''));
+const monthStartOf = (iso) => `${iso.slice(0, 8)}01`;
 
 // Which platform a visit came from, judged from what the ad platforms put in
 // the URL (utm_source + utm_medium, gclid, fbclid) and, failing that, the
@@ -171,8 +238,11 @@ function classifyPlatform({ utm_source, utm_medium, utm_campaign, gclid, gbraid,
   return s ? `other:${s}` : 'other';
 }
 const isMetaPlatform = (p) => ['facebook', 'instagram', 'messenger', 'audience_network'].includes(p);
+const isPaidPlatform = (p) => p === 'google' || isMetaPlatform(p); // real money; 'grant' is not
+// a Google Ads visit to sbrfc.com came from the Ad Grants account
+const sitePlatform = (p, site) => (p === 'google' && SITES[site]?.google === 'grant' ? 'grant' : p);
 const PLATFORM_LABEL = {
-  google: 'Google Search', facebook: 'Facebook', instagram: 'Instagram', messenger: 'Messenger',
+  google: 'Google Search', grant: 'Google Ad Grants', facebook: 'Facebook', instagram: 'Instagram', messenger: 'Messenger',
   audience_network: 'Audience Network', meta_untagged: 'Facebook / Instagram (organic or untagged)',
   google_organic: 'Google (organic)', other: 'Not from an ad',
 };
@@ -187,20 +257,33 @@ function gaPlatform(source, medium) {
   return null; // not ad traffic
 }
 
+const TEAM_LABEL = { mens: 'Men’s', womens: 'Women’s', youth: 'Youth' };
+function formLabel(l) {
+  if (l.form === 'sponsor') return 'Sponsor inquiry';
+  if (l.form === 'coach') return l.site === 'sbrfc' ? 'Coach / ref / volunteer' : 'Coach application';
+  return TEAM_LABEL[l.team] ? `${TEAM_LABEL[l.team]} sign-up` : 'Player sign-up';
+}
+
 // ============================================================================
-// Source 1 — GA4
+// Source 1 — GA4 (one call per property)
 // ============================================================================
-async function fetchGA(range, sinceAll) {
+function gaCreds() {
   let email = process.env.GA_CLIENT_EMAIL, pk = process.env.GA_PRIVATE_KEY;
   if ((!email || !pk) && process.env.GA_SERVICE_ACCOUNT_JSON) {
     try { const sa = JSON.parse(process.env.GA_SERVICE_ACCOUNT_JSON); email = email || sa.client_email; pk = pk || sa.private_key; } catch { /* handled below */ }
   }
-  const property = process.env.GA_PROPERTY_ID;
-  if (!email || !pk) return { configured: false, ok: false, error: 'GA service account not set (GA_CLIENT_EMAIL + GA_PRIVATE_KEY)' };
-  if (!property) return { configured: false, ok: false, error: 'GA_PROPERTY_ID not set' };
-  pk = pk.replace(/\\n/g, '\n');
+  if (!email || !pk) return null;
+  return { email, pk: pk.replace(/\\n/g, '\n') };
+}
 
-  const token = await googleToken(email, pk);
+async function fetchGA(range, sinceAll, site, getToken) {
+  const property = String(site.property() || '').trim();
+  if (isOff(property)) return { configured: false, off: true, ok: false, error: `${site.label} is switched off` };
+  const creds = gaCreds();
+  if (!creds) return { configured: false, ok: false, error: 'GA service account not set (GA_CLIENT_EMAIL + GA_PRIVATE_KEY)' };
+  if (!property) return { configured: false, ok: false, error: 'GA_PROPERTY_ID not set' };
+
+  const token = await getToken(creds);
   const run = async (requests) => {
     const r = await fetch(`${GA_DATA_API}/properties/${property}:batchRunReports`, {
       method: 'POST',
@@ -216,6 +299,7 @@ async function fetchGA(range, sinceAll) {
   const met = (row, i) => num(row.metricValues?.[i]?.value);
   const current = [{ startDate: range.since, endDate: range.until }];
   const allTime = [{ startDate: sinceAll, endDate: range.until }];
+  const eventFilter = { filter: { fieldName: 'eventName', inListFilter: { values: site.events } } };
 
   // Two separate batches so a problem with the Google Ads cost metrics (e.g. no
   // Google Ads link yet) can never take the sessions/leads reports down with it.
@@ -234,7 +318,7 @@ async function fetchGA(range, sinceAll) {
       limit: '10000',
     },
   ]);
-  const trafficBatch = run([
+  const trafficRequests = [
     { // sessions by source / medium / campaign in range
       dateRanges: current,
       dimensions: [{ name: 'sessionSource' }, { name: 'sessionMedium' }, { name: 'sessionCampaignName' }],
@@ -246,20 +330,33 @@ async function fetchGA(range, sinceAll) {
       dateRanges: current,
       dimensions: [{ name: 'sessionSource' }, { name: 'sessionMedium' }, { name: 'sessionCampaignName' }, { name: 'eventName' }],
       metrics: [{ name: 'eventCount' }],
-      dimensionFilter: { filter: { fieldName: 'eventName', inListFilter: { values: LEAD_EVENTS } } },
+      dimensionFilter: eventFilter,
       limit: '1000',
     },
-  ]);
+  ];
+  // Ad Grants: the same events for this calendar month, whatever range is
+  // shown, for the "at least one conversion a month" rule
+  if (site.google === 'grant') {
+    trafficRequests.push({
+      dateRanges: [{ startDate: monthStartOf(range.until), endDate: range.until }],
+      dimensions: [{ name: 'sessionSource' }, { name: 'sessionMedium' }, { name: 'eventName' }],
+      metrics: [{ name: 'eventCount' }],
+      dimensionFilter: eventFilter,
+      limit: '200',
+    });
+  }
+  const trafficBatch = run(trafficRequests);
 
-  const out = { configured: true, ok: true, error: null, adsError: null, googleCampaigns: [], googleDaily: [], traffic: [], events: [] };
+  const out = { configured: true, ok: true, error: null, adsError: null, property, site: site.key, googleCampaigns: [], googleDaily: [], traffic: [], events: [], monthEvents: [] };
   const [ads, traffic] = await Promise.allSettled([adsBatch, trafficBatch]);
 
   if (traffic.status === 'rejected') {
     out.ok = false; out.error = String(traffic.reason?.message || traffic.reason);
   } else {
-    const [sess, ev] = traffic.value;
-    out.traffic = rows(sess).map((r) => ({ source: dim(r, 0), medium: dim(r, 1), campaign: dim(r, 2), sessions: met(r, 0), engaged: met(r, 1) }));
-    out.events = rows(ev).map((r) => ({ source: dim(r, 0), medium: dim(r, 1), campaign: dim(r, 2), event: dim(r, 3), count: met(r, 0) }));
+    const [sess, ev, month] = traffic.value;
+    out.traffic = rows(sess).map((r) => ({ site: site.key, source: dim(r, 0), medium: dim(r, 1), campaign: dim(r, 2), sessions: met(r, 0), engaged: met(r, 1) }));
+    out.events = rows(ev).map((r) => ({ site: site.key, source: dim(r, 0), medium: dim(r, 1), campaign: dim(r, 2), event: dim(r, 3), count: met(r, 0) }));
+    out.monthEvents = rows(month).map((r) => ({ site: site.key, source: dim(r, 0), medium: dim(r, 1), event: dim(r, 2), count: met(r, 0) }));
   }
   if (ads.status === 'rejected') {
     out.adsError = String(ads.reason?.message || ads.reason);
@@ -278,16 +375,58 @@ async function fetchGA(range, sinceAll) {
 }
 
 // ============================================================================
-// Source 2 — Meta Marketing API
+// Source 2 — Meta Marketing API (every ad account the dashboard can read)
 // ============================================================================
-async function fetchMeta(range, sinceAll) {
-  const token = process.env.META_ADS_TOKEN;
-  let account = String(process.env.META_AD_ACCOUNT_ID || '').trim();
-  if (!token || !account) return { configured: false, ok: false, error: 'META_ADS_TOKEN / META_AD_ACCOUNT_ID not set' };
-  if (!account.startsWith('act_')) account = `act_${account}`;
-  const ver = process.env.META_API_VERSION || 'v23.0';
-  const base = `${META_GRAPH}/${ver}/${account}`;
+const actId = (s) => { const d = String(s || '').trim().replace(/^act_/i, ''); return /^\d+$/.test(d) ? `act_${d}` : null; };
+const bareId = (s) => String(s || '').replace(/^act_/, '');
+function metaError(e = {}, status) {
+  // Meta's own words for what went wrong, so the dashboard shows the reason
+  // instead of a bare "Invalid parameter"
+  const detail = [e.error_user_title, e.error_user_msg].filter(Boolean).join(': ');
+  return `Meta API ${e.code ? `(${e.code}${e.error_subcode ? `/${e.error_subcode}` : ''}) ` : ''}${e.message || status}${detail ? ` (${detail})` : ''}`;
+}
+async function metaGet(url) {
+  const r = await fetch(url);
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok || data.error) throw new Error(metaError(data.error, r.status));
+  return data;
+}
 
+// The ad accounts to read: every account assigned to the token's system user
+// (Business settings → System users → grunion-dashboard → Assign assets), plus
+// any extra ids in META_AD_ACCOUNT_ID. Assigning an account in Business
+// settings (and, while the app is in Development mode, adding it under App
+// settings → Advanced → Authorized ad account IDs) is all it takes to add one.
+let accountCache = null; // { at, found }
+async function metaAccounts(token, ver, fresh) {
+  const listed = String(process.env.META_AD_ACCOUNT_ID || '').split(/[\s,;]+/).map(actId).filter(Boolean);
+  let found = null, foundError = null;
+  if (!fresh && accountCache && Date.now() - accountCache.at < ACCOUNT_CACHE_MS) found = accountCache.found;
+  else {
+    for (const edge of ['adaccounts', 'assigned_ad_accounts']) {
+      try {
+        const u = new URL(`${META_GRAPH}/${ver}/me/${edge}`);
+        u.searchParams.set('fields', 'account_id,name,account_status');
+        u.searchParams.set('limit', '50');
+        u.searchParams.set('access_token', token);
+        const data = await metaGet(u.toString());
+        found = (data.data || [])
+          .filter((a) => Number(a.account_status) !== 101) // 101 = closed
+          .map((a) => ({ id: actId(a.account_id || a.id), name: a.name || null }))
+          .filter((a) => a.id);
+        foundError = null;
+        accountCache = { at: Date.now(), found };
+        break;
+      } catch (e) { foundError = String(e.message || e); }
+    }
+  }
+  const names = new Map((found || []).map((a) => [a.id, a.name]));
+  const ids = [...new Set([...(found || []).map((a) => a.id), ...listed])];
+  return { accounts: ids.map((id) => ({ id, name: names.get(id) || null })), foundError, listed };
+}
+
+async function fetchMetaAccount(account, token, ver, range, sinceAll) {
+  const base = `${META_GRAPH}/${ver}/${account}`;
   const call = async (path, params, pages = 8) => {
     const url = new URL(`${base}/${path}`);
     for (const [k, v] of Object.entries(params)) url.searchParams.set(k, typeof v === 'string' ? v : JSON.stringify(v));
@@ -295,12 +434,7 @@ async function fetchMeta(range, sinceAll) {
     const all = [];
     let next = url.toString();
     for (let i = 0; i < pages && next; i++) {
-      const r = await fetch(next);
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok || data.error) {
-        const e = data.error || {};
-        throw new Error(`Meta API ${e.code ? `(${e.code}) ` : ''}${e.message || r.status}`);
-      }
+      const data = await metaGet(next);
       all.push(...(data.data || []));
       next = data.paging?.next || null;
     }
@@ -311,9 +445,7 @@ async function fetchMeta(range, sinceAll) {
 
   // The ad-set list only answers "does this campaign send people into a chat?".
   // It is allowed to fail on its own: the rest of the Meta figures still report,
-  // and campaigns are then judged by objective + messages alone (see isMessaging).
-  // Archived and deleted ad sets are asked for too, so a finished message
-  // campaign whose spend is still in range keeps its label.
+  // and campaigns are then judged by objective + messages alone (see isMsgId).
   let adsetsError = null;
   const [camps, ins, split, daily, adsets] = await Promise.all([
     call('campaigns', { fields: 'id,name,status,effective_status,objective,created_time,start_time,stop_time,daily_budget,lifetime_budget', limit: '200' }),
@@ -324,8 +456,34 @@ async function fetchMeta(range, sinceAll) {
       .then((rows) => (Array.isArray(rows) ? rows : Promise.reject(new Error('unexpected ad-set list'))))
       .catch((e) => { adsetsError = String(e.message || e); return null; }),
   ]);
-  const chatCampaignIds = new Set();
-  for (const s of adsets || []) if (isChatAdset(s)) chatCampaignIds.add(String(s.campaign_id));
+  const chatCampaignIds = [];
+  for (const s of adsets || []) if (isChatAdset(s)) chatCampaignIds.push(String(s.campaign_id));
+  return { camps, ins, split, daily, adsetsError, chatCampaignIds };
+}
+
+async function fetchMeta(range, sinceAll, fresh) {
+  const token = process.env.META_ADS_TOKEN;
+  if (!token) return { configured: false, ok: false, error: 'META_ADS_TOKEN not set' };
+  const ver = process.env.META_API_VERSION || 'v23.0';
+  const { accounts, foundError, listed } = await metaAccounts(token, ver, fresh);
+  if (!accounts.length) {
+    if (!foundError && !listed.length) return { configured: false, ok: false, error: 'no ad account is assigned to the dashboard yet' };
+    return { configured: true, ok: false, error: `could not find an ad account to read: ${foundError}`, accounts: [], discoverError: foundError };
+  }
+
+  const results = await Promise.all(accounts.map((a) =>
+    fetchMetaAccount(a.id, token, ver, range, sinceAll)
+      .then((r) => ({ ...a, ok: true, ...r }), (e) => ({ ...a, ok: false, error: String(e.message || e) }))));
+  // an Instagram-created account is named after its own id; don't say it twice
+  const label = (r) => (r.name && r.name !== bareId(r.id) ? `${r.name} (${bareId(r.id)})` : bareId(r.id));
+  const accountsOut = results.map((r) => ({
+    id: bareId(r.id), name: r.name, label: label(r), ok: r.ok, error: r.error || null,
+    adsetsError: r.adsetsError || null, campaigns: r.ok ? r.camps.length : null,
+  }));
+  const good = results.filter((r) => r.ok);
+  if (!good.length) {
+    return { configured: true, ok: false, error: results.map((r) => `${label(r)}: ${r.error}`).join(' · '), accounts: accountsOut, discoverError: foundError };
+  }
 
   const actionsOf = (row) => {
     const map = {};
@@ -351,51 +509,63 @@ async function fetchMeta(range, sinceAll) {
     leads: leadCounts(row), messages: messageCounts(row),
   });
   return {
-    configured: true, ok: true, error: null, adsetsError, chatCampaignIds: [...chatCampaignIds],
-    campaigns: camps.map((c) => ({
+    configured: true, ok: true, error: null, accounts: accountsOut, discoverError: foundError,
+    adsetsFailed: good.filter((r) => r.adsetsError).map((r) => bareId(r.id)),
+    chatCampaignIds: [...new Set(good.flatMap((r) => r.chatCampaignIds))],
+    campaigns: good.flatMap((r) => r.camps.map((c) => ({
       id: c.id, name: c.name, status: c.status, effectiveStatus: c.effective_status, objective: c.objective,
-      chatAdsets: chatCampaignIds.has(String(c.id)),
+      accountId: bareId(r.id), accountLabel: label(r),
       created: c.created_time ? ptDate(new Date(c.created_time)) : null,
       start: c.start_time ? ptDate(new Date(c.start_time)) : null,
       stop: c.stop_time ? ptDate(new Date(c.stop_time)) : null,
       dailyBudget: c.daily_budget != null ? num(c.daily_budget) / 100 : null,
       lifetimeBudget: c.lifetime_budget != null ? num(c.lifetime_budget) / 100 : null,
-    })),
-    insights: ins.map(norm),
-    split: split.map((row) => ({ ...norm(row), platform: lower(row.publisher_platform) || 'unknown' })),
-    daily: daily.map((row) => ({ ...norm(row), date: row.date_start })),
+    }))),
+    insights: good.flatMap((r) => r.ins.map(norm)),
+    split: good.flatMap((r) => r.split.map((row) => ({ ...norm(row), platform: lower(row.publisher_platform) || 'unknown' }))),
+    daily: good.flatMap((r) => r.daily.map((row) => ({ ...norm(row), date: row.date_start }))),
   };
 }
 
 // ============================================================================
-// Source 3 — Netlify Forms (our own leads)
+// Source 3 — Netlify Forms (our own leads, one call per site)
 // ============================================================================
-async function fetchNetlify(range) {
-  const token = process.env.NETLIFY_API_TOKEN;
-  if (!token) return { configured: false, ok: false, error: 'NETLIFY_API_TOKEN not set' };
+function netlifyClient(token) {
   const headers = { Authorization: `Bearer ${token}` };
   const getJ = async (url) => {
     const r = await fetch(url, { headers });
     if (!r.ok) throw new Error(`Netlify API ${r.status} on ${url.replace(/^https?:\/\/[^/]+/, '').replace(/\?.*$/, '')}`);
     return r.json();
   };
+  let sitesP = null; // both sites are looked up in one list
+  const sites = () => (sitesP ||= getJ(`${NETLIFY_API}/sites?filter=all&per_page=100`));
+  return { getJ, sites };
+}
 
-  // resolve the site (same logic as netlify-stats)
-  const wantDomain = (process.env.SITE_DOMAIN || 'grunionrugby.com').toLowerCase();
-  let site = null;
-  if (process.env.NETLIFY_SITE_ID) site = await getJ(`${NETLIFY_API}/sites/${process.env.NETLIFY_SITE_ID}`).catch(() => null);
-  if (!site) {
-    const sites = await getJ(`${NETLIFY_API}/sites?filter=all&per_page=100`);
+async function fetchNetlify(range, site, client) {
+  if (!client) return { configured: false, ok: false, error: 'NETLIFY_API_TOKEN not set' };
+  const { getJ } = client;
+
+  // resolve the site (same logic as netlify-stats; sbrfc.com must match exactly)
+  const wantDomain = site.domain();
+  let found = null;
+  if (site.siteId()) found = await getJ(`${NETLIFY_API}/sites/${site.siteId()}`).catch(() => null);
+  if (!found) {
+    const sites = await client.sites();
     const matches = (s, d) =>
       [s.custom_domain, s.default_domain, ...(s.domain_aliases || [])].filter(Boolean)
         .some((x) => String(x).toLowerCase() === d || String(x).toLowerCase().endsWith(`.${d}`)) ||
       String(s.url || '').toLowerCase().includes(d);
-    site = sites.find((s) => matches(s, wantDomain)) || sites.find((s) => String(s.name || '').toLowerCase().includes('grunion')) || sites[0];
-    if (!site) throw new Error('No sites visible to this token');
+    found = sites.find((s) => matches(s, wantDomain));
+    if (!found && !site.strictDomain) found = sites.find((s) => String(s.name || '').toLowerCase().includes('grunion')) || sites[0];
+    if (!found) {
+      if (!sites.length) throw new Error('No sites visible to this token');
+      return { configured: false, ok: false, error: `${site.label} is not one of the Netlify sites the dashboard's token can see` };
+    }
   }
-  const siteId = site.id || site.site_id;
+  const siteId = found.id || found.site_id;
 
-  const forms = (await getJ(`${NETLIFY_API}/sites/${siteId}/forms`)).filter((f) => LEAD_FORMS[f.name]);
+  const forms = (await getJ(`${NETLIFY_API}/sites/${siteId}/forms`)).filter((f) => site.forms[f.name]);
   const listAll = async (formId, extra = '') => {
     const out = [];
     for (let page = 1; page <= 5; page++) {
@@ -410,7 +580,7 @@ async function fetchNetlify(range) {
   const leads = [];
   let spamCount = 0, spamSupported = null;
   for (const f of forms) {
-    const kind = LEAD_FORMS[f.name];
+    const kind = site.forms[f.name];
     const verified = await listAll(f.id);
     const ids = new Set(verified.map((s) => s.id));
     for (const s of verified) {
@@ -419,11 +589,15 @@ async function fetchNetlify(range) {
       const day = at ? ptDate(new Date(at)) : null;
       const fields = {
         utm_source: d.utm_source, utm_medium: d.utm_medium, utm_campaign: d.utm_campaign, utm_content: d.utm_content, utm_term: d.utm_term,
-        gclid: d.gclid, gbraid: d.gbraid, wbraid: d.wbraid, fbclid: d.fbclid, referrer: d.referrer, landing: d.landing,
+        gclid: d.gclid, gbraid: d.gbraid, wbraid: d.wbraid, fbclid: d.fbclid, referrer: d.referrer, landing: d.landing || d.landing_page,
       };
+      const name = String(d.name || s.name || '').trim();
+      const business = String(d.business || '').trim();
       leads.push({
-        id: s.id, at, day, form: kind, name: d.name || s.name || '',
-        platform: classifyPlatform(fields),
+        id: s.id, at, day, site: site.key, form: kind,
+        team: kind === 'play' ? (lower(d.team) || null) : null,
+        name: business ? `${name} (${business})` : name,
+        platform: sitePlatform(classifyPlatform(fields), site.key),
         campaign: String(d.utm_campaign || '').trim(),
         ad: String(d.utm_content || '').trim(),
         term: String(d.utm_term || '').trim(),
@@ -450,68 +624,109 @@ async function fetchNetlify(range) {
 // ============================================================================
 // Put it together
 // ============================================================================
-function assemble({ ga, meta, nl, range, today, sinceAll, days }) {
+function assemble({ ga, gaS, meta, nl, nlS, range, today, sinceAll, days }) {
   const inRange = (day) => day && day >= range.since && day <= range.until;
   const warnings = [];
   const campaigns = [];
 
-  // ---- Google campaigns (from GA4's Google Ads dimensions) ----------------
-  const gById = new Map(), gByName = new Map();
-  const gAll = new Map(); // name → {first,last,id}
-  for (const d of (ga.googleDaily || [])) {
-    const active = d.cost > 0 || d.impressions > 0 || d.clicks > 0;
-    if (!active) continue;
-    const g = gAll.get(d.name) || { name: d.name, id: d.id, first: d.date, last: d.date };
-    if (d.date < g.first) g.first = d.date;
-    if (d.date > g.last) g.last = d.date;
-    gAll.set(d.name, g);
-  }
-  for (const c of (ga.googleCampaigns || [])) if (!gAll.has(c.name)) gAll.set(c.name, { name: c.name, id: c.id, first: null, last: null });
-  for (const g of gAll.values()) { if (g.id) gById.set(String(g.id), g.name); gByName.set(g.name, g); }
-
-  const gaTraffic = ga.traffic || [], gaEvents = ga.events || [];
+  // ---- what the two GA4 properties saw (each row carries its site) ----------
+  const gaTraffic = [...(ga.traffic || []), ...(gaS.traffic || [])];
+  const gaEvents = [...(ga.events || []), ...(gaS.events || [])];
+  const platOf = (t) => sitePlatform(gaPlatform(t.source, t.medium), t.site);
   const sessionsFor = (pred) => {
     let sessions = 0, engaged = 0;
     for (const t of gaTraffic) if (pred(t)) { sessions += t.sessions; engaged += t.engaged; }
     return { sessions, engaged };
   };
   const eventsFor = (pred) => {
-    const out = { lead_play: 0, lead_coach: 0, tap_text: 0, tap_email: 0 };
-    for (const e of gaEvents) if (pred(e) && e.event in out) out[e.event] += e.count;
+    const out = {};
+    for (const e of gaEvents) if (pred(e)) out[e.event] = (out[e.event] || 0) + e.count;
     return out;
   };
-  const isGoogleRow = (t) => gaPlatform(t.source, t.medium) === 'google';
-  const isMetaRow = (t) => isMetaPlatform(gaPlatform(t.source, t.medium) || '');
+  const n0 = (o, k) => o?.[k] || 0;
+  // text / email taps (grunionrugby.com) and call / text / email taps (sbrfc.com's contact_click)
+  const tapsOf = (ev) => ({ text: n0(ev, 'tap_text'), email: n0(ev, 'tap_email'), contact: n0(ev, 'contact_click') });
+  const tapCount = (t) => (t?.text || 0) + (t?.email || 0) + (t?.contact || 0);
+  // sbrfc.com clicks on to the youth registration site and the three club sites
+  const outOf = (ev) => ({ register: n0(ev, 'youth_register_click'), club: n0(ev, 'club_site_click') });
+  const gaSignupsOf = (ev) => {
+    const g = { play: n0(ev, 'lead_play') + n0(ev, 'player_signup'), coach: n0(ev, 'lead_coach') + n0(ev, 'coach_signup'), sponsor: n0(ev, 'sponsor_inquiry') };
+    return { ...g, total: g.play + g.coach + g.sponsor };
+  };
+  // Ad Grants sign-ups: a form names its ad only when the visitor's browser
+  // kept the ad's tags (scripts and storage allowed), and Analytics misses
+  // people who block it. Both undercount, so each kind takes the higher count.
+  const bestOf = (forms, gaSign) => {
+    const out = { play: 0, coach: 0, sponsor: 0, total: 0 };
+    let fromGa = false;
+    for (const k of ['play', 'coach', 'sponsor']) {
+      out[k] = Math.max(forms[k] || 0, gaSign[k] || 0);
+      if ((gaSign[k] || 0) > (forms[k] || 0)) fromGa = true;
+      out.total += out[k];
+    }
+    return { leads: out, source: fromGa ? 'ga' : 'forms' };
+  };
 
-  const siteLeads = nl.leads || [];
+  // ---- our own form leads, both sites ---------------------------------------
+  const siteLeads = [...(nl.leads || []), ...(nlS.leads || [])].sort((a, b) => (a.at < b.at ? 1 : -1));
   const leadsIn = siteLeads.filter((l) => inRange(l.day));
-  const leadsFor = (pred) => {
-    const out = { play: 0, coach: 0, total: 0 };
-    for (const l of leadsIn) if (pred(l)) { out[l.form] += 1; out.total += 1; }
+  const leadsFor = (pred, list = leadsIn) => {
+    const out = { play: 0, coach: 0, sponsor: 0, total: 0 };
+    for (const l of list) if (pred(l)) { out[l.form] = (out[l.form] || 0) + 1; out.total += 1; }
     return out;
   };
 
-  for (const g of gAll.values()) {
-    const cur = (ga.googleCampaigns || []).find((c) => c.name === g.name) || { cost: 0, impressions: 0, clicks: 0, sessions: 0, engaged: 0, type: '' };
-    const inRangeDays = (ga.googleDaily || []).filter((d) => d.name === g.name && inRange(d.date) && (d.cost > 0 || d.impressions > 0));
-    if (!inRangeDays.length && !(cur.cost > 0 || cur.impressions > 0) && days !== 'all') continue; // nothing in this window
-    const sess = sessionsFor((t) => isGoogleRow(t) && t.campaign === g.name);
-    const ev = eventsFor((e) => isGoogleRow(e) && e.campaign === g.name);
-    const leads = leadsFor((l) => l.platform === 'google' && (l.campaign === String(g.id) || l.campaign === g.name));
-    const lastActive = g.last;
-    const status = !lastActive ? 'No spend yet' : daysBetween(lastActive, today) <= ACTIVE_DAYS ? 'Active' : 'Inactive';
-    campaigns.push(row({
-      key: `google:${g.name}`, platform: 'google', platformLabel: 'Google Search', name: g.name, id: g.id || null,
-      kind: cur.type || null, status, statusRaw: null, firstSeen: g.first, lastSeen: lastActive,
-      spend: cur.cost, impressions: cur.impressions, reach: null, clicks: cur.clicks, allClicks: cur.clicks,
-      sessions: cur.sessions || sess.sessions, engaged: cur.engaged || sess.engaged,
-      siteLeads: leads, instantLeads: 0, pixelLeads: 0, taps: { text: ev.tap_text, email: ev.tap_email },
-      gaLeads: { play: ev.lead_play, coach: ev.lead_coach }, split: null, dailyBudget: null,
-    }, today));
-  }
+  // ---- Google campaigns, one GA4 property at a time --------------------------
+  // grunionrugby.com → paid Google Search; sbrfc.com → the Ad Grants account
+  const gById = new Map(); // campaign id → name (form leads carry the id)
+  const googleCampaigns = (gx, siteKey) => {
+    const platform = SITES[siteKey].google;
+    const gAll = new Map(); // name → {first,last,id}
+    for (const d of (gx.googleDaily || [])) {
+      const active = d.cost > 0 || d.impressions > 0 || d.clicks > 0;
+      if (!active) continue;
+      const g = gAll.get(d.name) || { name: d.name, id: d.id, first: d.date, last: d.date };
+      if (d.date < g.first) g.first = d.date;
+      if (d.date > g.last) g.last = d.date;
+      gAll.set(d.name, g);
+    }
+    for (const c of (gx.googleCampaigns || [])) if (!gAll.has(c.name)) gAll.set(c.name, { name: c.name, id: c.id, first: null, last: null });
+    for (const g of gAll.values()) if (g.id) gById.set(String(g.id), g.name);
+
+    for (const g of gAll.values()) {
+      const cur = (gx.googleCampaigns || []).find((c) => c.name === g.name) || { cost: 0, impressions: 0, clicks: 0, sessions: 0, engaged: 0, type: '' };
+      const inRangeDays = (gx.googleDaily || []).filter((d) => d.name === g.name && inRange(d.date) && (d.cost > 0 || d.impressions > 0));
+      if (!inRangeDays.length && !(cur.cost > 0 || cur.impressions > 0) && days !== 'all') continue; // nothing in this window
+      const fromThis = (t) => t.site === siteKey && platOf(t) === platform && t.campaign === g.name;
+      const sess = sessionsFor(fromThis);
+      const ev = eventsFor(fromThis);
+      const forms = leadsFor((l) => l.platform === platform && (l.campaign === String(g.id) || l.campaign === g.name));
+      const gaSign = gaSignupsOf(ev);
+      // Ad Grants: a form names its campaign only when the ad link carries
+      // utm_campaign, while Analytics knows the campaign of every ad visit, so
+      // per campaign the forms and Analytics' sign-up events are combined
+      // (bestOf). Paid Google Search keeps counting forms only, as before.
+      const best = platform === 'grant' ? bestOf(forms, gaSign) : { leads: forms, source: 'forms' };
+      const lastActive = g.last;
+      const status = !lastActive ? 'No spend yet' : daysBetween(lastActive, today) <= ACTIVE_DAYS ? 'Active' : 'Inactive';
+      campaigns.push(row({
+        key: `${platform}:${g.name}`, platform, platformLabel: PLATFORM_LABEL[platform], site: siteKey, name: g.name, id: g.id || null,
+        kind: cur.type || null, status, statusRaw: null, firstSeen: g.first, lastSeen: lastActive,
+        spend: cur.cost, impressions: cur.impressions, reach: null, clicks: cur.clicks, allClicks: cur.clicks,
+        sessions: cur.sessions || sess.sessions, engaged: cur.engaged || sess.engaged,
+        siteLeads: best.leads, leadSource: best.source,
+        instantLeads: 0, pixelLeads: 0, taps: tapsOf(ev), clicksOut: outOf(ev),
+        gaLeads: gaSign, split: null, dailyBudget: null,
+      }, today));
+    }
+    return gAll;
+  };
+  const gAllG = googleCampaigns(ga, 'grunion');
+  const gAllS = googleCampaigns(gaS, 'sbrfc');
+
   // Google traffic arriving with no cost data → the Google Ads ↔ GA4 link is missing
-  const googleSessions = sessionsFor(isGoogleRow).sessions;
-  if (ga.ok && !ga.adsError && !gAll.size && googleSessions > 0) {
+  const googleSessions = sessionsFor((t) => t.site === 'grunion' && platOf(t) === 'google').sessions;
+  if (ga.ok && !ga.adsError && !gAllG.size && googleSessions > 0) {
     warnings.push({ level: 'warn', text: `GA4 sees ${googleSessions} Google Ads visits but no Google Ads cost data. Link the Google Ads account to GA4 (Admin → Product links → Google Ads links), or the ads only started today (cost lands in GA4 a day late).` });
   }
   if (ga.adsError) warnings.push({ level: 'warn', text: `Google Ads figures unavailable from GA4: ${ga.adsError}` });
@@ -519,24 +734,31 @@ function assemble({ ga, meta, nl, range, today, sinceAll, days }) {
   // ---- which Meta campaigns are message campaigns ---------------------------
   // A message campaign sends people into a chat (Instagram Direct, Messenger,
   // WhatsApp): one of its ad sets says so, or its objective is the old MESSAGES
-  // one. Only if the ad-set list could not be read does an Engagement campaign
-  // that has produced messages since launch count as one too. Its spend is
-  // judged by cost per message and left out of cost per lead. Decided by
-  // campaign id, because two boosts of the same post share a name.
+  // one. Only if its account's ad-set list could not be read does an
+  // Engagement campaign that has produced messages since launch count as one
+  // too. Its spend is judged by cost per message and left out of cost per lead.
+  // Decided by campaign id, because two boosts of the same post share a name.
   const metaIns = meta.ok ? (meta.insights || []) : [];
   const msgIds = new Set(meta.ok ? (meta.chatCampaignIds || []).map(String) : []);
+  const adsetsFailed = new Set(meta.ok ? (meta.adsetsFailed || []).map(String) : []);
   if (meta.ok) {
     const msgSinceLaunch = new Map();
     for (const d of (meta.daily || [])) msgSinceLaunch.set(String(d.id), (msgSinceLaunch.get(String(d.id)) || 0) + (d.messages?.started || 0));
     for (const c of (meta.campaigns || [])) {
       const obj = String(c.objective || '').toUpperCase();
-      if (obj === 'MESSAGES' || (meta.adsetsError && /ENGAGEMENT/.test(obj) && (msgSinceLaunch.get(String(c.id)) || 0) > 0)) msgIds.add(String(c.id));
+      if (obj === 'MESSAGES' || (adsetsFailed.has(String(c.accountId)) && /ENGAGEMENT/.test(obj) && (msgSinceLaunch.get(String(c.id)) || 0) > 0)) msgIds.add(String(c.id));
     }
   }
   const isMsgId = (id) => id != null && msgIds.has(String(id));
   // names are only needed to match our own form leads, which carry utm_campaign = the campaign name
   const msgNames = new Set([...(meta.ok ? meta.campaigns || [] : []), ...metaIns].filter((c) => isMsgId(c.id)).map((c) => c.name));
-  if (meta.ok && meta.adsetsError) warnings.push({ level: 'info', text: `Meta's ad-set list could not be read (${meta.adsetsError}), so message campaigns are recognised by their objective and messages only.` });
+  if (meta.ok) {
+    const accts = meta.accounts || [];
+    for (const a of accts.filter((x) => !x.ok)) warnings.push({ level: 'warn', text: `Meta ad account ${a.label} could not be read, so its campaigns are missing below: ${a.error}` });
+    const failedSets = accts.filter((x) => x.ok && x.adsetsError);
+    if (failedSets.length) warnings.push({ level: 'info', text: `Meta's ad-set list could not be read for ${failedSets.map((x) => `${x.label} (${x.adsetsError})`).join('; ')}, so message campaigns there are recognised by their objective and messages only.` });
+    if (meta.discoverError) warnings.push({ level: 'info', text: `Meta would not list the ad accounts assigned to the dashboard (${meta.discoverError}), so it read only the account(s) in META_AD_ACCOUNT_ID.` });
+  }
 
   // ---- Meta campaigns -------------------------------------------------------
   if (meta.ok) {
@@ -574,8 +796,10 @@ function assemble({ ga, meta, nl, range, today, sinceAll, days }) {
       // Show it if it ran in this window, is live or about to be, was made in the
       // last 30 days, or (since-launch view) ever ran. Old drafts stay hidden.
       if (!ranInRange && !live && !recentlyMade && !(days === 'all' && dl.length)) continue;
-      const sess = sessionsFor((t) => isMetaRow(t) && t.campaign === c.name);
-      const ev = eventsFor((e) => isMetaRow(e) && e.campaign === c.name);
+      // a Meta ad may send people to either site, so both sites' visits count
+      const fromThis = (t) => isMetaPlatform(platOf(t) || '') && t.campaign === c.name;
+      const sess = sessionsFor(fromThis);
+      const ev = eventsFor(fromThis);
       const leads = leadsFor((l) => isMetaPlatform(l.platform) && l.campaign === c.name);
       const sp = splitByKey.get(k) || {};
       const status = c.stop && c.stop < today && st !== 'ACTIVE' ? 'Ended'
@@ -585,12 +809,13 @@ function assemble({ ga, meta, nl, range, today, sinceAll, days }) {
       if (!messaging && ins.clicks >= UNTAGGED_MIN_CLICKS && sess.sessions === 0 && ins.leads.instant === 0) flags.push('untagged');
       campaigns.push(row({
         key: `meta:${c.id || c.name}`, platform: 'meta', platformLabel: 'Facebook / Instagram', name: c.name, id: c.id || null,
+        accountId: c.accountId || null, accountLabel: c.accountLabel || null,
         kind: c.objective ? String(c.objective).replace(/^OUTCOME_/, '').toLowerCase() : null, status, statusRaw: st || null,
         firstSeen: first, lastSeen: last,
         spend: ins.spend, impressions: ins.impressions, reach: ins.reach || null, clicks: ins.clicks, allClicks: ins.allClicks,
         sessions: sess.sessions, engaged: sess.engaged,
-        siteLeads: leads, instantLeads: ins.leads.instant, pixelLeads: ins.leads.pixel, taps: { text: ev.tap_text, email: ev.tap_email },
-        gaLeads: { play: ev.lead_play, coach: ev.lead_coach },
+        siteLeads: leads, instantLeads: ins.leads.instant, pixelLeads: ins.leads.pixel, taps: tapsOf(ev), clicksOut: outOf(ev),
+        gaLeads: gaSignupsOf(ev),
         messages: ins.messages.started, newContacts: ins.messages.newContacts, messaging,
         split: Object.fromEntries(Object.entries(sp).map(([k, v]) => [k, { spend: round(v.spend), impressions: v.impressions, clicks: v.clicks, instantLeads: v.leads.instant, messages: v.messages.started }])),
         dailyBudget: c.dailyBudget ?? null, lifetimeBudget: c.lifetimeBudget ?? null, extraFlags: flags,
@@ -600,15 +825,34 @@ function assemble({ ga, meta, nl, range, today, sinceAll, days }) {
 
   // ---- platform roll-ups ----------------------------------------------------
   const platforms = [];
-  const gRows = campaigns.filter((c) => c.platform === 'google');
-  const gSum = (k) => gRows.reduce((a, c) => a + (c[k] || 0), 0);
+  const rowsOf = (p) => campaigns.filter((c) => c.platform === p);
+  const gRows = rowsOf('google');
+  const gSum = (k) => sum(gRows, (c) => c[k]);
   platforms.push(platformRow('google', 'Google Search', {
     spend: gSum('spend'), impressions: gSum('impressions'), clicks: gSum('clicks'),
     sessions: gSum('sessions'), engaged: gSum('engaged'),
     siteLeads: leadsFor((l) => l.platform === 'google').total, instantLeads: 0,
-    taps: gRows.reduce((a, c) => a + c.taps.text + c.taps.email, 0),
+    taps: sum(gRows, (c) => tapCount(c.taps)),
     messages: null, messageSpend: 0, messagesFromMsgCampaigns: 0, msgLeads: 0, // Meta messages only
   }));
+  // Google Ad Grants (sbrfc.com): free grant credit, listed beside the paid
+  // platforms for comparison, never added into the money totals
+  const grRows = rowsOf('grant');
+  const grSum = (k) => sum(grRows, (c) => c[k]);
+  const grantOn = gaS.configured !== false;
+  const grantLeads = leadsFor((l) => l.platform === 'grant');
+  const grantEv = eventsFor((t) => t.site === 'sbrfc' && platOf(t) === 'grant');
+  const gaGrant = gaSignupsOf(grantEv);
+  const grantBest = bestOf(grantLeads, gaGrant); // forms vs Analytics, per kind of sign-up
+  if (grantOn || grRows.length || grantLeads.total) {
+    platforms.push(platformRow('grant', 'Google Ad Grants (sbrfc.com)', {
+      spend: grSum('spend'), impressions: grSum('impressions'), clicks: grSum('clicks'),
+      sessions: grSum('sessions'), engaged: grSum('engaged'),
+      siteLeads: grantBest.leads.total, instantLeads: 0,
+      taps: sum(grRows, (c) => tapCount(c.taps)),
+      messages: null, messageSpend: 0, messagesFromMsgCampaigns: 0, msgLeads: 0,
+    }));
+  }
   const msgByPlatform = {}; // platform → messages started (every Meta campaign)
   if (meta.ok) {
     const byPlat = {};
@@ -626,11 +870,11 @@ function assemble({ ga, meta, nl, range, today, sinceAll, days }) {
     for (const k of keys) {
       const p = byPlat[k] || blank();
       const plat = k === 'audience_network' ? 'audience_network' : k;
-      const sess = sessionsFor((t) => gaPlatform(t.source, t.medium) === plat);
-      const ev = eventsFor((e) => gaPlatform(e.source, e.medium) === plat);
+      const sess = sessionsFor((t) => platOf(t) === plat);
+      const ev = eventsFor((e) => platOf(e) === plat);
       platforms.push(platformRow(plat, platformLabel(plat), {
         spend: p.spend, impressions: p.impressions, clicks: p.clicks, sessions: sess.sessions, engaged: sess.engaged,
-        siteLeads: leadsFor((l) => l.platform === plat).total, instantLeads: p.instantLeads, taps: ev.tap_text + ev.tap_email,
+        siteLeads: leadsFor((l) => l.platform === plat).total, instantLeads: p.instantLeads, taps: tapCount(tapsOf(ev)),
         messages: p.messages, messageSpend: p.messageSpend, messagesFromMsgCampaigns: p.messagesFromMsgCampaigns,
         // leads that message campaigns brought in leave cost per lead along with their spend
         msgLeads: p.msgInstantLeads + leadsFor((l) => l.platform === plat && msgNames.has(l.campaign)).total,
@@ -640,17 +884,18 @@ function assemble({ ga, meta, nl, range, today, sinceAll, days }) {
   // Facebook/Instagram visits that carried no campaign tags: an untagged ad or
   // the club's own bio link. Listed so the totals reconcile, never as paid leads.
   {
-    const sess = sessionsFor((t) => gaPlatform(t.source, t.medium) === 'meta_untagged');
-    const ev = eventsFor((e) => gaPlatform(e.source, e.medium) === 'meta_untagged');
+    const sess = sessionsFor((t) => platOf(t) === 'meta_untagged');
+    const ev = eventsFor((e) => platOf(e) === 'meta_untagged');
     const untagged = leadsFor((l) => l.platform === 'meta_untagged').total;
     // spend / impressions / clicks are null here on purpose: "not applicable", not zero
-    if (untagged || sess.sessions) platforms.push(platformRow('meta_untagged', 'Facebook / Instagram, not paid', { spend: null, impressions: null, clicks: null, sessions: sess.sessions, engaged: sess.engaged, siteLeads: untagged, instantLeads: 0, taps: ev.tap_text + ev.tap_email, messages: null }));
+    if (untagged || sess.sessions) platforms.push(platformRow('meta_untagged', 'Facebook / Instagram, not paid', { spend: null, impressions: null, clicks: null, sessions: sess.sessions, engaged: sess.engaged, siteLeads: untagged, instantLeads: 0, taps: tapCount(tapsOf(ev)), messages: null }));
   }
-  const other = leadsFor((l) => !['google', 'facebook', 'instagram', 'messenger', 'audience_network', 'meta_untagged'].includes(l.platform));
+  const notFromAds = (l) => !isPaidPlatform(l.platform) && l.platform !== 'grant' && l.platform !== 'meta_untagged';
+  const other = leadsFor(notFromAds);
   if (other.total) platforms.push(platformRow('other', 'Not from an ad (direct, organic, other)', { spend: null, impressions: null, clicks: null, sessions: null, engaged: null, siteLeads: other.total, instantLeads: 0, taps: null, messages: null }));
 
-  // ---- totals ----------------------------------------------------------------
-  const sum = (arr, f) => arr.reduce((a, x) => a + (f(x) || 0), 0);
+  // ---- totals (real money: paid Google Search + Meta; Ad Grants are below) ----
+  const paidRows = campaigns.filter((c) => c.platform !== 'grant');
   const googleSpend = gSum('spend');
   const metaSpend = meta.ok ? sum(meta.insights || [], (i) => i.spend) : 0;
   const spend = googleSpend + metaSpend;
@@ -658,11 +903,11 @@ function assemble({ ga, meta, nl, range, today, sinceAll, days }) {
   const impressions = gSum('impressions') + (meta.ok ? sum(meta.insights || [], (i) => i.impressions) : 0);
   const instantLeads = meta.ok ? sum(meta.insights || [], (i) => i.leads.instant) : 0;
   const pixelLeads = meta.ok ? sum(meta.insights || [], (i) => i.leads.pixel) : 0;
-  const adLeads = leadsFor((l) => l.platform === 'google' || isMetaPlatform(l.platform));
+  const adLeads = leadsFor((l) => isPaidPlatform(l.platform));
   const untaggedSocialLeads = leadsFor((l) => l.platform === 'meta_untagged');
   const allSiteLeads = leadsFor(() => true);
-  const tapsAds = sum(campaigns, (c) => c.taps.text + c.taps.email);
-  const tapsAll = eventsFor(() => true);
+  const tapsAds = sum(paidRows, (c) => tapCount(c.taps));
+  const tapsAll = tapCount(tapsOf(eventsFor(() => true)));
   const leads = adLeads.total + instantLeads;
   // messages: every Meta campaign's count is shown; cost per message divides the
   // spend of message campaigns by the messages those campaigns brought in
@@ -678,16 +923,73 @@ function assemble({ ga, meta, nl, range, today, sinceAll, days }) {
   const cplLeads = Math.max(0, leads - leadsFromMsgCampaigns);
   const msgCamps = campaigns.filter((c) => c.messaging);
   const totals = {
-    spend: round(spend), googleSpend: round(googleSpend), metaSpend: round(metaSpend),
+    spend: round(spend), googleSpend: round(googleSpend), metaSpend: round(metaSpend), grantSpend: round(grSum('spend')),
     impressions, clicks, cpc: round(safeDiv(spend, clicks)),
-    leads, siteLeadsFromAds: adLeads, siteLeadsUntaggedSocial: untaggedSocialLeads, siteLeadsAll: allSiteLeads, instantLeads, pixelLeads,
+    leads, siteLeadsFromAds: adLeads, siteLeadsUntaggedSocial: untaggedSocialLeads, siteLeadsFromGrants: grantLeads,
+    siteLeadsOther: other, siteLeadsAll: allSiteLeads, instantLeads, pixelLeads,
     leadSpend: round(leadSpend), cplLeads, leadsFromMsgCampaigns, cpl: round(safeDiv(leadSpend, cplLeads)), clickToLead: pct(leads, clicks),
-    taps: tapsAds, tapsAllVisitors: tapsAll.tap_text + tapsAll.tap_email,
-    sessions: sum(campaigns, (c) => c.sessions),
+    taps: tapsAds, tapsAllVisitors: tapsAll,
+    sessions: sum(paidRows, (c) => c.sessions),
     messages, newContacts, messagesByPlatform: msgByPlatform, messagesFromMsgCampaigns,
     messageSpend: round(messageSpend), costPerMessage: round(safeDiv(messageSpend, messagesFromMsgCampaigns)),
     messageCampaigns: msgCamps.length, messageCampaignsActive: msgCamps.filter((c) => c.status === 'Active').length,
   };
+
+  // ---- Google Ad Grants (sbrfc.com) -----------------------------------------
+  const monthStart = monthStartOf(today);
+  const gDaily = gaS.googleDaily || [];
+  const shown = gDaily.filter((d) => d.impressions > 0).map((d) => d.date).sort();
+  const mtd = gDaily.filter((d) => d.date >= monthStart && d.date <= today);
+  const mtdImpressions = sum(mtd, (d) => d.impressions), mtdClicks = sum(mtd, (d) => d.clicks);
+  // Google counts the conversions it imports from sbrfc.com's Analytics
+  const mtdConversions = sum((gaS.monthEvents || []).filter((e) => platOf(e) === 'grant' && GRANT_CONVERSION_EVENTS.includes(e.event)), (e) => e.count);
+  const mtdSignups = leadsFor((l) => l.platform === 'grant' && l.day >= monthStart && l.day <= today, siteLeads);
+  // average per day over the days in range that the grant ads were running
+  // (from the first to the last day with impressions; today's cost lands tomorrow)
+  const runFrom = shown.length ? (shown[0] > range.since ? shown[0] : range.since) : null;
+  const runTo = shown.length ? (shown[shown.length - 1] < range.until ? shown[shown.length - 1] : range.until) : null;
+  const runDays = runFrom && runTo && runTo >= runFrom ? daysBetween(runFrom, runTo) + 1 : null;
+  const grSpend = grSum('spend'), grClicks = grSum('clicks'), grImpressions = grSum('impressions');
+  const untaggedGrant = leadsFor((l) => l.platform === 'grant' && !l.campaign).total;
+  const grant = {
+    configured: grantOn, ok: !!gaS.ok, error: gaS.error || null, adsError: gaS.adsError || null, property: gaS.property || null,
+    formsOk: !!nlS.ok, formsError: nlS.error || null,
+    spend: round(grSpend), impressions: grImpressions, clicks: grClicks, ctr: pct(grClicks, grImpressions, 2), cpc: round(safeDiv(grSpend, grClicks)),
+    sessions: grSum('sessions'), engaged: grSum('engaged'), engagementRate: pct(grSum('engaged'), grSum('sessions')),
+    avgDailySpend: runDays ? round(grSpend / runDays) : null, runDays, dailyCap: GRANT_DAILY_CAP, ctrTarget: GRANT_CTR_TARGET,
+    signups: grantLeads, gaSignups: gaGrant, best: grantBest.leads, leads: grantBest.leads.total, leadSource: grantBest.source,
+    cpl: round(safeDiv(grSpend, grantBest.leads.total)),
+    signupsAll: leadsFor((l) => l.site === 'sbrfc'),
+    taps: tapCount(tapsOf(grantEv)), registerClicks: n0(grantEv, 'youth_register_click'), clubClicks: n0(grantEv, 'club_site_click'),
+    firstShown: shown[0] || null, lastShown: shown[shown.length - 1] || null,
+    month: {
+      start: monthStart, spend: round(sum(mtd, (d) => d.cost)), impressions: mtdImpressions, clicks: mtdClicks,
+      ctr: pct(mtdClicks, mtdImpressions, 2), conversions: mtdConversions, signups: mtdSignups.total,
+    },
+    campaigns: grRows.length, campaignsActive: grRows.filter((c) => c.status === 'Active').length,
+    untaggedSignups: untaggedGrant,
+  };
+  if (grantOn) {
+    if (gaS.configured && !gaS.ok) warnings.push({ level: 'warn', text: `sbrfc.com Google Analytics error: ${gaS.error}` });
+    if (gaS.adsError && gaS.adsError !== gaS.error) warnings.push({ level: 'warn', text: `Ad Grants figures unavailable from sbrfc.com's Google Analytics: ${gaS.adsError}` });
+    const grantSessions = sessionsFor((t) => t.site === 'sbrfc' && platOf(t) === 'grant').sessions;
+    if (gaS.ok && !gaS.adsError && !gAllS.size && grantSessions > 0) {
+      warnings.push({ level: 'warn', text: `sbrfc.com's Google Analytics sees ${grantSessions} Google Ads visits but no Ad Grants cost data. Check the Google Ads link on the sbrfc.com property (Admin → Product links → Google Ads links), or the ads only started today (cost lands a day late).` });
+    }
+    if (gaS.ok && !gaS.adsError && !shown.length && !grantSessions) {
+      const since = new Date(`${sinceAll}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+      warnings.push({ level: 'info', text: `No Google Ad Grants ad has shown yet: Google reports no impressions since ${since}. Its figures reach Analytics about a day late; if this stays, check the campaign statuses in Google Ads.` });
+    }
+    if (mtdImpressions >= GRANT_CTR_MIN_IMPRESSIONS && grant.month.ctr != null && grant.month.ctr < GRANT_CTR_TARGET) {
+      warnings.push({ level: 'warn', text: `Ad Grants click-through rate this month is ${grant.month.ctr}%. Google expects 5% or more every month and can pause the grant after two months in a row below it.` });
+    }
+    // (a problem both sites share, like a missing token, is reported once below)
+    if (nlS.error !== nl.error) {
+      if (nlS.configured === false) warnings.push({ level: 'warn', text: `sbrfc.com sign-up forms are not connected: ${nlS.error}` });
+      else if (!nlS.ok) warnings.push({ level: 'warn', text: `sbrfc.com forms (Netlify) error: ${nlS.error}` });
+    }
+    if (untaggedGrant > 0) warnings.push({ level: 'info', text: `${untaggedGrant} sbrfc.com sign-up${untaggedGrant === 1 ? '' : 's'} in this range came from a Google ad whose link names no campaign, so ${untaggedGrant === 1 ? 'it counts' : 'they count'} toward Ad Grants as a whole and Analytics matches them to campaigns. Adding the Final URL suffix in Google Ads (DASHBOARD-SETUP.md, 6f) names the campaign on every form.` });
+  }
 
   // ---- flags + warnings -----------------------------------------------------
   for (const c of campaigns) {
@@ -699,59 +1001,74 @@ function assemble({ ga, meta, nl, range, today, sinceAll, days }) {
   campaigns.sort((a, b) => (b.spend - a.spend) || (b.lastSeen || '').localeCompare(a.lastSeen || ''));
   const untaggedCamps = campaigns.filter((c) => c.flags.includes('untagged'));
   if (untaggedCamps.length) warnings.push({ level: 'warn', text: `${untaggedCamps.map((c) => `"${c.name}"`).join(', ')}: Meta reports clicks but no tagged visits reached the site. Add the URL parameters line to that campaign's ads (DASHBOARD-SETUP.md) unless it uses Instant Forms.` });
-  if (nl.ok && nl.spamSupported && nl.spamCount > 0) warnings.push({ level: 'warn', text: `${nl.spamCount} form submission${nl.spamCount === 1 ? ' in this range sits' : 's in this range sit'} in Netlify's spam folder. Check Forms → Spam submissions; real ones can be marked verified.` });
-  if (meta.configured === false) warnings.push({ level: 'info', text: 'Meta is not connected yet: add META_ADS_TOKEN and META_AD_ACCOUNT_ID in Netlify env vars, then redeploy. Facebook and Instagram figures appear after that.' });
+  for (const [n, label] of [[nl, 'grunionrugby.com'], [nlS, 'sbrfc.com']]) {
+    if (n.ok && n.spamSupported && n.spamCount > 0) warnings.push({ level: 'warn', text: `${n.spamCount} ${label} form submission${n.spamCount === 1 ? ' in this range sits' : 's in this range sit'} in Netlify's spam folder. Check Forms → Spam submissions; real ones can be marked verified.` });
+  }
+  if (meta.configured === false) warnings.push({ level: 'info', text: 'Meta is not connected yet: add META_ADS_TOKEN in Netlify env vars and assign the ad account to the grunion-dashboard system user, then redeploy. Facebook and Instagram figures appear after that.' });
   else if (!meta.ok) warnings.push({ level: 'warn', text: `Meta error: ${meta.error}` });
   if (ga.configured === false) warnings.push({ level: 'warn', text: `Google Analytics is not connected: ${ga.error}` });
   else if (!ga.ok) warnings.push({ level: 'warn', text: `Google Analytics error: ${ga.error}` });
   if (nl.configured === false) warnings.push({ level: 'warn', text: `Netlify is not connected: ${nl.error}` });
   else if (!nl.ok) warnings.push({ level: 'warn', text: `Netlify error: ${nl.error}` });
-  const untaggedLeads = leadsIn.filter((l) => !l.tagged).length;
-  if (leadsIn.length && untaggedLeads === leadsIn.length && (spend > 0)) warnings.push({ level: 'info', text: 'None of the recent site leads carried campaign tags. If the landing-page change has not been deployed yet, that is expected.' });
+  const grunionIn = leadsIn.filter((l) => l.site === 'grunion');
+  const untaggedLeads = grunionIn.filter((l) => !l.tagged).length;
+  // only meaningful while website-bound ads run (a message ad never tags a visit)
+  if (grunionIn.length && untaggedLeads === grunionIn.length && leadSpend > 0) warnings.push({ level: 'info', text: 'None of the recent site leads carried campaign tags. If the landing-page change has not been deployed yet, that is expected.' });
 
   // ---- daily series (in range) ------------------------------------------------
   const daily = [];
   for (let d = range.since; d <= range.until; d = addDays(d, 1)) {
     const gD = (ga.googleDaily || []).filter((x) => x.date === d);
+    const sD = gDaily.filter((x) => x.date === d);
     const mD = (meta.daily || []).filter((x) => x.date === d);
     daily.push({
       date: d,
       googleSpend: round(sum(gD, (x) => x.cost)),
       metaSpend: round(sum(mD, (x) => x.spend)),
-      siteLeads: leadsIn.filter((l) => l.day === d).length,
+      grantSpend: round(sum(sD, (x) => x.cost)),
+      grantClicks: sum(sD, (x) => x.clicks),
+      siteLeads: leadsIn.filter((l) => l.site === 'grunion' && l.day === d).length,
+      sbrfcLeads: leadsIn.filter((l) => l.site === 'sbrfc' && l.day === d).length,
       instantLeads: sum(mD, (x) => x.leads.instant),
       messages: sum(mD, (x) => x.messages?.started),
     });
   }
 
-  const recentLeads = siteLeads.slice(0, 20).map((l) => ({
-    at: l.at, form: l.form, name: l.name, platform: l.platform, platformLabel: platformLabel(l.platform),
-    campaign: l.platform === 'google' ? (gById.get(l.campaign) || l.campaign) : l.campaign, ad: l.ad, term: l.term, tagged: l.tagged,
+  const recentLeads = siteLeads.slice(0, 25).map((l) => ({
+    at: l.at, form: l.form, formLabel: formLabel(l), site: l.site, siteLabel: SITES[l.site]?.label || l.site, team: l.team,
+    name: l.name, platform: l.platform, platformLabel: platformLabel(l.platform),
+    campaign: (l.platform === 'google' || l.platform === 'grant') ? (gById.get(l.campaign) || l.campaign) : l.campaign, ad: l.ad, term: l.term, tagged: l.tagged,
   }));
 
-  return { totals, platforms, campaigns, daily, recentLeads, warnings };
+  return { totals, grant, platforms, campaigns, daily, recentLeads, warnings };
 }
 
 function row(c, today) {
   const leads = c.siteLeads.total + c.instantLeads;
   const messages = c.messages || 0;
-  const goal = /coach/i.test(c.name) ? 'Coach' : (c.siteLeads.coach > c.siteLeads.play ? 'Coach' : 'Players');
+  const goal = /sponsor/i.test(c.name) ? 'Sponsors'
+    : /coach|referee|\brefs?\b|volunteer/i.test(c.name) ? 'Coach'
+      : (c.siteLeads.sponsor > Math.max(c.siteLeads.play, c.siteLeads.coach) ? 'Sponsors'
+        : c.siteLeads.coach > c.siteLeads.play ? 'Coach' : 'Players');
   return {
-    key: c.key, platform: c.platform, platformLabel: c.platformLabel, name: c.name, id: c.id, kind: c.kind, goal,
+    key: c.key, platform: c.platform, platformLabel: c.platformLabel, site: c.site || null, accountId: c.accountId || null, accountLabel: c.accountLabel || null,
+    name: c.name, id: c.id, kind: c.kind, goal,
     status: c.status, statusRaw: c.statusRaw, firstSeen: c.firstSeen, lastSeen: c.lastSeen,
     daysRunning: c.firstSeen ? Math.max(1, daysBetween(c.firstSeen, today) + 1) : null,
     isNew: !!(c.firstSeen && daysBetween(c.firstSeen, today) < NEW_DAYS),
     spend: round(c.spend), impressions: c.impressions, reach: c.reach, clicks: c.clicks, allClicks: c.allClicks,
     ctr: pct(c.clicks, c.impressions, 2), cpc: round(safeDiv(c.spend, c.clicks)),
     sessions: c.sessions, engaged: c.engaged, engagementRate: pct(c.engaged, c.sessions),
-    siteLeads: c.siteLeads, instantLeads: c.instantLeads, pixelLeads: c.pixelLeads, gaLeads: c.gaLeads, leads,
+    siteLeads: c.siteLeads, leadSource: c.leadSource || 'forms', instantLeads: c.instantLeads, pixelLeads: c.pixelLeads, gaLeads: c.gaLeads, leads,
     cpl: c.messaging ? null : round(safeDiv(c.spend, leads)), clickToLead: pct(leads, c.clicks),
     messaging: !!c.messaging, messages, newContacts: c.newContacts || 0,
     costPerMessage: c.messaging ? round(safeDiv(c.spend, messages)) : null,
-    taps: c.taps, split: c.split, dailyBudget: c.dailyBudget, lifetimeBudget: c.lifetimeBudget ?? null, flags: (c.extraFlags || []).slice(),
+    taps: c.taps, clicksOut: c.clicksOut || { register: 0, club: 0 },
+    split: c.split, dailyBudget: c.dailyBudget, lifetimeBudget: c.lifetimeBudget ?? null, flags: (c.extraFlags || []).slice(),
   };
 }
 const PLATFORM_NOTES = {
+  grant: 'Free Google search ads from the Ad Grants account, landing on sbrfc.com. The spend is grant credit, not cash, so it stays out of the spend, click and cost-per-lead tiles. Site leads are sbrfc.com sign-ups that came from these ads.',
   meta_untagged: 'Visits and leads from Facebook or Instagram that carried no paid-ad tags: the club\'s own posts and bio link, a share, or an ad whose URL parameters are missing. Never counted as paid leads.',
   other: 'Site leads whose visit carried no ad tags at all: direct, organic search, word of mouth.',
 };
@@ -777,7 +1094,7 @@ function platformRow(key, label, p) {
 // ============================================================================
 const cache = new Map(); // days → { at, body }
 
-async function buildReport({ daysParam }) {
+async function buildReport({ daysParam, fresh }) {
   const today = ptDate();
   const sinceAll = validDate(process.env.ADS_START_DATE) ? process.env.ADS_START_DATE : DEFAULT_START;
   const days = daysParam === 'all' ? 'all' : ([7, 30, 90].includes(Number(daysParam)) ? Number(daysParam) : 30);
@@ -785,15 +1102,29 @@ async function buildReport({ daysParam }) {
   if (range.since > today) range.since = today;
 
   const settle = (p) => p.then((v) => v).catch((e) => ({ configured: true, ok: false, error: String(e.message || e) }));
-  const [ga, meta, nl] = await Promise.all([settle(fetchGA(range, sinceAll)), settle(fetchMeta(range, sinceAll)), settle(fetchNetlify(range))]);
-  const report = assemble({ ga, meta, nl, range, today, sinceAll, days });
+  let tokenP = null; // one Google token serves both properties
+  const getToken = (c) => (tokenP ||= googleToken(c.email, c.pk));
+  const client = process.env.NETLIFY_API_TOKEN ? netlifyClient(process.env.NETLIFY_API_TOKEN) : null;
+  // SBRFC_GA_PROPERTY_ID=off leaves sbrfc.com out altogether (its Analytics and its forms)
+  const sbrfcOff = isOff(SITES.sbrfc.property());
+  const offSite = { configured: false, off: true, ok: false, error: 'sbrfc.com is switched off (SBRFC_GA_PROPERTY_ID=off)' };
+  const [ga, gaS, meta, nl, nlS] = await Promise.all([
+    settle(fetchGA(range, sinceAll, SITES.grunion, getToken)),
+    sbrfcOff ? offSite : settle(fetchGA(range, sinceAll, SITES.sbrfc, getToken)),
+    settle(fetchMeta(range, sinceAll, fresh)),
+    settle(fetchNetlify(range, SITES.grunion, client)),
+    sbrfcOff ? offSite : settle(fetchNetlify(range, SITES.sbrfc, client)),
+  ]);
+  const report = assemble({ ga, gaS, meta, nl, nlS, range, today, sinceAll, days });
   return {
     days, range, today, sinceLaunch: sinceAll,
-    configured: { ga: ga.configured !== false, meta: meta.configured !== false, netlify: nl.configured !== false },
+    configured: { ga: ga.configured !== false, sbrfc: gaS.configured !== false, meta: meta.configured !== false, netlify: nl.configured !== false },
     sources: {
       ga: { ok: !!ga.ok, error: ga.error || null, adsError: ga.adsError || null },
-      meta: { ok: !!meta.ok, error: meta.error || null },
+      sbrfcGa: { ok: !!gaS.ok, error: gaS.error || null, adsError: gaS.adsError || null, property: gaS.property || null },
+      meta: { ok: !!meta.ok, error: meta.error || null, accounts: meta.accounts || [], discoverError: meta.discoverError || null },
       netlify: { ok: !!nl.ok, error: nl.error || null, spamSupported: nl.spamSupported ?? null, forms: nl.forms || [] },
+      sbrfcNetlify: { ok: !!nlS.ok, error: nlS.error || null, spamSupported: nlS.spamSupported ?? null, forms: nlS.forms || [] },
     },
     ...report,
   };
@@ -808,7 +1139,7 @@ export default async (req) => {
   const hit = cache.get(daysParam);
   if (!fresh && hit && Date.now() - hit.at < CACHE_TTL_MS) return json({ ...hit.body, cachedAt: new Date(hit.at).toISOString() });
   try {
-    const body = await buildReport({ daysParam });
+    const body = await buildReport({ daysParam, fresh });
     cache.set(daysParam, { at: Date.now(), body });
     return json({ ...body, cachedAt: null });
   } catch (e) {

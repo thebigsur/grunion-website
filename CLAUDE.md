@@ -41,8 +41,11 @@ tradeoffs. Simplicity here is deliberate, not an accident.
 - netlify/functions/ — cm-stats.mjs, ga-stats.mjs, netlify-stats.mjs, ads-stats.mjs:
   serverless data proxies for the dashboard (zero npm dependencies; API keys live
   only in Netlify env vars — see DASHBOARD-SETUP.md). ads-stats.mjs is the ads
-  tracker: Google Ads via the GA4 link + the Meta Marketing API + our own form
-  leads, joined by campaign name (DASHBOARD-SETUP.md step 6).
+  tracker: Google Ads via the GA4 link + the Meta Marketing API (every ad
+  account assigned to the grunion-dashboard system user) + our own form
+  leads, joined by campaign name, plus the Google Ad Grants campaigns read
+  from sbrfc.com's GA4 property and forms (DASHBOARD-SETUP.md step 6, 6f).
+  Grant spend is free credit and stays out of the money totals.
 - netlify/functions/board/ — the Sponsor Board (jersey-tile email campaign
   metrics from Instantly, read-only). board.mjs serves BOTH the page and its
   JSON feed at /board/<BOARD_SLUG>/ ; page.mjs is the page markup/CSS/JS as a
